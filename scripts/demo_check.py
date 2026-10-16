@@ -7,7 +7,6 @@ Usage: python scripts/demo_check.py [--base-url http://localhost:8000]
 Owned by M4.
 """
 import argparse
-import json
 import sys
 from typing import Any
 

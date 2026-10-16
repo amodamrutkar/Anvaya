@@ -5,6 +5,8 @@ No real network connections are made.
 """
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends
 
 from sutradhar_api.auth import require_action
@@ -28,6 +30,6 @@ _CONNECTORS = [
 
 @router.get("/connectors/status")
 def get_connectors_status(
-    user: UserInfo = Depends(require_action("CONNECTORS_STATUS")),
+    user: Annotated[UserInfo, Depends(require_action("CONNECTORS_STATUS"))],
 ):
     return [c.status() for c in _CONNECTORS]

@@ -9,7 +9,7 @@ No real person, agency or case is represented.
 from __future__ import annotations
 
 import logging
-import os
+from typing import Annotated
 
 from fastapi import Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,7 +19,16 @@ from sutradhar_api import __version__
 from sutradhar_api.auth import require_auth
 from sutradhar_api.config import CORS_ORIGINS, DATASET_VERSION, DEMO_TAMPER
 from sutradhar_api.models import UserInfo
-from sutradhar_api.routers import audit, connectors, dossier, entities, federated, graph, kumbh, review
+from sutradhar_api.routers import (
+    audit,
+    connectors,
+    dossier,
+    entities,
+    federated,
+    graph,
+    kumbh,
+    review,
+)
 from sutradhar_api.store import get_store
 
 # ─────────────────────────────────────────────────────────────
@@ -106,7 +115,7 @@ def get_health():
 # Me
 # ─────────────────────────────────────────────────────────────
 @app.get("/me", tags=["auth"])
-def get_me(user: UserInfo = Depends(require_auth)):
+def get_me(user: Annotated[UserInfo, Depends(require_auth)]):
     """Return current demo user info."""
     return user.model_dump()
 
@@ -115,7 +124,7 @@ def get_me(user: UserInfo = Depends(require_auth)):
 # Metrics
 # ─────────────────────────────────────────────────────────────
 @app.get("/metrics", tags=["system"])
-def get_metrics(user: UserInfo = Depends(require_auth)):
+def get_metrics(user: Annotated[UserInfo, Depends(require_auth)]):
     """Return evaluation metrics from artifacts/metrics.json."""
     store = get_store()
     return store.metrics or {"message": "Metrics not yet available. Run `make eval` first."}

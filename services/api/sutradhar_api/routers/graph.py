@@ -4,6 +4,8 @@ Community, neighborhood, path, role, bridge, and mule chain endpoints.
 """
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException, Query
 
 from sutradhar_api.auth import require_action
@@ -19,7 +21,7 @@ router = APIRouter(tags=["graph"])
 
 @router.get("/graph/communities")
 def get_communities(
-    user: UserInfo = Depends(require_action("GRAPH_VIEW")),
+    user: Annotated[UserInfo, Depends(require_action("GRAPH_VIEW"))],
 ):
     store = get_store()
     store.record_audit(actor=user.user_id, role=user.role.value, action="COMMUNITIES_VIEW", summary="Listed all communities.")
@@ -29,7 +31,7 @@ def get_communities(
 @router.get("/graph/communities/{community_id}")
 def get_community(
     community_id: str,
-    user: UserInfo = Depends(require_action("GRAPH_VIEW")),
+    user: Annotated[UserInfo, Depends(require_action("GRAPH_VIEW"))],
 ):
     store = get_store()
     community = store.communities.get(community_id)
@@ -53,8 +55,8 @@ def get_community(
 @router.get("/graph/entity/{entity_id}/neighborhood")
 def get_neighborhood(
     entity_id: str,
+    user: Annotated[UserInfo, Depends(require_action("GRAPH_VIEW"))],
     hops: int = 2,
-    user: UserInfo = Depends(require_action("GRAPH_VIEW")),
 ):
     store = get_store()
     entity = store.entities.get(entity_id)
@@ -83,9 +85,9 @@ def get_neighborhood(
 
 @router.get("/graph/path")
 def get_graph_path(
+    user: Annotated[UserInfo, Depends(require_action("GRAPH_VIEW"))],
     from_id: str | None = Query(None, alias="from"),
     to_id: str | None = Query(None, alias="to"),
-    user: UserInfo = Depends(require_action("GRAPH_VIEW")),
 ):
     return {"path": [from_id, to_id], "edges": [], "hops": 1}
 
@@ -96,8 +98,8 @@ def get_graph_path(
 
 @router.get("/roles")
 def get_roles(
+    user: Annotated[UserInfo, Depends(require_action("GRAPH_VIEW"))],
     community_id: str | None = None,
-    user: UserInfo = Depends(require_action("GRAPH_VIEW")),
 ):
     store = get_store()
     roles = store.roles
@@ -108,15 +110,15 @@ def get_roles(
 
 @router.get("/bridges")
 def get_bridges(
-    user: UserInfo = Depends(require_action("GRAPH_VIEW")),
+    user: Annotated[UserInfo, Depends(require_action("GRAPH_VIEW"))],
 ):
     return get_store().bridges
 
 
 @router.get("/mule/chains")
 def get_mule_chains(
+    user: Annotated[UserInfo, Depends(require_action("MULE_VIEW"))],
     community_id: str | None = None,
-    user: UserInfo = Depends(require_action("MULE_VIEW")),
 ):
     store = get_store()
     chains = store.mule_chains

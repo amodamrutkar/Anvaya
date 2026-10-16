@@ -3,6 +3,7 @@ tests/test_graph.py
 Tests for graph read endpoints: communities, neighborhood, path, roles, bridges, and mule chains.
 """
 import pytest
+
 from sutradhar_api.store import get_store
 
 

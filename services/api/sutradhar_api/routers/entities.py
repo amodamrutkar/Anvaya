@@ -4,6 +4,8 @@ Entity search, profile, and link endpoints.
 """
 from __future__ import annotations
 
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from sutradhar_api.auth import require_action
@@ -16,8 +18,8 @@ router = APIRouter(prefix="/entities", tags=["entities"])
 @router.get("/search")
 def search_entities(
     q: str,
+    user: Annotated[UserInfo, Depends(require_action("ENTITY_SEARCH"))],
     type: str | None = None,
-    user: UserInfo = Depends(require_action("ENTITY_SEARCH")),
 ):
     store = get_store()
     q_lower = q.lower()
@@ -45,7 +47,7 @@ def search_entities(
 @router.get("/{entity_id}")
 def get_entity(
     entity_id: str,
-    user: UserInfo = Depends(require_action("ENTITY_VIEW")),
+    user: Annotated[UserInfo, Depends(require_action("ENTITY_VIEW"))],
 ):
     store = get_store()
     entity = store.entities.get(entity_id)
@@ -62,7 +64,7 @@ def get_entity(
 @router.get("/{entity_id}/links")
 def get_entity_links(
     entity_id: str,
-    user: UserInfo = Depends(require_action("ENTITY_VIEW")),
+    user: Annotated[UserInfo, Depends(require_action("ENTITY_VIEW"))],
 ):
     store = get_store()
     entity = store.entities.get(entity_id)
