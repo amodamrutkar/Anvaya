@@ -73,8 +73,14 @@ def generate_explanation(
     # Only include reasons that were actually computed (non-zero weight or informational)
     parts = []
     for_reasons = [r for r in link.reasons if r.direction == "FOR" and r.weight > 0]
-    against_reasons = [r for r in link.reasons if r.direction == "AGAINST" and r.weight != 0]
-    info_reasons = [r for r in link.reasons if r.weight == 0 and r.clue not in ("DECISION_MUST_LINK",)]
+    against_reasons = [
+        r for r in link.reasons if r.direction == "AGAINST" and r.weight != 0
+    ]
+    info_reasons = [
+        r
+        for r in link.reasons
+        if r.weight == 0 and r.clue not in ("DECISION_MUST_LINK",)
+    ]
 
     for r in for_reasons:
         parts.append(_format_reason(r.clue, r.detail, templates))
