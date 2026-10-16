@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=68.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sutradhar-er"
+version = "0.1.0"
+description = "Sutradhar Entity Resolution — NLP extraction and cross-agency entity resolution"
+requires-python = ">=3.11"
+dependencies = [
+    "pydantic>=2.0,<3",
+    "pyyaml>=6.0",
+    "rapidfuzz>=3.0",
+    "jellyfish>=1.0",
+    "indic-transliteration>=2.3",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "pytest-cov>=4.0",
+]
+llm = [
+    "anthropic>=0.20",
+    "google-generativeai>=0.4",
+]
+
+[project.scripts]
+sutradhar-er = "sutradhar_er.run:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-v --tb=short"
