@@ -6,6 +6,7 @@ Member 4: Backend, Security, Audit.
 All data is synthetic. All connectors are simulated.
 No real person, agency or case is represented.
 """
+
 from __future__ import annotations
 
 import logging
@@ -80,12 +81,18 @@ app.include_router(audit.router)
 app.include_router(kumbh.router)
 app.include_router(connectors.router)
 
+
 # ─────────────────────────────────────────────────────────────
 # Startup
 # ─────────────────────────────────────────────────────────────
 @app.on_event("startup")
 async def startup() -> None:
-    log.info("Sutradhar API v%s starting. DATASET_VERSION=%s DEMO_TAMPER=%s", __version__, DATASET_VERSION, DEMO_TAMPER)
+    log.info(
+        "Sutradhar API v%s starting. DATASET_VERSION=%s DEMO_TAMPER=%s",
+        __version__,
+        DATASET_VERSION,
+        DEMO_TAMPER,
+    )
     store = get_store()
     store.load()
     log.info("DataStore ready.")
@@ -98,6 +105,7 @@ async def startup() -> None:
 def get_health():
     """API health check. Always returns simulated: true."""
     from sutradhar_api.store import get_store as _gs
+
     store = _gs()
     return {
         "status": "ok",

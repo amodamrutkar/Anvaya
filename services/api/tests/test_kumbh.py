@@ -3,6 +3,7 @@ tests/test_kumbh.py
 Tests for Kumbh simulation mode, alert generation (E1, E2),
 control case (E3 missing person raises no alert), and alert confirm/dismiss.
 """
+
 import pytest
 
 from sutradhar_api.store import get_store

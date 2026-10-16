@@ -2,6 +2,7 @@
 sutradhar_api/routers/entities.py
 Entity search, profile, and link endpoints.
 """
+
 from __future__ import annotations
 
 from typing import Annotated
@@ -29,15 +30,19 @@ def search_entities(
         if type and entity.get("entity_type") != type:
             continue
         # Simple match on canonical_name, name_variants, or entity_id
-        haystack = " ".join([
-            entity.get("canonical_name", ""),
-            entity.get("entity_id", ""),
-            " ".join(entity.get("name_variants", [])),
-        ]).lower()
+        haystack = " ".join(
+            [
+                entity.get("canonical_name", ""),
+                entity.get("entity_id", ""),
+                " ".join(entity.get("name_variants", [])),
+            ]
+        ).lower()
         if q_lower in haystack:
             results.append(entity)
     store.record_audit(
-        actor=user.user_id, role=user.role.value, action="ENTITY_SEARCH",
+        actor=user.user_id,
+        role=user.role.value,
+        action="ENTITY_SEARCH",
         summary=f"Searched entities: q={q!r}, hits={len(results)}",
         purpose="INVESTIGATION",
     )
@@ -52,9 +57,14 @@ def get_entity(
     store = get_store()
     entity = store.entities.get(entity_id)
     if not entity:
-        raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Entity {entity_id!r} not found."}})
+        raise HTTPException(
+            status_code=404,
+            detail={"error": {"code": "NOT_FOUND", "message": f"Entity {entity_id!r} not found."}},
+        )
     store.record_audit(
-        actor=user.user_id, role=user.role.value, action="ENTITY_VIEW",
+        actor=user.user_id,
+        role=user.role.value,
+        action="ENTITY_VIEW",
         summary=f"Viewed entity {entity_id}.",
         purpose="INVESTIGATION",
     )
@@ -69,14 +79,20 @@ def get_entity_links(
     store = get_store()
     entity = store.entities.get(entity_id)
     if not entity:
-        raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Entity {entity_id!r} not found."}})
+        raise HTTPException(
+            status_code=404,
+            detail={"error": {"code": "NOT_FOUND", "message": f"Entity {entity_id!r} not found."}},
+        )
     mention_ids = set(entity.get("mention_ids", []))
     links = [
-        lnk for lnk in store.links.values()
+        lnk
+        for lnk in store.links.values()
         if lnk.get("a_mention_id") in mention_ids or lnk.get("b_mention_id") in mention_ids
     ]
     store.record_audit(
-        actor=user.user_id, role=user.role.value, action="ENTITY_LINKS_VIEW",
+        actor=user.user_id,
+        role=user.role.value,
+        action="ENTITY_LINKS_VIEW",
         summary=f"Viewed links for entity {entity_id}: {len(links)} found.",
     )
     return links
