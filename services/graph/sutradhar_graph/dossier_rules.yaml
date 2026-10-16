@@ -1,0 +1,19 @@
+# Legal parameters for MCOCA (Maharashtra Control of Organised Crime Act) dossier synthesis.
+# IMPORTANT: All parameters are synthetic guidelines for demonstration and marked with verified: false.
+mcoca:
+  act_name: "Maharashtra Control of Organised Crime Act, 1999"
+  section: "Section 3(1) & Section 3(2)"
+  lookback_years: 10
+  min_chargesheets_required: 2
+  min_gang_members_required: 2
+  competent_court_cognizance_required: true
+  continuing_unlawful_activity_window_months: 12
+  verified: false
+  disclaimer: "Draft to support officer judgement. Synthetic data."
+
+evidence_gap_rules:
+  single_case_threshold: 1
+  min_role_confidence_threshold: 0.60
+  flag_unconfirmed_roles: true
+  flag_single_district_gangs: true
+  flag_missing_financial_links: true
