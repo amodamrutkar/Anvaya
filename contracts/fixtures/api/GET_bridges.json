@@ -1,0 +1,1 @@
+[{"entity_id": "PH-000007", "entity_type": "PHONE", "communities": ["COM-001", "COM-002", "COM-003"], "crime_types": ["CYBER_FRAUD", "EXTORTION", "NARCOTICS"], "linked_person": "P-000045", "evidence_record_ids": ["R-SPO-000123", "R-CYB-000456", "R-CEN-000009"]}]

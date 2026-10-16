@@ -1,0 +1,1 @@
+{"tampered_seq": 2, "message": "Entry seq=2 corrupted for demo. Call GET /audit/verify to detect."}

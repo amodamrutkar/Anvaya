@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "entity.schema.json",
+  "title": "Entity",
+  "description": "A resolved entity (person, phone, account, vehicle, or address).",
+  "type": "object",
+  "required": ["entity_id", "entity_type", "canonical_name"],
+  "properties": {
+    "entity_id": {"type": "string", "pattern": "^(P|PH|AC|VH|AD)-\\d{6}$"},
+    "entity_type": {"type": "string", "enum": ["PERSON", "PHONE", "ACCOUNT", "VEHICLE", "ADDRESS"]},
+    "canonical_name": {"type": "string"},
+    "name_variants": {"type": "array", "items": {"type": "string"}},
+    "identifiers": {
+      "type": "object",
+      "properties": {
+        "phones": {"type": "array", "items": {"type": "string"}},
+        "accounts": {"type": "array", "items": {"type": "string"}},
+        "vehicles": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "mention_ids": {"type": "array", "items": {"type": "string"}},
+    "record_ids": {"type": "array", "items": {"type": "string"}},
+    "agencies": {"type": "array", "items": {"type": "string"}},
+    "districts": {"type": "array", "items": {"type": "string"}},
+    "min_link_confidence": {"type": ["number", "null"]},
+    "status": {"type": "string", "enum": ["ACTIVE", "MERGED", "UNLINKED"]}
+  }
+}

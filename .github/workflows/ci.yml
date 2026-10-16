@@ -1,0 +1,76 @@
+name: CI
+
+on:
+  push:
+    branches: ["main", "dev", "feat/**", "contract/**", "fix/**"]
+  pull_request:
+    branches: ["main", "dev"]
+
+jobs:
+  # ─────────────────────────────────────────────
+  # Gate 1: Truth-leak protection
+  # ─────────────────────────────────────────────
+  truth-leak:
+    name: Check truth leak
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run truth-leak gate
+        run: bash scripts/check_no_truth_leak.sh
+
+  # ─────────────────────────────────────────────
+  # Gate 2: Scope check
+  # ─────────────────────────────────────────────
+  scope-check:
+    name: Check scope
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run scope check
+        run: bash scripts/check_scope.sh
+
+  # ─────────────────────────────────────────────
+  # Gate 3: Python linting / formatting
+  # ─────────────────────────────────────────────
+  lint:
+    name: Lint (ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install ruff
+      - run: ruff check services/ scripts/
+      - run: ruff format --check services/ scripts/
+
+  # ─────────────────────────────────────────────
+  # Gate 4: API tests
+  # ─────────────────────────────────────────────
+  test-api:
+    name: Test API (sutradhar_api)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -e ".[dev]"
+      - run: pytest tests/ -v --tb=short
+
+  # ─────────────────────────────────────────────
+  # Gate 5: Fixture validation
+  # ─────────────────────────────────────────────
+  validate-fixtures:
+    name: Validate fixtures
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install jsonschema
+      - run: python scripts/validate_fixtures.py

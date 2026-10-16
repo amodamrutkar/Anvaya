@@ -1,0 +1,13 @@
+{
+  "entity_id": "P-000045",
+  "entity_type": "PERSON",
+  "canonical_name": "Rakesh Dagdu Pawar",
+  "name_variants": ["राकेश दगडू पवार", "Rakesh D. Pawar", "Rakesh Powar", "Raka"],
+  "identifiers": {"phones": ["PH-000007"], "accounts": [], "vehicles": ["VH-000003"]},
+  "mention_ids": ["M-R-SPO-000123-1", "M-R-CYB-000456-3", "M-R-CEN-000009-2"],
+  "record_ids": ["R-SPO-000123", "R-CYB-000456", "R-CEN-000009"],
+  "agencies": ["STATE_POLICE", "MAHA_CYBER", "CENTRAL_AGENCY"],
+  "districts": ["Thane", "Pune"],
+  "min_link_confidence": 0.88,
+  "status": "ACTIVE"
+}

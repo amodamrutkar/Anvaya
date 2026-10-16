@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "decision.schema.json",
+  "title": "Decision",
+  "description": "A human review decision on a link.",
+  "type": "object",
+  "required": ["link_id", "decision", "reason", "actor", "ts"],
+  "properties": {
+    "link_id": {"type": "string"},
+    "decision": {"type": "string", "enum": ["CONFIRM", "REJECT", "UNLINK"]},
+    "reason": {"type": "string", "minLength": 3},
+    "actor": {"type": "string"},
+    "ts": {"type": "string", "format": "date-time"}
+  }
+}

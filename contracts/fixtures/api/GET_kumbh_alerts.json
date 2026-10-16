@@ -1,0 +1,1 @@
+[{"alert_id": "ALR-000001", "event_id": "EVT-001", "zone": "Ramkund", "alert_type": "WATCHLIST_SIGHTING", "confidence": 0.91, "reason": "Subject token maps to entity P-000045 (BROKER, COM-002). Watchlist entity detected in zone.", "state": "OPEN", "created_at": "2026-10-17T08:15:00Z", "confirmed_at": null, "dismissed_at": null}]

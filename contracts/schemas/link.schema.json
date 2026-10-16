@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "link.schema.json",
+  "title": "Link",
+  "description": "A pairwise entity resolution decision between two PERSON mentions.",
+  "type": "object",
+  "required": ["link_id", "a_mention_id", "b_mention_id", "score", "band", "status"],
+  "properties": {
+    "link_id": {"type": "string", "pattern": "^L-\\d{6}$"},
+    "a_mention_id": {"type": "string"},
+    "b_mention_id": {"type": "string"},
+    "score": {"type": "number", "minimum": 0, "maximum": 1},
+    "band": {"type": "string", "enum": ["AUTO", "REVIEW", "SEPARATE"]},
+    "reasons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["clue", "direction", "weight"],
+        "properties": {
+          "clue": {"type": "string"},
+          "direction": {"type": "string", "enum": ["FOR", "AGAINST"]},
+          "weight": {"type": "number"},
+          "detail": {"type": "string"}
+        }
+      }
+    },
+    "explanation_text": {"type": "string"},
+    "explanation_source": {"type": "string", "enum": ["TEMPLATE", "LLM"]},
+    "status": {"type": "string", "enum": ["ACTIVE", "PENDING_REVIEW", "UNLINKED"]},
+    "decided_by": {"type": ["string", "null"]},
+    "decided_at": {"type": ["string", "null"]},
+    "decision_reason": {"type": ["string", "null"]}
+  }
+}

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "federated_query.schema.json",
+  "title": "FederatedQuery",
+  "description": "Federated query request and response pair.",
+  "type": "object",
+  "$defs": {
+    "request": {
+      "type": "object",
+      "required": ["querying_agency", "identifier_type", "identifier_value", "purpose", "case_ref"],
+      "properties": {
+        "querying_agency": {"type": "string", "enum": ["STATE_POLICE", "MAHA_CYBER", "CENTRAL_AGENCY"]},
+        "identifier_type": {"type": "string", "enum": ["PHONE", "ACCOUNT", "VEHICLE", "PERSON_NAME_FATHER"]},
+        "identifier_value": {"type": "string"},
+        "purpose": {"type": "string", "enum": ["INVESTIGATION", "ALERT_VERIFICATION", "AUDIT"]},
+        "case_ref": {"type": "string"}
+      }
+    },
+    "response": {
+      "type": "object",
+      "required": ["query_id", "result", "confidence", "reason_code", "reason_text", "owning_agency_notified", "audit_seq"],
+      "properties": {
+        "query_id": {"type": "string", "pattern": "^Q-\\d{6}$"},
+        "result": {"type": "string", "enum": ["MATCH", "NO_MATCH", "MAYBE"]},
+        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+        "reason_code": {"type": "string", "enum": ["OPEN_CASE_MATCH", "CLOSED_CASE_MATCH", "NO_RECORD", "AMBIGUOUS_IDENTITY"]},
+        "reason_text": {"type": "string"},
+        "owning_agency_notified": {"type": "boolean"},
+        "audit_seq": {"type": "integer"}
+      }
+    }
+  }
+}

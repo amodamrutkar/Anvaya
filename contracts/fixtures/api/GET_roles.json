@@ -1,0 +1,1 @@
+[{"entity_id": "P-000045", "community_id": "COM-002", "role": "BROKER", "score": 0.82, "reasons": [{"signal": "BRIDGES_COMMUNITIES", "value": 3, "text": "Connects 3 groups"}], "evidence_record_ids": ["R-SPO-000123"]}]

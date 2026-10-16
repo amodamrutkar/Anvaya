@@ -1,0 +1,72 @@
+# ===================================================
+# Sutradhar .gitignore
+# Owned by M4. Edit only via M4 approval.
+# ===================================================
+
+# ---- CRITICAL: Ground-truth answer key must NEVER be committed ----
+data/truth/
+data/*/truth/
+
+# ---- Pipeline artifacts (generated output; never committed) ----
+artifacts/*
+!artifacts/.gitkeep
+
+# ---- Python ----
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg
+*.egg-info/
+dist/
+build/
+.eggs/
+.venv/
+venv/
+env/
+.env
+*.pth
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+.coverage
+coverage.xml
+htmlcov/
+
+# ---- Node / Frontend ----
+node_modules/
+.next/
+dist/
+apps/web/dist/
+apps/web/.vite/
+
+# ---- SQLite databases (runtime state; not committed) ----
+*.db
+*.sqlite
+*.sqlite3
+
+# ---- Docker ----
+.docker/
+
+# ---- Editor / OS ----
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# ---- Secrets ----
+.env
+.env.local
+.env.*.local
+secrets.yaml
+secrets.json
+
+# ---- Logs ----
+*.log
+logs/
+
+# ---- LLM cache (offline mode caches responses here) ----
+.llm_cache/

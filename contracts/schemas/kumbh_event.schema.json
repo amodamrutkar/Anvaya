@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "kumbh_event.schema.json",
+  "title": "KumbhEvent",
+  "description": "A Kumbh Mela simulation event.",
+  "type": "object",
+  "required": ["event_id", "ts", "zone", "event_type", "subject_token"],
+  "properties": {
+    "event_id": {"type": "string"},
+    "ts": {"type": "string", "format": "date-time"},
+    "zone": {"type": "string", "enum": ["Ramkund", "Panchavati", "Tapovan", "Trimbakeshwar", "Godavari Ghats"]},
+    "event_type": {"type": "string", "enum": ["WATCHLIST_SIGHTING", "SCAM_PATTERN", "MISSING_PERSON"]},
+    "subject_token": {"type": "string"},
+    "related_ids": {"type": "array", "items": {"type": "string"}},
+    "details": {"type": "object"}
+  }
+}
