@@ -4,6 +4,7 @@ Comprehensive RBAC permission matrix tests verifying that each role
 can access only permitted endpoints and is strictly forbidden from unauthorized ones.
 """
 import pytest
+
 from sutradhar_api.store import get_store
 
 
@@ -11,7 +12,6 @@ from sutradhar_api.store import get_store
 async def test_rbac_matrix(client):
     store = get_store()
     comm_id = next(iter(store.communities))
-    eid = next(iter(store.entities))
 
     # AUDITOR permissions
     # Permitted: /audit, /audit/verify

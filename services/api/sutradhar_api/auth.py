@@ -6,7 +6,7 @@ All users and roles are synthetic.
 """
 from __future__ import annotations
 
-from fastapi import Header, HTTPException, Request
+from fastapi import Header, HTTPException
 
 from sutradhar_api.models import Agency, Role, UserInfo
 

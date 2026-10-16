@@ -8,15 +8,15 @@ All data is synthetic.
 """
 from __future__ import annotations
 
+import hashlib
 import json
 import logging
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
 from sutradhar_api.config import (
     CONTRACTS_FIXTURES_DIR,
-    DATA_DIR,
-    DATASET_VERSION,
     KUMBH_EVENTS_PATH,
     artifacts_path,
 )
@@ -206,12 +206,10 @@ class DataStore:
 
     def record_audit(self, actor: str, role: str, action: str,
                      summary: str, purpose: str | None = None, case_ref: str | None = None) -> int:
-        import hashlib
-        from datetime import datetime, timezone
         self._audit_seq += 1
         entry = {
             "seq": self._audit_seq,
-            "ts": datetime.now(timezone.utc).isoformat(),
+            "ts": datetime.now(UTC).isoformat(),
             "actor": actor,
             "role": role,
             "action": action,
@@ -227,7 +225,6 @@ class DataStore:
         return self._audit_seq
 
     def verify_audit_chain(self) -> dict:
-        import hashlib
         entries = self._audit_log
         if not entries:
             return {"valid": True, "entries": 0, "head_hash": "", "broken_at": None}
@@ -275,7 +272,6 @@ class DataStore:
         return event
 
     def add_kumbh_alert(self, event: dict, confidence: float, reason: str) -> dict:
-        from datetime import datetime, timezone
         self._kumbh_alert_counter += 1
         alert_id = f"ALR-{self._kumbh_alert_counter:06d}"
         alert = {
@@ -286,7 +282,7 @@ class DataStore:
             "confidence": confidence,
             "reason": reason,
             "state": "OPEN",
-            "created_at": datetime.now(timezone.utc).isoformat(),
+            "created_at": datetime.now(UTC).isoformat(),
             "confirmed_at": None,
             "dismissed_at": None,
         }
@@ -294,10 +290,9 @@ class DataStore:
         return alert
 
     def update_kumbh_alert(self, alert_id: str, action: str) -> dict | None:
-        from datetime import datetime, timezone
         for alert in self._kumbh_alerts:
             if alert["alert_id"] == alert_id:
-                ts = datetime.now(timezone.utc).isoformat()
+                ts = datetime.now(UTC).isoformat()
                 if action == "CONFIRM":
                     alert["state"] = "CONFIRMED"
                     alert["confirmed_at"] = ts
@@ -315,14 +310,13 @@ class DataStore:
         return f"Q-{self._query_counter:06d}"
 
     def generate_dossier(self, community_id: str, actor: str) -> dict:
-        from datetime import datetime, timezone
         self._dossier_counter += 1
         dossier_id = f"DOS-{self._dossier_counter:03d}"
         community = self._communities.get(community_id, {})
         dos = {
             "dossier_id": dossier_id,
             "community_id": community_id,
-            "generated_at": datetime.now(timezone.utc).isoformat(),
+            "generated_at": datetime.now(UTC).isoformat(),
             "status": "DRAFT",
             "summary": f"Community {community.get('label', community_id)}: {community.get('size', '?')} members.",
             "legal_params": {"lookback_years": 10, "min_chargesheets": 3, "verified": False},

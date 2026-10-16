@@ -9,6 +9,7 @@ from __future__ import annotations
 import hashlib
 import hmac
 import os
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -50,7 +51,7 @@ def _match_identifier(identifier_type: str, identifier_value: str, store) -> tup
     Returns (result, reason_code, reason_text).
     Never returns raw entity records.
     """
-    hashed = _hash_identifier(identifier_value)
+    _ = _hash_identifier(identifier_value)
 
     # Simple heuristic: look for the raw value in entity identifiers
     # (In production, all data would be hashed at ingestion.)
@@ -89,18 +90,17 @@ def _match_identifier(identifier_type: str, identifier_value: str, store) -> tup
 @router.post("/federated/query", response_model=FederatedQueryResponse)
 def post_federated_query(
     body: FederatedQueryRequest,
-    user: UserInfo = Depends(require_action("FEDERATED_QUERY")),
+    user: Annotated[UserInfo, Depends(require_action("FEDERATED_QUERY"))],
 ):
     store = get_store()
 
     # Check grant
     for target_agency in Agency:
-        if target_agency.value != body.querying_agency.value:
-            if not _AGENCY_GRANTS.get((body.querying_agency.value, target_agency.value), False):
-                raise HTTPException(
-                    status_code=403,
-                    detail={"error": {"code": "NO_GRANT", "message": f"No data-sharing grant: {body.querying_agency.value} → {target_agency.value}"}},
-                )
+        if target_agency.value != body.querying_agency.value and not _AGENCY_GRANTS.get((body.querying_agency.value, target_agency.value), False):
+            raise HTTPException(
+                status_code=403,
+                detail={"error": {"code": "NO_GRANT", "message": f"No data-sharing grant: {body.querying_agency.value} → {target_agency.value}"}},
+            )
 
     # Perform match
     result, reason_code, reason_text = _match_identifier(body.identifier_type.value, body.identifier_value, store)
@@ -135,7 +135,7 @@ def post_federated_query(
 @router.get("/agency/{agency}/inbox")
 def get_agency_inbox(
     agency: str,
-    user: UserInfo = Depends(require_action("AGENCY_INBOX_VIEW")),
+    user: Annotated[UserInfo, Depends(require_action("AGENCY_INBOX_VIEW"))],
 ):
     store = get_store()
     # Return all queries that targeted the given agency (simulated: return all for demo)

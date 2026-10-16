@@ -3,7 +3,6 @@ tests/test_api_smoke.py
 End-to-end demo walk smoke tests covering all core user journeys.
 """
 import pytest
-from sutradhar_api.store import get_store
 
 
 @pytest.mark.asyncio

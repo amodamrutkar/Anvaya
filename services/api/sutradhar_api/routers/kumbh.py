@@ -7,6 +7,9 @@ E3 = MISSING_PERSON (control case) → must NOT raise organised-crime alert
 """
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from sutradhar_api.auth import require_action
@@ -35,7 +38,7 @@ _WATCHLIST_ENTITY_IDS = {"P-000045", "P-000046", "P-000047", "P-000101", "P-0001
 
 @router.get("/zones")
 def get_kumbh_zones(
-    user: UserInfo = Depends(require_action("KUMBH_VIEW")),
+    user: Annotated[UserInfo, Depends(require_action("KUMBH_VIEW"))],
 ):
     store = get_store()
     zone_states = []
@@ -52,14 +55,14 @@ def get_kumbh_zones(
 
 @router.get("/alerts")
 def get_kumbh_alerts(
-    user: UserInfo = Depends(require_action("KUMBH_VIEW")),
+    user: Annotated[UserInfo, Depends(require_action("KUMBH_VIEW"))],
 ):
     return get_store().kumbh_alerts
 
 
 @router.post("/simulate/next")
 def post_simulate_next(
-    user: UserInfo = Depends(require_action("KUMBH_SIMULATE")),
+    user: Annotated[UserInfo, Depends(require_action("KUMBH_SIMULATE"))],
 ):
     store = get_store()
     event = store.play_next_kumbh_event()
@@ -112,7 +115,7 @@ def post_simulate_next(
 def post_kumbh_alert_confirm(
     alert_id: str,
     body: KumbhAlertActionRequest,
-    user: UserInfo = Depends(require_action("KUMBH_ALERT_CONFIRM")),
+    user: Annotated[UserInfo, Depends(require_action("KUMBH_ALERT_CONFIRM"))],
 ):
     if body.action.value == "DISMISS" and not body.reason:
         raise HTTPException(
@@ -123,9 +126,8 @@ def post_kumbh_alert_confirm(
     alert = store.update_kumbh_alert(alert_id, body.action.value)
     if not alert:
         raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Alert {alert_id!r} not found."}})
-    from datetime import datetime, timezone
     seq = store.record_audit(
         actor=user.user_id, role=user.role.value, action=f"KUMBH_ALERT_{body.action.value}",
         summary=f"Alert {alert_id}: {body.action.value}. Reason: {body.reason!r}",
     )
-    return {"alert_id": alert_id, "action": body.action.value, "actor": user.user_id, "ts": datetime.now(timezone.utc).isoformat(), "audit_seq": seq}
+    return {"alert_id": alert_id, "action": body.action.value, "actor": user.user_id, "ts": datetime.now(UTC).isoformat(), "audit_seq": seq}

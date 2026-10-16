@@ -5,6 +5,9 @@ APPROVING_OFFICER must explicitly set confirm=true to export.
 """
 from __future__ import annotations
 
+from datetime import UTC, datetime
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, HTTPException
 
 from sutradhar_api.auth import require_action
@@ -17,7 +20,7 @@ router = APIRouter(prefix="/dossier", tags=["dossier"])
 @router.post("/generate")
 def post_dossier_generate(
     body: DossierGenerateRequest,
-    user: UserInfo = Depends(require_action("DOSSIER_GENERATE")),
+    user: Annotated[UserInfo, Depends(require_action("DOSSIER_GENERATE"))],
 ):
     store = get_store()
     if body.community_id not in store.communities:
@@ -35,7 +38,7 @@ def post_dossier_generate(
 @router.get("/{dossier_id}")
 def get_dossier(
     dossier_id: str,
-    user: UserInfo = Depends(require_action("DOSSIER_VIEW")),
+    user: Annotated[UserInfo, Depends(require_action("DOSSIER_VIEW"))],
 ):
     store = get_store()
     dossier = store.dossiers.get(dossier_id)
@@ -52,7 +55,7 @@ def get_dossier(
 def post_dossier_export(
     dossier_id: str,
     body: DossierExportRequest,
-    user: UserInfo = Depends(require_action("DOSSIER_EXPORT")),
+    user: Annotated[UserInfo, Depends(require_action("DOSSIER_EXPORT"))],
 ):
     if not body.confirm:
         raise HTTPException(
@@ -63,8 +66,7 @@ def post_dossier_export(
     dossier = store.dossiers.get(dossier_id)
     if not dossier:
         raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Dossier {dossier_id!r} not found."}})
-    from datetime import datetime, timezone
-    exported_at = datetime.now(timezone.utc).isoformat()
+    exported_at = datetime.now(UTC).isoformat()
     seq = store.record_audit(
         actor=user.user_id, role=user.role.value, action="DOSSIER_EXPORT",
         summary=f"Exported dossier {dossier_id} in format {body.export_format.value}.",
