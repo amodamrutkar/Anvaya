@@ -1,0 +1,19 @@
+[
+  {
+    "link_id": "L-000813",
+    "a_mention_id": "M-R-SPO-000124-1",
+    "b_mention_id": "M-R-SPO-000125-2",
+    "score": 0.73,
+    "band": "REVIEW",
+    "reasons": [
+      {"clue": "NAME_SIMILARITY", "direction": "FOR", "weight": 0.45, "detail": "anil jadhav vs anil jadhav: 1.00"},
+      {"clue": "DISTRICT_MISMATCH", "direction": "AGAINST", "weight": -0.12, "detail": "Thane vs Pune"}
+    ],
+    "explanation_text": "Same name but different districts; requires human verification.",
+    "explanation_source": "TEMPLATE",
+    "status": "PENDING_REVIEW",
+    "decided_by": null,
+    "decided_at": null,
+    "decision_reason": null
+  }
+]

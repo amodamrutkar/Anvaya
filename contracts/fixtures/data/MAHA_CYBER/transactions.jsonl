@@ -1,0 +1,2 @@
+{"txn_id": "TXN-000001", "from_account": "HDFC:50100099999999", "to_account": "HDFC:50100012345678", "amount": 50000, "ts": "2026-03-01T10:00:00Z", "channel": "IMPS"}
+{"txn_id": "TXN-000002", "from_account": "HDFC:50100012345678", "to_account": "HDFC:50100088888888", "amount": 49500, "ts": "2026-03-01T10:09:00Z", "channel": "IMPS"}

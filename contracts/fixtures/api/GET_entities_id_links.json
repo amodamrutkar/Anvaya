@@ -1,0 +1,20 @@
+[
+  {
+    "link_id": "L-000812",
+    "a_mention_id": "M-R-SPO-000123-1",
+    "b_mention_id": "M-R-CYB-000456-3",
+    "score": 0.91,
+    "band": "AUTO",
+    "reasons": [
+      {"clue": "SHARED_PHONE", "direction": "FOR", "weight": 0.55, "detail": "both list 9000012345"},
+      {"clue": "NAME_SIMILARITY", "direction": "FOR", "weight": 0.25, "detail": "rakesh dagdu pavar vs rakesh powar: 0.94"},
+      {"clue": "FATHER_NAME_MISMATCH", "direction": "AGAINST", "weight": -0.0, "detail": "father missing in one record"}
+    ],
+    "explanation_text": "Same phone number and a near-identical name; father's name absent in one record.",
+    "explanation_source": "TEMPLATE",
+    "status": "ACTIVE",
+    "decided_by": null,
+    "decided_at": null,
+    "decision_reason": null
+  }
+]

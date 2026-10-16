@@ -1,0 +1,14 @@
+{
+  "community_id": "COM-002",
+  "label": "Urban extortion gang (suspected)",
+  "nodes": [
+    {"id": "P-000045", "type": "PERSON", "label": "Rakesh Dagdu Pawar", "props": {"districts": ["Thane", "Pune"]}, "agencies": ["STATE_POLICE", "MAHA_CYBER", "CENTRAL_AGENCY"], "crime_types": ["EXTORTION", "CYBER_FRAUD", "NARCOTICS"]},
+    {"id": "PH-000007", "type": "PHONE", "label": "9000012345", "props": {}, "agencies": ["STATE_POLICE", "MAHA_CYBER"], "crime_types": ["EXTORTION", "CYBER_FRAUD"]}
+  ],
+  "edges": [
+    {"edge_id": "E-000100", "source": "P-000045", "target": "PH-000007", "type": "USES", "strength": "STRONG", "evidence": ["R-SPO-000123"], "confidence": 0.97, "weight": null}
+  ],
+  "roles": [
+    {"entity_id": "P-000045", "community_id": "COM-002", "role": "BROKER", "score": 0.82, "reasons": [{"signal": "BRIDGES_COMMUNITIES", "value": 3, "text": "Connects 3 crime groups"}], "evidence_record_ids": ["R-SPO-000123"]}
+  ]
+}

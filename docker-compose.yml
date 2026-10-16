@@ -1,0 +1,57 @@
+version: "3.9"
+
+# Sutradhar — Docker Compose for offline demo.
+# Owned by M4.
+# Usage: make demo  (or: docker compose up --build)
+#
+# IMPORTANT: No network calls at runtime. All data is synthetic.
+# The API falls back to contracts/fixtures/ if artifacts/ is empty.
+
+services:
+  api:
+    build:
+      context: ./services/api
+      dockerfile: Dockerfile
+    image: sutradhar-api:latest
+    container_name: sutradhar-api
+    ports:
+      - "8000:8000"
+    environment:
+      - ARTIFACTS_DIR=/app/artifacts
+      - DEMO_TAMPER=${DEMO_TAMPER:-0}
+      - CORS_ORIGINS=http://localhost:8080,http://localhost:5173
+      - DATASET_VERSION=${DATASET_VERSION:-v1}
+      - LLM_PROVIDER=none
+    volumes:
+      # Mount artifacts and contracts so demo can run from prebuilt outputs
+      - ./artifacts:/app/artifacts:ro
+      - ./contracts:/app/contracts:ro
+      - ./data:/app/data:ro
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - sutradhar-net
+
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    image: sutradhar-web:latest
+    container_name: sutradhar-web
+    ports:
+      - "8080:8080"
+    environment:
+      - VITE_API_BASE_URL=http://localhost:8000
+      - VITE_API_MODE=live
+    depends_on:
+      api:
+        condition: service_healthy
+    networks:
+      - sutradhar-net
+
+networks:
+  sutradhar-net:
+    driver: bridge

@@ -1,0 +1,57 @@
+# CODEOWNERS for Sutradhar
+# GitHub uses this to automatically request reviews from the right member.
+# Path-to-owner mappings. Last matching rule wins.
+# Owned by M4.
+
+# --- Default fallback: M4 reviews everything ---
+* @m4-backend
+
+# --- M1: Data generation and evaluation ---
+/data/ @m1-data
+/services/data_gen/ @m1-data
+/services/eval/ @m1-data
+/NOTICE-SYNTHETIC-DATA.md @m1-data
+/docs/prd/01-data-synthetic.md @m1-data
+
+# --- M2: NLP and Entity Resolution ---
+/services/nlp/ @m2-nlp
+
+# M2 co-reviews contract changes for ER output fixtures
+/contracts/fixtures/artifacts/er/ @m4-backend @m2-nlp
+/docs/prd/02-nlp-entity-resolution.md @m2-nlp
+
+# --- M3: Graph Analytics ---
+/services/graph/ @m3-graph
+
+# M3 co-reviews contract changes for graph output fixtures
+/contracts/fixtures/artifacts/graph/ @m4-backend @m3-graph
+/docs/prd/03-graph-analytics.md @m3-graph
+
+# --- M4: Backend, Security, Audit, Integration ---
+/services/api/ @m4-backend
+/contracts/ @m4-backend
+/scripts/ @m4-backend
+/.github/ @m4-backend
+/Makefile @m4-backend
+/docker-compose.yml @m4-backend
+/pyproject.toml @m4-backend
+/requirements-dev.txt @m4-backend
+/.env.example @m4-backend
+/.gitignore @m4-backend
+/.gitattributes @m4-backend
+/.editorconfig @m4-backend
+/.pre-commit-config.yaml @m4-backend
+/README.md @m4-backend
+/CONTRIBUTING.md @m4-backend
+/docs/REPO-SETUP.md @m4-backend
+/docs/decisions/ @m4-backend
+/docs/prd/00-MAIN-PRD.md @m4-backend
+/docs/prd/04-backend-security-audit.md @m4-backend
+
+# --- M5: Frontend and Storytelling ---
+/apps/web/ @m5-frontend
+/docs/pitch/ @m5-frontend
+/docs/prd/05-frontend-storytelling.md @m5-frontend
+
+# --- Shared: contracts/openapi.json needs all-member review ---
+/contracts/openapi.json @m4-backend @m1-data @m2-nlp @m3-graph @m5-frontend

@@ -1,0 +1,32 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "source_record.schema.json",
+  "title": "SourceRecord",
+  "description": "A single law-enforcement source record (FIR, chargesheet, complaint, seizure report).",
+  "type": "object",
+  "required": ["record_id", "agency", "record_type", "crime_type", "case_ref", "district", "filed_date", "language", "form_fields"],
+  "properties": {
+    "record_id": {"type": "string", "pattern": "^R-[A-Z]{3}-\\d{6}$"},
+    "agency": {"type": "string", "enum": ["STATE_POLICE", "MAHA_CYBER", "CENTRAL_AGENCY"]},
+    "record_type": {"type": "string", "enum": ["FIR", "CHARGESHEET", "COMPLAINT", "SEIZURE_REPORT"]},
+    "crime_type": {"type": "string", "enum": ["CYBER_FRAUD", "EXTORTION", "NARCOTICS", "MISSING_PERSON"]},
+    "case_ref": {"type": "string", "pattern": "^CASE-[A-Z]{3}-\\d{6}$"},
+    "district": {"type": "string"},
+    "station": {"type": "string"},
+    "filed_date": {"type": "string", "format": "date"},
+    "language": {"type": "string", "enum": ["mr", "hi", "en"]},
+    "sections": {"type": "array", "items": {"type": "string"}},
+    "form_fields": {
+      "type": "object",
+      "properties": {
+        "accused": {"type": "array"},
+        "complainant": {"type": ["object", "null"]},
+        "victims": {"type": "array"},
+        "accounts": {"type": "array"},
+        "phones": {"type": "array", "items": {"type": "string"}},
+        "vehicles": {"type": "array", "items": {"type": "string"}}
+      }
+    },
+    "narrative": {"type": "string"}
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "mention.schema.json",
+  "title": "Mention",
+  "description": "A person mention extracted from a source record.",
+  "type": "object",
+  "required": ["mention_id", "record_id", "agency", "role", "name_raw", "name_norm"],
+  "properties": {
+    "mention_id": {"type": "string", "pattern": "^M-R-[A-Z]{3}-\\d{6}-\\d+$"},
+    "record_id": {"type": "string", "pattern": "^R-[A-Z]{3}-\\d{6}$"},
+    "agency": {"type": "string", "enum": ["STATE_POLICE", "MAHA_CYBER", "CENTRAL_AGENCY"]},
+    "role": {"type": "string", "enum": ["ACCUSED", "SUSPECT", "VICTIM", "COMPLAINANT", "WITNESS", "ACCOUNT_HOLDER"]},
+    "name_raw": {"type": "string"},
+    "name_norm": {"type": "string"},
+    "name_script": {"type": "string", "enum": ["DEVANAGARI", "LATIN", "MIXED"]},
+    "father_name_raw": {"type": ["string", "null"]},
+    "father_name_norm": {"type": ["string", "null"]},
+    "age": {"type": ["integer", "null"]},
+    "address_raw": {"type": ["string", "null"]},
+    "district": {"type": ["string", "null"]},
+    "phones": {"type": "array", "items": {"type": "string"}},
+    "accounts": {"type": "array", "items": {"type": "string"}},
+    "vehicles": {"type": "array", "items": {"type": "string"}},
+    "aliases": {"type": "array", "items": {"type": "string"}},
+    "extraction_method": {"type": "string", "enum": ["FORM", "REGEX", "LLM"]},
+    "extraction_confidence": {"type": "number", "minimum": 0, "maximum": 1}
+  }
+}

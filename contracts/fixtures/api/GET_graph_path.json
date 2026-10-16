@@ -1,0 +1,1 @@
+{"path": ["P-000045", "PH-000007", "P-000102"], "edges": [{"from": "P-000045", "to": "PH-000007", "type": "USES", "evidence": ["R-SPO-000123"]}, {"from": "PH-000007", "to": "P-000102", "type": "USES", "evidence": ["R-CYB-000456"]}], "hops": 2}
