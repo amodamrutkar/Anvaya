@@ -2,6 +2,7 @@
 tests/test_audit.py
 Tests for append-only audit log, hash chain verification, tamper detection, and repair.
 """
+
 import pytest
 
 from sutradhar_api.store import get_store
@@ -32,6 +33,7 @@ async def test_audit_chain_valid_initially(client):
 @pytest.mark.asyncio
 async def test_audit_tamper_and_repair(client, monkeypatch):
     import sutradhar_api.routers.audit as audit_router
+
     monkeypatch.setattr(audit_router, "DEMO_TAMPER", True)
 
     store = get_store()

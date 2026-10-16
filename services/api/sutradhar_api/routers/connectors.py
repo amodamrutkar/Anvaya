@@ -3,6 +3,7 @@ sutradhar_api/routers/connectors.py
 Simulated agency connector status. All connectors are labelled simulated=true.
 No real network connections are made.
 """
+
 from __future__ import annotations
 
 from typing import Annotated
