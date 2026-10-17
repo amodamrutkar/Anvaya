@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
@@ -10,7 +10,7 @@ from pydantic import BaseModel, Field
 # ── Enums ────────────────────────────────────────────────────────────────────
 
 
-class Agency(str, Enum):
+class Agency(StrEnum):
     STATE_POLICE = "STATE_POLICE"
     MAHA_CYBER = "MAHA_CYBER"
     CENTRAL_AGENCY = "CENTRAL_AGENCY"
@@ -23,21 +23,21 @@ AGENCY_CODE = {
 }
 
 
-class RecordType(str, Enum):
+class RecordType(StrEnum):
     FIR = "FIR"
     CHARGESHEET = "CHARGESHEET"
     COMPLAINT = "COMPLAINT"
     SEIZURE_REPORT = "SEIZURE_REPORT"
 
 
-class CrimeType(str, Enum):
+class CrimeType(StrEnum):
     CYBER_FRAUD = "CYBER_FRAUD"
     EXTORTION = "EXTORTION"
     NARCOTICS = "NARCOTICS"
     MISSING_PERSON = "MISSING_PERSON"
 
 
-class MentionRole(str, Enum):
+class MentionRole(StrEnum):
     ACCUSED = "ACCUSED"
     SUSPECT = "SUSPECT"
     VICTIM = "VICTIM"
@@ -46,19 +46,19 @@ class MentionRole(str, Enum):
     ACCOUNT_HOLDER = "ACCOUNT_HOLDER"
 
 
-class ExtractionMethod(str, Enum):
+class ExtractionMethod(StrEnum):
     FORM = "FORM"
     REGEX = "REGEX"
     LLM = "LLM"
 
 
-class NameScript(str, Enum):
+class NameScript(StrEnum):
     DEVANAGARI = "DEVANAGARI"
     LATIN = "LATIN"
     MIXED = "MIXED"
 
 
-class EntityType(str, Enum):
+class EntityType(StrEnum):
     PERSON = "PERSON"
     PHONE = "PHONE"
     ACCOUNT = "ACCOUNT"
@@ -66,34 +66,34 @@ class EntityType(str, Enum):
     ADDRESS = "ADDRESS"
 
 
-class Band(str, Enum):
+class Band(StrEnum):
     AUTO = "AUTO"
     REVIEW = "REVIEW"
     SEPARATE = "SEPARATE"
 
 
-class LinkStatus(str, Enum):
+class LinkStatus(StrEnum):
     ACTIVE = "ACTIVE"
     PENDING_REVIEW = "PENDING_REVIEW"
     UNLINKED = "UNLINKED"
 
 
-class EntityStatus(str, Enum):
+class EntityStatus(StrEnum):
     ACTIVE = "ACTIVE"
     MERGED = "MERGED"
 
 
-class ClueDirection(str, Enum):
+class ClueDirection(StrEnum):
     FOR = "FOR"
     AGAINST = "AGAINST"
 
 
-class ExplanationSource(str, Enum):
+class ExplanationSource(StrEnum):
     TEMPLATE = "TEMPLATE"
     LLM = "LLM"
 
 
-class DecisionType(str, Enum):
+class DecisionType(StrEnum):
     CONFIRM = "CONFIRM"
     REJECT = "REJECT"
     UNLINK = "UNLINK"

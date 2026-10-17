@@ -150,9 +150,7 @@ def _extract_from_form_fields(
                 name_norm=normalise_name(complainant["name"]),
                 name_script=detect_script(complainant["name"]),
                 father_name_raw=complainant.get("father_name", ""),
-                father_name_norm=normalise_father_name(
-                    complainant.get("father_name", "")
-                ),
+                father_name_norm=normalise_father_name(complainant.get("father_name", "")),
                 age=complainant.get("age"),
                 address_raw=complainant.get("address", ""),
                 district=record.district,
@@ -430,9 +428,7 @@ def extract_mentions(
 
         # Optional LLM extraction
         llm_mentions = _extract_with_llm(record, mention_counter, cache_path)
-        existing_norms_all = {
-            m.name_norm for m in all_mentions if m.record_id == record.record_id
-        }
+        existing_norms_all = {m.name_norm for m in all_mentions if m.record_id == record.record_id}
         for lm in llm_mentions:
             if lm.name_norm and lm.name_norm not in existing_norms_all:
                 all_mentions.append(lm)

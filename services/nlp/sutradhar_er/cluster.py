@@ -87,9 +87,7 @@ def cluster_mentions(
                     cannot_link.add(pair)
 
     # Sort links by score descending for greedy merge
-    mergeable_links = [
-        lnk for lnk in links if lnk.band == "AUTO" and lnk.status == "ACTIVE"
-    ]
+    mergeable_links = [lnk for lnk in links if lnk.band == "AUTO" and lnk.status == "ACTIVE"]
     mergeable_links.sort(key=lambda lnk: (-lnk.score, lnk.link_id))
 
     uf = UnionFind()
@@ -211,9 +209,7 @@ def cluster_mentions(
                 record_ids=sorted(all_record_ids),
                 agencies=sorted(all_agencies),
                 districts=sorted(all_districts),
-                min_link_confidence=round(min_conf, 4)
-                if min_conf is not None
-                else None,
+                min_link_confidence=round(min_conf, 4) if min_conf is not None else None,
                 status="ACTIVE",
             )
         )
@@ -290,9 +286,7 @@ def cluster_mentions(
     entities.extend(sorted(account_entities.values(), key=lambda e: e.entity_id))
 
     # Link PERSON entities to ACCOUNT entity IDs
-    account_id_map = {
-        ae.canonical_name: ae.entity_id for ae in account_entities.values()
-    }
+    account_id_map = {ae.canonical_name: ae.entity_id for ae in account_entities.values()}
     for entity in entities:
         if entity.entity_type == "PERSON":
             person_accounts = set()
@@ -334,9 +328,7 @@ def cluster_mentions(
     entities.extend(sorted(vehicle_entities.values(), key=lambda e: e.entity_id))
 
     # Link PERSON entities to VEHICLE entity IDs
-    vehicle_id_map = {
-        ve.canonical_name: ve.entity_id for ve in vehicle_entities.values()
-    }
+    vehicle_id_map = {ve.canonical_name: ve.entity_id for ve in vehicle_entities.values()}
     for entity in entities:
         if entity.entity_type == "PERSON":
             person_vehicles = set()

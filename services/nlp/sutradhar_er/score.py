@@ -122,9 +122,7 @@ def score_pair(
         if name_sim >= jw_threshold:
             base_w = weights.get("name_similarity", 0.25)
             # Scale weight by how far above threshold
-            scaled = base_w * (
-                (name_sim - jw_threshold) / (1.0 - jw_threshold + 0.001) * 0.5 + 0.5
-            )
+            scaled = base_w * ((name_sim - jw_threshold) / (1.0 - jw_threshold + 0.001) * 0.5 + 0.5)
             reasons.append(
                 Reason(
                     clue="NAME_SIMILARITY",
@@ -237,9 +235,7 @@ def score_pair(
     # Different phone AND different district AND name-only match
     if not has_strong_id:
         different_phone = not shared_phones and (a.phones or b.phones)
-        different_district = (
-            a.district and b.district and a.district.lower() != b.district.lower()
-        )
+        different_district = a.district and b.district and a.district.lower() != b.district.lower()
         name_only = any(r.clue == "NAME_SIMILARITY" for r in reasons)
         if name_only and (different_phone or different_district):
             w = weights.get("name_only_penalty", -0.15)
@@ -279,25 +275,17 @@ def apply_hard_rules(
     bands_cfg = cfg.get("bands", {})
     auto_threshold = bands_cfg.get("auto_threshold", 0.85)
     review_threshold = bands_cfg.get("review_threshold", 0.60)
-    common_name_threshold = cfg.get("name_similarity", {}).get(
-        "common_name_threshold", 5
-    )
+    common_name_threshold = cfg.get("name_similarity", {}).get("common_name_threshold", 5)
 
     has_strong_id = any(
-        r.clue in ("SHARED_PHONE", "SHARED_ACCOUNT", "SHARED_VEHICLE")
-        and r.direction == "FOR"
+        r.clue in ("SHARED_PHONE", "SHARED_ACCOUNT", "SHARED_VEHICLE") and r.direction == "FOR"
         for r in reasons
     )
     has_name_match = any(
-        r.clue in ("NAME_SIMILARITY", "ALIAS_MATCH") and r.direction == "FOR"
-        for r in reasons
+        r.clue in ("NAME_SIMILARITY", "ALIAS_MATCH") and r.direction == "FOR" for r in reasons
     )
-    has_father_match = any(
-        r.clue == "FATHER_NAME_MATCH" and r.direction == "FOR" for r in reasons
-    )
-    same_district = any(
-        r.clue == "SAME_DISTRICT" and r.direction == "FOR" for r in reasons
-    )
+    has_father_match = any(r.clue == "FATHER_NAME_MATCH" and r.direction == "FOR" for r in reasons)
+    same_district = any(r.clue == "SAME_DISTRICT" and r.direction == "FOR" for r in reasons)
 
     # Common name check
     is_common = False

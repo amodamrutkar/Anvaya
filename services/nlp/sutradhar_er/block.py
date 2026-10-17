@@ -96,9 +96,7 @@ def generate_candidate_pairs(
         surname = _surname_token(m.name_norm)
         surname_ph = _metaphone(surname)
         first_init = _first_initial(m.name_norm)
-        father_ph = (
-            _metaphone(m.father_name_norm.split()[-1]) if m.father_name_norm else ""
-        )
+        father_ph = _metaphone(m.father_name_norm.split()[-1]) if m.father_name_norm else ""
 
         # Strategy 1: Exact identifier keys
         for phone in m.phones:

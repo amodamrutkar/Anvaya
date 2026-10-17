@@ -60,9 +60,7 @@ def run_pipeline(
 
     # Load config
     cfg = load_config(config_path)
-    logger.info(
-        f"Config loaded. LLM provider: {cfg.get('llm', {}).get('provider', 'none')}"
-    )
+    logger.info(f"Config loaded. LLM provider: {cfg.get('llm', {}).get('provider', 'none')}")
 
     # Stage 1: Load records
     records = load_records(data_dir)
@@ -130,8 +128,7 @@ def run_pipeline(
         "entities_account": sum(1 for e in entities if e.entity_type == "ACCOUNT"),
         "entities_vehicle": sum(1 for e in entities if e.entity_type == "VEHICLE"),
         "validation_stats": {
-            k: {"accepted": v.accepted, "rejected": v.rejected}
-            for k, v in validation_stats.items()
+            k: {"accepted": v.accepted, "rejected": v.rejected} for k, v in validation_stats.items()
         },
     }
 
