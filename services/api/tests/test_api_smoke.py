@@ -2,8 +2,8 @@
 tests/test_api_smoke.py
 End-to-end demo walk smoke tests covering all core user journeys.
 """
+
 import pytest
-from sutradhar_api.store import get_store
 
 
 @pytest.mark.asyncio
@@ -64,14 +64,20 @@ async def test_full_demo_walk(client):
     assert r.status_code == 200
 
     # 5. Dossier lifecycle
-    r = await client.post("/dossier/generate", json={"community_id": cid}, headers={"X-Demo-User": "analyst1"})
+    r = await client.post(
+        "/dossier/generate", json={"community_id": cid}, headers={"X-Demo-User": "analyst1"}
+    )
     assert r.status_code == 200
     dos_id = r.json()["dossier_id"]
 
     r = await client.get(f"/dossier/{dos_id}", headers={"X-Demo-User": "officer1"})
     assert r.status_code == 200
 
-    r = await client.post(f"/dossier/{dos_id}/export", json={"confirm": True, "export_format": "JSON"}, headers={"X-Demo-User": "officer1"})
+    r = await client.post(
+        f"/dossier/{dos_id}/export",
+        json={"confirm": True, "export_format": "JSON"},
+        headers={"X-Demo-User": "officer1"},
+    )
     assert r.status_code == 200
 
     # 6. Federated query

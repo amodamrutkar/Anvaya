@@ -12,8 +12,9 @@ from typing import Any
 from .models import BridgeModel, CommunityModel
 
 
-def detect_bridges(graph_data: dict[str, Any],
-                   communities: list[CommunityModel]) -> list[BridgeModel]:
+def detect_bridges(
+    graph_data: dict[str, Any], communities: list[CommunityModel]
+) -> list[BridgeModel]:
     """
     Detect bridges connecting >= 2 crime types or >= 2 communities.
 
@@ -88,30 +89,39 @@ def detect_bridges(graph_data: dict[str, Any],
         if is_cross_crime or is_cross_comm:
             reasons = []
             if is_cross_crime:
-                crimes_str = ", ".join(sorted(list(crimes)))
+                crimes_str = ", ".join(sorted(crimes))
                 reasons.append(f"Spans {len(crimes)} distinct crime classifications: {crimes_str}")
             if is_cross_comm:
-                comms_str = ", ".join(sorted(list(comms)))
-                reasons.append(f"Direct operational link bridging {len(comms)} syndicates: {comms_str}")
+                comms_str = ", ".join(sorted(comms))
+                reasons.append(
+                    f"Direct operational link bridging {len(comms)} syndicates: {comms_str}"
+                )
             if ntype != "PERSON":
-                reasons.append(f"Shared technical infrastructure utilized by {len(linked_persons)} persons")
+                reasons.append(
+                    f"Shared technical infrastructure utilized by {len(linked_persons)} persons"
+                )
 
             bridges.append(
                 BridgeModel(
                     node_id=nid,
                     node_type=ntype,
                     label=node.get("label", nid),
-                    communities=sorted(list(comms)),
-                    crime_types=sorted(list(crimes)),
-                    linked_person_ids=sorted(list(linked_persons)),
-                    evidence_record_ids=sorted(list(node_evidence[nid])),
+                    communities=sorted(comms),
+                    crime_types=sorted(crimes),
+                    linked_person_ids=sorted(linked_persons),
+                    evidence_record_ids=sorted(node_evidence[nid]),
                     reasons=reasons,
                 )
             )
 
     # Sort bridges deterministically: cross-crime first, then by number of evidence records
     bridges.sort(
-        key=lambda b: (-len(b.crime_types), -len(b.communities), -len(b.evidence_record_ids), b.node_id)
+        key=lambda b: (
+            -len(b.crime_types),
+            -len(b.communities),
+            -len(b.evidence_record_ids),
+            b.node_id,
+        )
     )
 
     return bridges

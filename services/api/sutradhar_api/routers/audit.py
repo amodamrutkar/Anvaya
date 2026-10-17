@@ -5,6 +5,7 @@ GET /audit — AUDITOR only
 GET /audit/verify — all authenticated users (integrity check)
 POST /audit/dev/tamper — DEMO_TAMPER=1 only (live demo use)
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -24,7 +25,7 @@ def get_audit_log(
     user: UserInfo = Depends(require_action("AUDIT_LOG_VIEW")),
 ):
     store = get_store()
-    entries = store.audit_log[offset: offset + limit]
+    entries = store.audit_log[offset : offset + limit]
     return entries
 
 
@@ -35,7 +36,9 @@ def get_audit_verify(
     store = get_store()
     result = store.verify_audit_chain()
     store.record_audit(
-        actor=user.user_id, role=user.role.value, action="AUDIT_VERIFY",
+        actor=user.user_id,
+        role=user.role.value,
+        action="AUDIT_VERIFY",
         summary=f"Verified audit chain: valid={result['valid']}.",
         purpose="AUDIT",
     )
@@ -49,7 +52,12 @@ def post_audit_tamper(
     if not DEMO_TAMPER:
         raise HTTPException(
             status_code=403,
-            detail={"error": {"code": "TAMPER_DISABLED", "message": "DEMO_TAMPER is not enabled. Set DEMO_TAMPER=1 in .env for live tamper demonstration."}},
+            detail={
+                "error": {
+                    "code": "TAMPER_DISABLED",
+                    "message": "DEMO_TAMPER is not enabled. Set DEMO_TAMPER=1 in .env for live tamper demonstration.",
+                }
+            },
         )
     store = get_store()
     result = store.tamper_audit_for_demo()
@@ -63,7 +71,12 @@ def post_audit_repair(
     if not DEMO_TAMPER:
         raise HTTPException(
             status_code=403,
-            detail={"error": {"code": "TAMPER_DISABLED", "message": "DEMO_TAMPER is not enabled. Set DEMO_TAMPER=1 in .env for live tamper demonstration."}},
+            detail={
+                "error": {
+                    "code": "TAMPER_DISABLED",
+                    "message": "DEMO_TAMPER is not enabled. Set DEMO_TAMPER=1 in .env for live tamper demonstration.",
+                }
+            },
         )
     store = get_store()
     result = store.repair_audit_for_demo()

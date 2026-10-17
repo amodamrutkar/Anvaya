@@ -3,25 +3,26 @@ sutradhar_api/models.py
 Pydantic request/response models for all API endpoints.
 All models are entirely synthetic — no real person or case is represented.
 """
+
 from __future__ import annotations
 
-from enum import Enum
+from enum import StrEnum
 from typing import Any
 
 from pydantic import BaseModel, Field
-
 
 # ─────────────────────────────────────────────────────────────
 # Enums
 # ─────────────────────────────────────────────────────────────
 
-class Agency(str, Enum):
+
+class Agency(StrEnum):
     STATE_POLICE = "STATE_POLICE"
     MAHA_CYBER = "MAHA_CYBER"
     CENTRAL_AGENCY = "CENTRAL_AGENCY"
 
 
-class Role(str, Enum):
+class Role(StrEnum):
     ANALYST = "ANALYST"
     INSPECTOR = "INSPECTOR"
     APPROVING_OFFICER = "APPROVING_OFFICER"
@@ -30,43 +31,43 @@ class Role(str, Enum):
     SYSTEM = "SYSTEM"
 
 
-class IdentifierType(str, Enum):
+class IdentifierType(StrEnum):
     PHONE = "PHONE"
     ACCOUNT = "ACCOUNT"
     VEHICLE = "VEHICLE"
     PERSON_NAME_FATHER = "PERSON_NAME_FATHER"
 
 
-class QueryPurpose(str, Enum):
+class QueryPurpose(StrEnum):
     INVESTIGATION = "INVESTIGATION"
     ALERT_VERIFICATION = "ALERT_VERIFICATION"
     AUDIT = "AUDIT"
 
 
-class FederatedResult(str, Enum):
+class FederatedResult(StrEnum):
     MATCH = "MATCH"
     NO_MATCH = "NO_MATCH"
     MAYBE = "MAYBE"
 
 
-class FederatedReasonCode(str, Enum):
+class FederatedReasonCode(StrEnum):
     OPEN_CASE_MATCH = "OPEN_CASE_MATCH"
     CLOSED_CASE_MATCH = "CLOSED_CASE_MATCH"
     NO_RECORD = "NO_RECORD"
     AMBIGUOUS_IDENTITY = "AMBIGUOUS_IDENTITY"
 
 
-class ReviewDecision(str, Enum):
+class ReviewDecision(StrEnum):
     CONFIRM = "CONFIRM"
     REJECT = "REJECT"
 
 
-class AlertAction(str, Enum):
+class AlertAction(StrEnum):
     CONFIRM = "CONFIRM"
     DISMISS = "DISMISS"
 
 
-class DossierExportFormat(str, Enum):
+class DossierExportFormat(StrEnum):
     JSON = "JSON"
     json = "json"
     PDF = "PDF"
@@ -76,6 +77,7 @@ class DossierExportFormat(str, Enum):
 # ─────────────────────────────────────────────────────────────
 # Generic
 # ─────────────────────────────────────────────────────────────
+
 
 class ErrorDetail(BaseModel):
     code: str
@@ -90,6 +92,7 @@ class ErrorResponse(BaseModel):
 # Auth / User
 # ─────────────────────────────────────────────────────────────
 
+
 class UserInfo(BaseModel):
     user_id: str
     role: Role
@@ -100,6 +103,7 @@ class UserInfo(BaseModel):
 # ─────────────────────────────────────────────────────────────
 # Federated query
 # ─────────────────────────────────────────────────────────────
+
 
 class FederatedQueryRequest(BaseModel):
     querying_agency: Agency
@@ -123,6 +127,7 @@ class FederatedQueryResponse(BaseModel):
 # Review queue
 # ─────────────────────────────────────────────────────────────
 
+
 class ReviewDecisionRequest(BaseModel):
     decision: ReviewDecision
     reason: str = Field(min_length=3)
@@ -135,6 +140,7 @@ class UnlinkRequest(BaseModel):
 # ─────────────────────────────────────────────────────────────
 # Dossier
 # ─────────────────────────────────────────────────────────────
+
 
 class DossierGenerateRequest(BaseModel):
     community_id: str
@@ -149,6 +155,7 @@ class DossierExportRequest(BaseModel):
 # Kumbh
 # ─────────────────────────────────────────────────────────────
 
+
 class KumbhAlertActionRequest(BaseModel):
     action: AlertAction
     reason: str | None = None
@@ -157,6 +164,7 @@ class KumbhAlertActionRequest(BaseModel):
 # ─────────────────────────────────────────────────────────────
 # Generic passthrough (for fixture-mode responses)
 # ─────────────────────────────────────────────────────────────
+
 
 class AnyDict(BaseModel):
     model_config = {"extra": "allow"}

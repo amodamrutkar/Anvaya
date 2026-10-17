@@ -2,15 +2,18 @@
 Sutradhar Graph and Network Analytics Package.
 """
 
+from .bridges import detect_bridges
 from .build import GraphBuilder
 from .communities import detect_communities
-from .roles import detect_roles
-from .bridges import detect_bridges
-from .mule import trace_mule_chains
 from .dossier import generate_dossier, load_dossier_rules
+from .mule import trace_mule_chains
 from .paths import neighborhood, shortest_path
+from .roles import detect_roles
+
+
 def run_pipeline(*args, **kwargs):
     from .run import run_pipeline as _rp
+
     return _rp(*args, **kwargs)
 
 
