@@ -273,17 +273,11 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
 
     # All 5 hero records must be inside the single hero entity!
     for r_id in hero_record_ids:
-        assert r_id in hero_entity.record_ids, (
-            f"Hero record {r_id} missing from hero entity"
-        )
+        assert r_id in hero_entity.record_ids, f"Hero record {r_id} missing from hero entity"
 
     # Decoys must be strictly separate entities!
-    assert hero_entity.entity_id != decoy1_entity.entity_id, (
-        "Decoy 1 was wrongly merged with Hero!"
-    )
-    assert hero_entity.entity_id != decoy2_entity.entity_id, (
-        "Decoy 2 was wrongly merged with Hero!"
-    )
+    assert hero_entity.entity_id != decoy1_entity.entity_id, "Decoy 1 was wrongly merged with Hero!"
+    assert hero_entity.entity_id != decoy2_entity.entity_id, "Decoy 2 was wrongly merged with Hero!"
     assert decoy1_entity.entity_id != decoy2_entity.entity_id, (
         "Decoy 1 and Decoy 2 should be separate!"
     )
@@ -297,9 +291,7 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
 
     # Hero links must include Marathi translation "[mr]"
     hero_links = [
-        lnk
-        for lnk in links
-        if any(r in lnk.explanation_text for r in ["9000012345", "rakesh"])
+        lnk for lnk in links if any(r in lnk.explanation_text for r in ["9000012345", "rakesh"])
     ]
     has_marathi = any("[mr]" in lnk.explanation_text for lnk in hero_links)
     assert has_marathi, "Hero links must contain bilingual Marathi translation"
@@ -341,9 +333,7 @@ def test_no_name_only_auto():
         score, reasons, m1, m2, cfg, Counter(), {}, "L-test"
     )
 
-    assert band != "AUTO", (
-        f"Name-only pair reached AUTO (band={band}, score={final_score})"
-    )
+    assert band != "AUTO", f"Name-only pair reached AUTO (band={band}, score={final_score})"
     assert band in ("REVIEW", "SEPARATE")
 
 
@@ -466,9 +456,7 @@ def test_reject_then_rerun_stays_separate(tmp_path: Path):
 
     with open(out_dir_2 / "links.jsonl", encoding="utf-8") as f:
         links_2 = [Link(**json.loads(line)) for line in f]
-    unlinked = [
-        lnk for lnk in links_2 if lnk.status == "UNLINKED" or lnk.band == "SEPARATE"
-    ]
+    unlinked = [lnk for lnk in links_2 if lnk.status == "UNLINKED" or lnk.band == "SEPARATE"]
     assert len(unlinked) >= 1
     assert unlinked[0].decided_by == "inspector_patil"
 
@@ -509,9 +497,7 @@ def test_validator_behaviour():
 
     # Batch tracking
     stats = ValidationStats()
-    res = validate_batch(
-        ["9000012345", "123", "+91 88888 77777"], validate_phone, stats
-    )
+    res = validate_batch(["9000012345", "123", "+91 88888 77777"], validate_phone, stats)
     assert len(res) == 2
     assert stats.accepted == 2
     assert stats.rejected == 1
@@ -527,9 +513,7 @@ def test_pipeline_determinism(tmp_path: Path):
         {
             "record_id": f"R-{i:03d}",
             "agency": "STATE_POLICE",
-            "form_fields": {
-                "accused": [{"name": f"Person {i % 5}", "phone": f"900000000{i % 3}"}]
-            },
+            "form_fields": {"accused": [{"name": f"Person {i % 5}", "phone": f"900000000{i % 3}"}]},
         }
         for i in range(15)
     ]
@@ -560,17 +544,13 @@ def test_schema_validity(tmp_path: Path):
             "record_id": "R-100",
             "agency": "STATE_POLICE",
             "form_fields": {
-                "accused": [
-                    {"name": "Sachin Kale", "phone": "9999988888", "alias": "Sachu"}
-                ]
+                "accused": [{"name": "Sachin Kale", "phone": "9999988888", "alias": "Sachu"}]
             },
         },
         {
             "record_id": "R-200",
             "agency": "MAHA_CYBER",
-            "form_fields": {
-                "accused": [{"name": "Sachin Kale", "phone": "9999988888"}]
-            },
+            "form_fields": {"accused": [{"name": "Sachin Kale", "phone": "9999988888"}]},
         },
     ]
     data_dir = tmp_path / "data"

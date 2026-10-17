@@ -133,9 +133,7 @@ def transliterate_devanagari(text: str) -> str:
     try:
         from indic_transliteration import sanscript
 
-        trans = sanscript.transliterate(
-            text, sanscript.DEVANAGARI, sanscript.ITRANS
-        ).lower()
+        trans = sanscript.transliterate(text, sanscript.DEVANAGARI, sanscript.ITRANS).lower()
         trans = trans.replace("~n", "n").replace(".n", "n").replace(".m", "m")
         parts = []
         for word in trans.split():
@@ -663,10 +661,7 @@ def normalise_name(raw: str) -> str:
             continue
 
         # Strip honorifics
-        if (
-            clean.lower().rstrip(".") in _HONORIFICS_SET
-            or clean.rstrip(".") in _HONORIFICS_SET
-        ):
+        if clean.lower().rstrip(".") in _HONORIFICS_SET or clean.rstrip(".") in _HONORIFICS_SET:
             continue
 
         # Check lexicon directly (handles Devanagari e.g. "पवार", "राकेश", "दगडू")

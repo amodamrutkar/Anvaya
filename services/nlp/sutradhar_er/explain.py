@@ -73,13 +73,9 @@ def generate_explanation(
     # Only include reasons that were actually computed (non-zero weight or informational)
     parts = []
     for_reasons = [r for r in link.reasons if r.direction == "FOR" and r.weight > 0]
-    against_reasons = [
-        r for r in link.reasons if r.direction == "AGAINST" and r.weight != 0
-    ]
+    against_reasons = [r for r in link.reasons if r.direction == "AGAINST" and r.weight != 0]
     info_reasons = [
-        r
-        for r in link.reasons
-        if r.weight == 0 and r.clue not in ("DECISION_MUST_LINK",)
+        r for r in link.reasons if r.weight == 0 and r.clue not in ("DECISION_MUST_LINK",)
     ]
 
     for r in for_reasons:
@@ -115,10 +111,7 @@ def generate_all_explanations(
         hero_mention_ids = set()
 
     for link in links:
-        is_hero = (
-            link.a_mention_id in hero_mention_ids
-            or link.b_mention_id in hero_mention_ids
-        )
+        is_hero = link.a_mention_id in hero_mention_ids or link.b_mention_id in hero_mention_ids
 
         link.explanation_text = generate_explanation(link, mention_map, "en")
         link.explanation_source = "TEMPLATE"
