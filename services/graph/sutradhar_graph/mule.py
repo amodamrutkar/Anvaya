@@ -11,13 +11,13 @@ with full audit reasons.
 from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Any
+
 import networkx as nx
 
 from .models import AccountClass, MuleAccountModel, MuleChainModel, MuleTransferEdge
 
 
-def trace_mule_chains(graph_data: dict[str, Any],
-                      data_dir: Any = None) -> list[MuleChainModel]:
+def trace_mule_chains(graph_data: dict[str, Any], data_dir: Any = None) -> list[MuleChainModel]:
     """
     Trace layered mule accounts and classify accounts with explainable evidence.
 
@@ -43,7 +43,7 @@ def trace_mule_chains(graph_data: dict[str, Any],
             account_holders[e["target"]] = (e["source"], p_node.get("label", "Unknown"))
 
     # Map Account -> Cases / Complaints
-    account_cases: dict[str, set[str]] = defaultdict(set)
+    defaultdict(set)
     for e in edges:
         if e.get("type") in ("ACCUSED_IN", "VICTIM_IN"):
             pass
@@ -76,13 +76,15 @@ def trace_mule_chains(graph_data: dict[str, Any],
             pass
 
         G_tx.add_edge(src, tgt, amount=amt, ts=ts_str, channel=channel)
-        transfer_details.append({
-            "from_account": src.replace("ACCOUNT:", ""),
-            "to_account": tgt.replace("ACCOUNT:", ""),
-            "amount": amt,
-            "ts": ts_str,
-            "channel": channel,
-        })
+        transfer_details.append(
+            {
+                "from_account": src.replace("ACCOUNT:", ""),
+                "to_account": tgt.replace("ACCOUNT:", ""),
+                "amount": amt,
+                "ts": ts_str,
+                "channel": channel,
+            }
+        )
 
     # Step 2: Identify Layer 1 Accounts (Victim-Receiving Inflow Nodes)
     # Layer 1 = nodes with complaint counts > 0 or with in-degree == 0 / receiving first victim funds
@@ -96,20 +98,22 @@ def trace_mule_chains(graph_data: dict[str, Any],
 
     if not layer1_nodes:
         # Fallback: take nodes with out_degree > 0
-        layer1_nodes = {n for n in G_tx.nodes() if G_tx.out_degree(n) > 0 and G_tx.in_degree(n) == 0}
+        layer1_nodes = {
+            n for n in G_tx.nodes() if G_tx.out_degree(n) > 0 and G_tx.in_degree(n) == 0
+        }
     if not layer1_nodes:
         layer1_nodes = set(list(G_tx.nodes())[:1])
 
     # Step 3: Layering via BFS from Layer 1
     node_layers: dict[str, int] = {}
-    queue = [(n, 1) for n in sorted(list(layer1_nodes))]
+    queue = [(n, 1) for n in sorted(layer1_nodes)]
     visited = set(layer1_nodes)
     for n in layer1_nodes:
         node_layers[n] = 1
 
     while queue:
         curr, layer = queue.pop(0)
-        for nbr in sorted(list(G_tx.successors(curr))):
+        for nbr in sorted(G_tx.successors(curr)):
             if nbr not in visited:
                 visited.add(nbr)
                 node_layers[nbr] = layer + 1
@@ -145,7 +149,10 @@ def trace_mule_chains(graph_data: dict[str, Any],
         ts_list = sorted(account_timestamps.get(anid, []))
         passthrough_min = 15.0
         if len(ts_list) >= 2:
-            deltas = [(ts_list[k + 1] - ts_list[k]).total_seconds() / 60.0 for k in range(len(ts_list) - 1)]
+            deltas = [
+                (ts_list[k + 1] - ts_list[k]).total_seconds() / 60.0
+                for k in range(len(ts_list) - 1)
+            ]
             deltas = [d for d in deltas if d >= 0]
             if deltas:
                 deltas.sort()
@@ -187,7 +194,9 @@ def trace_mule_chains(graph_data: dict[str, Any],
         elif org_score <= 0.35 and layer <= 2:
             classification = "LIKELY_DECEIVED"
             score = round(1.0 - org_score, 2)
-            reasons.append("Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate")
+            reasons.append(
+                "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+            )
         else:
             classification = "UNCERTAIN"
             score = round(org_score, 2)
@@ -240,8 +249,8 @@ def trace_mule_chains(graph_data: dict[str, Any],
         depth_gained=max(0, max_depth - 1),
         accounts=classified_accounts,
         edges=edges_output,
-        recruiter_candidates=sorted(list(recruiter_candidates)),
-        controller_candidates=sorted(list(controller_candidates)),
+        recruiter_candidates=sorted(recruiter_candidates),
+        controller_candidates=sorted(controller_candidates),
     )
 
     return [chain]
