@@ -2,7 +2,9 @@
 tests/test_graph.py
 Tests for graph read endpoints: communities, neighborhood, path, roles, bridges, and mule chains.
 """
+
 import pytest
+
 from sutradhar_api.store import get_store
 
 
@@ -39,7 +41,9 @@ async def test_graph_neighborhood(client):
 
 @pytest.mark.asyncio
 async def test_graph_path(client):
-    r = await client.get("/graph/path?from=P-000045&to=P-000046", headers={"X-Demo-User": "analyst1"})
+    r = await client.get(
+        "/graph/path?from=P-000045&to=P-000046", headers={"X-Demo-User": "analyst1"}
+    )
     assert r.status_code == 200
     data = r.json()
     assert "path" in data

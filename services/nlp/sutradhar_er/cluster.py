@@ -16,6 +16,7 @@ logger = logging.getLogger(__name__)
 
 # ── Union-Find ───────────────────────────────────────────────────────────────
 
+
 class UnionFind:
     """Weighted union-find with path compression."""
 
@@ -51,6 +52,7 @@ class UnionFind:
 
 # ── Clustering ───────────────────────────────────────────────────────────────
 
+
 def cluster_mentions(
     mentions: list[Mention],
     links: list[Link],
@@ -85,11 +87,8 @@ def cluster_mentions(
                     cannot_link.add(pair)
 
     # Sort links by score descending for greedy merge
-    mergeable_links = [
-        l for l in links
-        if l.band == "AUTO" and l.status == "ACTIVE"
-    ]
-    mergeable_links.sort(key=lambda l: (-l.score, l.link_id))
+    mergeable_links = [lnk for lnk in links if lnk.band == "AUTO" and lnk.status == "ACTIVE"]
+    mergeable_links.sort(key=lambda lnk: (-lnk.score, lnk.link_id))
 
     uf = UnionFind()
     # Initialize all mentions
@@ -187,29 +186,33 @@ def cluster_mentions(
 
         # Min link confidence for this cluster
         cluster_links = [
-            l for l in links
-            if l.band == "AUTO" and l.status == "ACTIVE"
-            and (l.a_mention_id in member_ids or l.b_mention_id in member_ids)
+            lnk
+            for lnk in links
+            if lnk.band == "AUTO"
+            and lnk.status == "ACTIVE"
+            and (lnk.a_mention_id in member_ids or lnk.b_mention_id in member_ids)
         ]
-        min_conf = min((l.score for l in cluster_links), default=None)
+        min_conf = min((lnk.score for lnk in cluster_links), default=None)
 
-        entities.append(Entity(
-            entity_id=entity_id,
-            entity_type="PERSON",
-            canonical_name=canonical,
-            name_variants=sorted(all_variants),
-            identifiers=EntityIdentifiers(
-                phones=[],  # will be linked via phone entities
-                accounts=[],
-                vehicles=[],
-            ),
-            mention_ids=member_ids,
-            record_ids=sorted(all_record_ids),
-            agencies=sorted(all_agencies),
-            districts=sorted(all_districts),
-            min_link_confidence=round(min_conf, 4) if min_conf is not None else None,
-            status="ACTIVE",
-        ))
+        entities.append(
+            Entity(
+                entity_id=entity_id,
+                entity_type="PERSON",
+                canonical_name=canonical,
+                name_variants=sorted(all_variants),
+                identifiers=EntityIdentifiers(
+                    phones=[],  # will be linked via phone entities
+                    accounts=[],
+                    vehicles=[],
+                ),
+                mention_ids=member_ids,
+                record_ids=sorted(all_record_ids),
+                agencies=sorted(all_agencies),
+                districts=sorted(all_districts),
+                min_link_confidence=round(min_conf, 4) if min_conf is not None else None,
+                status="ACTIVE",
+            )
+        )
 
     # ── Create deterministic PHONE entities ──────────────────────────────
     phone_entities: dict[str, Entity] = {}

@@ -11,8 +11,6 @@ Verifies:
 import json
 from pathlib import Path
 
-import pytest
-
 from sutradhar_data.generate import generate_dataset
 from sutradhar_eval.run import run_evaluation
 
@@ -44,7 +42,16 @@ def test_eval_metric_shape(tmp_path: Path) -> None:
 
     # Check ER metrics structure
     er = metrics["er"]
-    for k in ["auto_precision", "auto_recall", "overall_precision", "overall_recall", "overall_f1", "by_difficulty", "wrong_merge_rate", "review_share"]:
+    for k in [
+        "auto_precision",
+        "auto_recall",
+        "overall_precision",
+        "overall_recall",
+        "overall_f1",
+        "by_difficulty",
+        "wrong_merge_rate",
+        "review_share",
+    ]:
         assert k in er, f"Missing ER key '{k}'"
 
     assert "easy" in er["by_difficulty"]
@@ -76,7 +83,11 @@ def test_eval_with_mock_predictions(tmp_path: Path) -> None:
 
     # Read ground truth mentions
     mention_truth_file = truth_dir / "mention_truth.jsonl"
-    mentions = [json.loads(line) for line in mention_truth_file.read_text(encoding="utf-8").splitlines() if line]
+    mentions = [
+        json.loads(line)
+        for line in mention_truth_file.read_text(encoding="utf-8").splitlines()
+        if line
+    ]
 
     # Group mentions by person_id to build perfect entities
     clusters: dict[str, list[str]] = {}
@@ -85,10 +96,12 @@ def test_eval_with_mock_predictions(tmp_path: Path) -> None:
 
     entities = []
     for pid, mids in clusters.items():
-        entities.append({
-            "entity_id": f"ENT-{pid}",
-            "mention_ids": mids,
-        })
+        entities.append(
+            {
+                "entity_id": f"ENT-{pid}",
+                "mention_ids": mids,
+            }
+        )
 
     # Write mock predictions
     er_dir = artifacts_dir / "er"

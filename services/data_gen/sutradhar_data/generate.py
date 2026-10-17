@@ -8,7 +8,6 @@ CLI: python -m sutradhar_data.generate --version v0 --seed 42 --out data/
 """
 
 import json
-import os
 import random
 from pathlib import Path
 from typing import Any
@@ -33,8 +32,7 @@ def _write_json(path: Path, data: Any) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def generate_dataset(version: str = "v0", seed: int = 42,
-                     out_dir: str = "data") -> dict[str, Any]:
+def generate_dataset(version: str = "v0", seed: int = 42, out_dir: str = "data") -> dict[str, Any]:
     """
     Generate a complete synthetic dataset.
 
@@ -51,7 +49,6 @@ def generate_dataset(version: str = "v0", seed: int = 42,
     emitter = RecordEmitter(rng, version)
 
     # Collect all persons by network for record emission
-    all_persons = entity_gen.persons
 
     # Bridge 1: Rakesh Pawar — appears across ALL THREE agencies
     # with at least 5 different renderings
@@ -134,6 +131,22 @@ def generate_dataset(version: str = "v0", seed: int = 42,
         num_txns = min(20, len(mule_accounts) * 2)
         emitter.emit_transactions(mule_accounts, num_txns=num_txns, base_amount=500000)
 
+    # Ensure every account participating in transactions exists in MAHA_CYBER accounts.jsonl
+    for person in cast["A"]:
+        for acct in person.accounts:
+            if not any(a["account_key"] == acct["account_key"] for a in emitter.all_accounts):
+                emitter.all_accounts.append(
+                    {
+                        "account_key": acct["account_key"],
+                        "bank": acct["bank"],
+                        "ifsc": acct["ifsc"],
+                        "holder_name_raw": person.canonical_name_rom,
+                        "opened_date": "2021-01-15",
+                        "complaint_count": 1,
+                        "record_ids": [],
+                    }
+                )
+
     # --- Step 3: Partition records by agency ---
     spo_records = [r for r in emitter.all_records if r["agency"] == "STATE_POLICE"]
     cyb_records = [r for r in emitter.all_records if r["agency"] == "MAHA_CYBER"]
@@ -175,12 +188,14 @@ def generate_dataset(version: str = "v0", seed: int = 42,
                     acct_class = "NEUTRAL"
             else:
                 acct_class = "NEUTRAL"
-            account_truths.append({
-                "account_key": acct["account_key"],
-                "person_id": person.person_id,
-                "layer": layer,
-                "class": acct_class,
-            })
+            account_truths.append(
+                {
+                    "account_key": acct["account_key"],
+                    "person_id": person.person_id,
+                    "layer": layer,
+                    "class": acct_class,
+                }
+            )
     _write_jsonl(truth_dir / "account_truth.jsonl", account_truths)
 
     # networks_truth.json
@@ -239,7 +254,7 @@ def generate_dataset(version: str = "v0", seed: int = 42,
         net = person_network.get(m["person_id"], "NONE")
         by_network.setdefault(net, []).append(m)
 
-    for net, group in by_network.items():
+    for _net, group in by_network.items():
         rng.shuffle(group)
         split_idx = max(1, len(group) // 5)  # 20%
         dev_mentions.extend(group[:split_idx])
@@ -247,8 +262,7 @@ def generate_dataset(version: str = "v0", seed: int = 42,
 
     # Dev labels
     dev_labels = [
-        {"mention_id": m["mention_id"], "person_id": m["person_id"]}
-        for m in dev_mentions
+        {"mention_id": m["mention_id"], "person_id": m["person_id"]} for m in dev_mentions
     ]
     _write_jsonl(dev_dir / "dev_labels.jsonl", dev_labels)
 
@@ -264,13 +278,15 @@ def generate_dataset(version: str = "v0", seed: int = 42,
     for rec in emitter.all_records:
         missing = validate_slots(rec["form_fields"], rec["narrative"])
         if missing:
-            slot_errors.append({
-                "record_id": rec["record_id"],
-                "missing_slots": missing,
-            })
+            slot_errors.append(
+                {
+                    "record_id": rec["record_id"],
+                    "missing_slots": missing,
+                }
+            )
 
     # --- Step 7: Kumbh events feed ---
-    kumbh_events = generate_kumbh_events(seed=seed, out_dir=str(out))
+    generate_kumbh_events(seed=seed, out_dir=str(out))
 
     # --- Summary ---
     summary = {

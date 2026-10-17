@@ -3,6 +3,7 @@ tests/test_federated.py
 Tests for cross-agency federated query, purpose & case_ref validation,
 zero-data leakage guarantees, and agency inbox.
 """
+
 import pytest
 
 
@@ -30,7 +31,16 @@ async def test_federated_query_match_no_leak(client):
 
     # Zero-data leakage assertions:
     # Must NOT return raw records, entity names, suspect dossiers, or identifiers
-    forbidden_keys = {"records", "raw_data", "suspect_name", "first_name", "last_name", "name", "address", "fir_id"}
+    forbidden_keys = {
+        "records",
+        "raw_data",
+        "suspect_name",
+        "first_name",
+        "last_name",
+        "name",
+        "address",
+        "fir_id",
+    }
     for k in forbidden_keys:
         assert k not in data, f"Leaked forbidden key '{k}' in federated response!"
 

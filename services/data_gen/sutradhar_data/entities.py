@@ -12,8 +12,12 @@ import string
 from typing import Any
 
 from .lexicons import (
-    SURNAMES, FIRST_NAMES, FATHER_NAMES, DISTRICTS, POLICE_STATIONS,
     BANK_CODES,
+    DISTRICTS,
+    FATHER_NAMES,
+    FIRST_NAMES,
+    POLICE_STATIONS,
+    SURNAMES,
 )
 
 
@@ -46,11 +50,23 @@ def _gen_vehicle(rng: random.Random) -> str:
 class PersonRecord:
     """A true person with canonical identity."""
 
-    def __init__(self, person_id: str, first_name: dict, father_name: dict,
-                 surname: dict, age: int, district: str, gender: str,
-                 phones: list[str], accounts: list[dict],
-                 vehicles: list[str], addresses: list[str],
-                 network: str, role: str, aliases: list[str] | None = None):
+    def __init__(
+        self,
+        person_id: str,
+        first_name: dict,
+        father_name: dict,
+        surname: dict,
+        age: int,
+        district: str,
+        gender: str,
+        phones: list[str],
+        accounts: list[dict],
+        vehicles: list[str],
+        addresses: list[str],
+        network: str,
+        role: str,
+        aliases: list[str] | None = None,
+    ):
         self.person_id = person_id
         self.first_name = first_name
         self.father_name = father_name
@@ -139,8 +155,10 @@ class EntityGenerator:
         return f"{bank_code}:{acct_no}"
 
     def _make_account(self, bank_code: str | None = None) -> dict:
-        bank = self.rng.choice(BANK_CODES) if bank_code is None else next(
-            b for b in BANK_CODES if b["code"] == bank_code
+        bank = (
+            self.rng.choice(BANK_CODES)
+            if bank_code is None
+            else next(b for b in BANK_CODES if b["code"] == bank_code)
         )
         acct_no = _gen_account(self.rng, bank["code"])
         return {
@@ -152,15 +170,23 @@ class EntityGenerator:
             "holder_name": "",  # filled after person creation
         }
 
-    def _create_person(self, first_name_rom: str, father_name_rom: str,
-                       surname_rom: str, age: int, district: str,
-                       network: str, role: str,
-                       gender: str = "M",
-                       num_phones: int = 1, num_accounts: int = 1,
-                       num_vehicles: int = 0,
-                       aliases: list[str] | None = None,
-                       bank_code: str | None = None,
-                       forced_phone: str | None = None) -> PersonRecord:
+    def _create_person(
+        self,
+        first_name_rom: str,
+        father_name_rom: str,
+        surname_rom: str,
+        age: int,
+        district: str,
+        network: str,
+        role: str,
+        gender: str = "M",
+        num_phones: int = 1,
+        num_accounts: int = 1,
+        num_vehicles: int = 0,
+        aliases: list[str] | None = None,
+        bank_code: str | None = None,
+        forced_phone: str | None = None,
+    ) -> PersonRecord:
         """Create a specific person with known attributes."""
         pid = self._next_person_id()
         first = _find_first_name_entry(first_name_rom)
@@ -204,9 +230,9 @@ class EntityGenerator:
         self.persons.append(person)
         return person
 
-    def _create_random_person(self, network: str = "NONE",
-                              role: str = "NEUTRAL",
-                              district: str | None = None) -> PersonRecord:
+    def _create_random_person(
+        self, network: str = "NONE", role: str = "NEUTRAL", district: str | None = None
+    ) -> PersonRecord:
         """Create a random background person."""
         first = self.rng.choice(FIRST_NAMES)
         father = self.rng.choice(FATHER_NAMES)
@@ -231,16 +257,26 @@ class EntityGenerator:
     def generate_planted_cast(self) -> dict[str, list[PersonRecord]]:
         """Generate the planted networks and bridges from the PRD cast."""
         cast: dict[str, list[PersonRecord]] = {
-            "A": [], "B": [], "C": [], "bridges": [],
-            "collisions": [], "innocents": [], "background": [],
+            "A": [],
+            "B": [],
+            "C": [],
+            "bridges": [],
+            "collisions": [],
+            "innocents": [],
+            "background": [],
         }
 
         # --- Bridge 1: Rakesh Dagdu Pawar ---
         # Appears across all 3 agencies
         bridge_phone = _gen_phone(self.rng)  # shared phone across networks
         rakesh = self._create_person(
-            "Rakesh", "Dagdu", "Pawar", 34, "Thane",
-            network="B", role="BROKER",
+            "Rakesh",
+            "Dagdu",
+            "Pawar",
+            34,
+            "Thane",
+            network="B",
+            role="BROKER",
             aliases=["राका", "Raka"],
             forced_phone=bridge_phone,
             num_vehicles=1,
@@ -250,8 +286,13 @@ class EntityGenerator:
         # --- Network A: Cyber-fraud mule ring (MAHA_CYBER) ---
         # Recruiter: Sachin Kale
         sachin = self._create_person(
-            "Sachin", "Tukaram", "Kale", 29, "Pune",
-            network="A", role="RECRUITER",
+            "Sachin",
+            "Tukaram",
+            "Kale",
+            29,
+            "Pune",
+            network="A",
+            role="RECRUITER",
             aliases=["Sachu", "साचू"],
             bank_code="HDFC",
         )
@@ -260,8 +301,13 @@ class EntityGenerator:
         # Controller: Nitin Gaikwad (also Bridge 2)
         nitin_phone = _gen_phone(self.rng)
         nitin = self._create_person(
-            "Nitin", "Shankar", "Gaikwad", 38, "Pune",
-            network="A", role="CONTROLLER",
+            "Nitin",
+            "Shankar",
+            "Gaikwad",
+            38,
+            "Pune",
+            network="A",
+            role="CONTROLLER",
             forced_phone=nitin_phone,
             bank_code="SBIN",
         )
@@ -274,16 +320,18 @@ class EntityGenerator:
         num_mules = max(12, num_deceived + 4) if self.version != "v0" else 8
         victim_districts = self.rng.sample(DISTRICTS, min(6, len(DISTRICTS)))
 
-        for i in range(num_deceived):
+        for _i in range(num_deceived):
             p = self._create_random_person(
-                network="A", role="DECEIVED_HOLDER",
+                network="A",
+                role="DECEIVED_HOLDER",
                 district=self.rng.choice(victim_districts),
             )
             cast["A"].append(p)
 
-        for i in range(num_mules - num_deceived):
+        for _i in range(num_mules - num_deceived):
             p = self._create_random_person(
-                network="A", role="MEMBER",
+                network="A",
+                role="MEMBER",
                 district=self.rng.choice(victim_districts),
             )
             cast["A"].append(p)
@@ -291,7 +339,8 @@ class EntityGenerator:
         # Victims (complainants)
         for i in range(min(6, len(victim_districts))):
             p = self._create_random_person(
-                network="NONE", role="NEUTRAL",
+                network="NONE",
+                role="NEUTRAL",
                 district=victim_districts[i],
             )
             cast["A"].append(p)
@@ -299,14 +348,19 @@ class EntityGenerator:
         # --- Network B: Extortion gang (STATE_POLICE) ---
         # Leader: Anil Jadhav (rarely appears)
         anil = self._create_person(
-            "Anil", "Ramchandra", "Jadhav", 45, "Mumbai Suburban",
-            network="B", role="LEADER",
+            "Anil",
+            "Ramchandra",
+            "Jadhav",
+            45,
+            "Mumbai Suburban",
+            network="B",
+            role="LEADER",
             aliases=["Boss", "बॉस"],
         )
         cast["B"].append(anil)
 
         # 6 members across 3 stations
-        b_districts = ["Mumbai Suburban", "Thane", "Pune"]
+
         b_members_data = [
             ("Vijay", "Ganpat", "Shinde", 30, "Thane"),
             ("Sandeep", "Namdev", "More", 33, "Pune"),
@@ -316,23 +370,38 @@ class EntityGenerator:
         ]
         for fn, fatn, sn, age, dist in b_members_data:
             p = self._create_person(
-                fn, fatn, sn, age, dist,
-                network="B", role="MEMBER",
+                fn,
+                fatn,
+                sn,
+                age,
+                dist,
+                network="B",
+                role="MEMBER",
             )
             cast["B"].append(p)
 
         # --- Network C: Drug chain (CENTRAL_AGENCY + STATE_POLICE) ---
         # Financier: Mahendra Rathore (outside Maharashtra)
         mahendra = self._create_person(
-            "Mahendra", "Arjun", "Rathore", 50, "Nagpur",
-            network="C", role="FINANCIER",
+            "Mahendra",
+            "Arjun",
+            "Rathore",
+            50,
+            "Nagpur",
+            network="C",
+            role="FINANCIER",
         )
         cast["C"].append(mahendra)
 
         # Lab operator: Prakash Shinde
         prakash = self._create_person(
-            "Prakash", "Sadashiv", "Shinde", 42, "Pune",
-            network="C", role="MEMBER",
+            "Prakash",
+            "Sadashiv",
+            "Shinde",
+            42,
+            "Pune",
+            network="C",
+            role="MEMBER",
             num_vehicles=1,
         )
         cast["C"].append(prakash)
@@ -346,8 +415,13 @@ class EntityGenerator:
         ]
         for fn, fatn, sn, age, dist in courier_data:
             p = self._create_person(
-                fn, fatn, sn, age, dist,
-                network="C", role="COURIER",
+                fn,
+                fatn,
+                sn,
+                age,
+                dist,
+                network="C",
+                role="COURIER",
                 num_vehicles=1,
             )
             cast["C"].append(p)
@@ -358,13 +432,33 @@ class EntityGenerator:
         # --- Common-name collision groups (30+) ---
         # Create groups of 2-3 people with very similar names but different identities
         collision_first_names = [
-            "Rakesh", "Sachin", "Nitin", "Vijay", "Sandeep",
-            "Amit", "Rajesh", "Sanjay", "Sunil", "Ramesh",
-            "Deepak", "Manoj", "Ganesh", "Vikas", "Prashant",
+            "Rakesh",
+            "Sachin",
+            "Nitin",
+            "Vijay",
+            "Sandeep",
+            "Amit",
+            "Rajesh",
+            "Sanjay",
+            "Sunil",
+            "Ramesh",
+            "Deepak",
+            "Manoj",
+            "Ganesh",
+            "Vikas",
+            "Prashant",
         ]
         collision_surnames = [
-            "Pawar", "Patil", "Shinde", "Jadhav", "More",
-            "Kale", "Deshmukh", "Kulkarni", "Gaikwad", "Bhosale",
+            "Pawar",
+            "Patil",
+            "Shinde",
+            "Jadhav",
+            "More",
+            "Kale",
+            "Deshmukh",
+            "Kulkarni",
+            "Gaikwad",
+            "Bhosale",
         ]
 
         collision_count = 0
@@ -385,9 +479,13 @@ class EntityGenerator:
                 father = self.rng.choice(FATHER_NAMES)
                 dist = self.rng.choice(DISTRICTS)
                 p = self._create_person(
-                    fn, father["canonical_rom"], sn,
-                    self.rng.randint(22, 55), dist,
-                    network="NONE", role="NEUTRAL",
+                    fn,
+                    father["canonical_rom"],
+                    sn,
+                    self.rng.randint(22, 55),
+                    dist,
+                    network="NONE",
+                    role="NEUTRAL",
                     gender="M",
                 )
                 cast["collisions"].append(p)
@@ -402,7 +500,8 @@ class EntityGenerator:
             dist = self.rng.choice(organiser_districts)
             bank = self.rng.choice(organiser_banks)
             p = self._create_random_person(
-                network="NONE", role="NEUTRAL",
+                network="NONE",
+                role="NEUTRAL",
                 district=dist,
             )
             # Ensure they have an account at the same bank

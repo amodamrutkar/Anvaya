@@ -3,7 +3,11 @@ sutradhar_api/routers/dossier.py
 Draft dossier generation and export.
 APPROVING_OFFICER must explicitly set confirm=true to export.
 """
+
 from __future__ import annotations
+
+from datetime import UTC, datetime
+from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -17,14 +21,24 @@ router = APIRouter(prefix="/dossier", tags=["dossier"])
 @router.post("/generate")
 def post_dossier_generate(
     body: DossierGenerateRequest,
-    user: UserInfo = Depends(require_action("DOSSIER_GENERATE")),
+    user: Annotated[UserInfo, Depends(require_action("DOSSIER_GENERATE"))],
 ):
     store = get_store()
     if body.community_id not in store.communities:
-        raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Community {body.community_id!r} not found."}})
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": f"Community {body.community_id!r} not found.",
+                }
+            },
+        )
     dossier = store.generate_dossier(community_id=body.community_id, actor=user.user_id)
     seq = store.record_audit(
-        actor=user.user_id, role=user.role.value, action="DOSSIER_GENERATE",
+        actor=user.user_id,
+        role=user.role.value,
+        action="DOSSIER_GENERATE",
         summary=f"Generated dossier {dossier['dossier_id']} for community {body.community_id}.",
     )
     result = dict(dossier)
@@ -35,14 +49,21 @@ def post_dossier_generate(
 @router.get("/{dossier_id}")
 def get_dossier(
     dossier_id: str,
-    user: UserInfo = Depends(require_action("DOSSIER_VIEW")),
+    user: Annotated[UserInfo, Depends(require_action("DOSSIER_VIEW"))],
 ):
     store = get_store()
     dossier = store.dossiers.get(dossier_id)
     if not dossier:
-        raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Dossier {dossier_id!r} not found."}})
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {"code": "NOT_FOUND", "message": f"Dossier {dossier_id!r} not found."}
+            },
+        )
     store.record_audit(
-        actor=user.user_id, role=user.role.value, action="DOSSIER_VIEW",
+        actor=user.user_id,
+        role=user.role.value,
+        action="DOSSIER_VIEW",
         summary=f"Viewed dossier {dossier_id}.",
     )
     return dossier
@@ -52,21 +73,32 @@ def get_dossier(
 def post_dossier_export(
     dossier_id: str,
     body: DossierExportRequest,
-    user: UserInfo = Depends(require_action("DOSSIER_EXPORT")),
+    user: Annotated[UserInfo, Depends(require_action("DOSSIER_EXPORT"))],
 ):
     if not body.confirm:
         raise HTTPException(
             status_code=422,
-            detail={"error": {"code": "CONFIRM_REQUIRED", "message": "confirm must be true to export a dossier."}},
+            detail={
+                "error": {
+                    "code": "CONFIRM_REQUIRED",
+                    "message": "confirm must be true to export a dossier.",
+                }
+            },
         )
     store = get_store()
     dossier = store.dossiers.get(dossier_id)
     if not dossier:
-        raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Dossier {dossier_id!r} not found."}})
-    from datetime import datetime, timezone
-    exported_at = datetime.now(timezone.utc).isoformat()
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {"code": "NOT_FOUND", "message": f"Dossier {dossier_id!r} not found."}
+            },
+        )
+    exported_at = datetime.now(UTC).isoformat()
     seq = store.record_audit(
-        actor=user.user_id, role=user.role.value, action="DOSSIER_EXPORT",
+        actor=user.user_id,
+        role=user.role.value,
+        action="DOSSIER_EXPORT",
         summary=f"Exported dossier {dossier_id} in format {body.export_format.value}.",
     )
     return {
