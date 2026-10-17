@@ -336,18 +336,23 @@ class RecordEmitter:
             "difficulty_tags": diff_tags,
         })
 
-        # Add accounts to the account list
+        # Add accounts to the account list (deduplicating by account_key)
         for acct in suspect_person.accounts:
-            acct_entry = {
-                "account_key": acct["account_key"],
-                "bank": acct["bank"],
-                "ifsc": acct["ifsc"],
-                "holder_name_raw": suspect_mention["name_raw"],
-                "opened_date": self._gen_date(2020),
-                "complaint_count": self.rng.randint(1, 50),
-                "record_ids": [record_id],
-            }
-            self.all_accounts.append(acct_entry)
+            existing = next((a for a in self.all_accounts if a["account_key"] == acct["account_key"]), None)
+            if existing:
+                if record_id not in existing["record_ids"]:
+                    existing["record_ids"].append(record_id)
+            else:
+                acct_entry = {
+                    "account_key": acct["account_key"],
+                    "bank": acct["bank"],
+                    "ifsc": acct["ifsc"],
+                    "holder_name_raw": suspect_mention["name_raw"],
+                    "opened_date": self._gen_date(2020),
+                    "complaint_count": self.rng.randint(1, 50),
+                    "record_ids": [record_id],
+                }
+                self.all_accounts.append(acct_entry)
 
         return record
 

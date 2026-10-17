@@ -134,6 +134,20 @@ def generate_dataset(version: str = "v0", seed: int = 42,
         num_txns = min(20, len(mule_accounts) * 2)
         emitter.emit_transactions(mule_accounts, num_txns=num_txns, base_amount=500000)
 
+    # Ensure every account participating in transactions exists in MAHA_CYBER accounts.jsonl
+    for person in cast["A"]:
+        for acct in person.accounts:
+            if not any(a["account_key"] == acct["account_key"] for a in emitter.all_accounts):
+                emitter.all_accounts.append({
+                    "account_key": acct["account_key"],
+                    "bank": acct["bank"],
+                    "ifsc": acct["ifsc"],
+                    "holder_name_raw": person.canonical_name_rom,
+                    "opened_date": "2021-01-15",
+                    "complaint_count": 1,
+                    "record_ids": [],
+                })
+
     # --- Step 3: Partition records by agency ---
     spo_records = [r for r in emitter.all_records if r["agency"] == "STATE_POLICE"]
     cyb_records = [r for r in emitter.all_records if r["agency"] == "MAHA_CYBER"]

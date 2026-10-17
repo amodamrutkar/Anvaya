@@ -47,7 +47,10 @@ def generate_kumbh_events(seed: int = 42, out_dir: str = "data") -> list[dict]:
         "event_type": "WATCHLIST_SIGHTING",
         "subject_token": "TOK-EXTORT-ASSOC-001",
         "related_ids": ["P-000001"],  # Rakesh Pawar (bridge)
-        "details": "Synthetic sighting: subject matching watchlist entity observed near Ramkund bathing ghat. Token-based identification. No real biometric data used.",
+        "details": {
+            "description": "Synthetic sighting: subject matching watchlist entity observed near Ramkund bathing ghat. Token-based identification. No real biometric data used.",
+            "confidence": 0.92,
+        },
         "planted": True,
         "planted_id": "E1",
     })
@@ -62,7 +65,11 @@ def generate_kumbh_events(seed: int = 42, out_dir: str = "data") -> list[dict]:
         "event_type": "SCAM_PATTERN",
         "subject_token": "TOK-SCAM-PATTERN-001",
         "related_ids": ["P-000002", "P-000003"],  # Sachin Kale, Nitin Gaikwad
-        "details": "Synthetic scam alert: 14 complaints in 120 minutes about fake dharamshala booking links. Payment traced to accounts linked to Network A mule ring. All data synthetic.",
+        "details": {
+            "description": "Synthetic scam alert: 14 complaints in 120 minutes about fake dharamshala booking links. Payment traced to accounts linked to Network A mule ring. All data synthetic.",
+            "complaint_count": 14,
+            "duration_hours": 2,
+        },
         "planted": True,
         "planted_id": "E2",
     })
@@ -76,7 +83,9 @@ def generate_kumbh_events(seed: int = 42, out_dir: str = "data") -> list[dict]:
         "event_type": "MISSING_PERSON",
         "subject_token": "TOK-MISSING-001",
         "related_ids": [],
-        "details": "Synthetic missing person report: elderly pilgrim separated from family group near Trimbakeshwar temple. No criminal network connection. Control case for alert system.",
+        "details": {
+            "description": "Synthetic missing person report: elderly pilgrim separated from family group near Trimbakeshwar temple. No criminal network connection. Control case for alert system.",
+        },
         "planted": True,
         "planted_id": "E3",
     })
@@ -135,7 +144,9 @@ def generate_kumbh_events(seed: int = 42, out_dir: str = "data") -> list[dict]:
             "event_type": evt_type,
             "subject_token": f"TOK-BG-{rng.randint(1000, 9999)}",
             "related_ids": [],
-            "details": detail,
+            "details": {
+                "description": detail,
+            },
             "planted": False,
             "planted_id": None,
         })

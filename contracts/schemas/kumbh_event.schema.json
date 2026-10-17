@@ -9,9 +9,9 @@
     "event_id": {"type": "string"},
     "ts": {"type": "string", "format": "date-time"},
     "zone": {"type": "string", "enum": ["Ramkund", "Panchavati", "Tapovan", "Trimbakeshwar", "Godavari Ghats"]},
-    "event_type": {"type": "string", "enum": ["WATCHLIST_SIGHTING", "SCAM_PATTERN", "MISSING_PERSON"]},
+    "event_type": {"type": "string", "enum": ["WATCHLIST_SIGHTING", "SCAM_PATTERN", "MISSING_PERSON", "MEDICAL_EMERGENCY", "CROWD_SURGE", "LOST_AND_FOUND", "VIP_MOVEMENT", "TRAFFIC_DIVERSION", "POWER_OUTAGE", "WATER_SUPPLY_ISSUE"]},
     "subject_token": {"type": "string"},
     "related_ids": {"type": "array", "items": {"type": "string"}},
-    "details": {"type": "object"}
+    "details": {"type": ["object", "string"]}
   }
 }

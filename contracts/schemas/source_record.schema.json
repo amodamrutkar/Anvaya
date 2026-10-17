@@ -14,7 +14,7 @@
     "district": {"type": "string"},
     "station": {"type": "string"},
     "filed_date": {"type": "string", "format": "date"},
-    "language": {"type": "string", "enum": ["mr", "hi", "en"]},
+    "language": {"type": "string", "enum": ["mr", "hi", "en", "mixed"]},
     "sections": {"type": "array", "items": {"type": "string"}},
     "form_fields": {
       "type": "object",
