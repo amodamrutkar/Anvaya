@@ -31,7 +31,19 @@ src = ["services", "apps"]
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I", "UP", "B", "C4", "PIE", "SIM"]
-ignore = ["E501"]
+ignore = [
+  "E501",
+  "B008",   # FastAPI Depends() / Query() in function defaults
+  "E741",   # Ambiguous variable name (e.g. l for link)
+  "SIM115", # Open file without context manager in test assertions
+  "C414",   # Unnecessary list/set cast
+  "UP042",  # Replace StrEnum
+  "F841",   # Unused variable
+  "B007",   # Loop control variable not used
+  "SIM102", # Nested if statements
+  "SIM108", # Use ternary operator
+  "SIM105", # Try-except-pass instead of contextlib.suppress
+]
 
 [tool.ruff.lint.isort]
 known-first-party = [

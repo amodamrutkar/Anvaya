@@ -12,8 +12,9 @@ from typing import Any
 from .models import BridgeModel, CommunityModel
 
 
-def detect_bridges(graph_data: dict[str, Any],
-                   communities: list[CommunityModel]) -> list[BridgeModel]:
+def detect_bridges(
+    graph_data: dict[str, Any], communities: list[CommunityModel]
+) -> list[BridgeModel]:
     """
     Detect bridges connecting >= 2 crime types or >= 2 communities.
 
@@ -92,9 +93,13 @@ def detect_bridges(graph_data: dict[str, Any],
                 reasons.append(f"Spans {len(crimes)} distinct crime classifications: {crimes_str}")
             if is_cross_comm:
                 comms_str = ", ".join(sorted(list(comms)))
-                reasons.append(f"Direct operational link bridging {len(comms)} syndicates: {comms_str}")
+                reasons.append(
+                    f"Direct operational link bridging {len(comms)} syndicates: {comms_str}"
+                )
             if ntype != "PERSON":
-                reasons.append(f"Shared technical infrastructure utilized by {len(linked_persons)} persons")
+                reasons.append(
+                    f"Shared technical infrastructure utilized by {len(linked_persons)} persons"
+                )
 
             bridges.append(
                 BridgeModel(
@@ -111,7 +116,12 @@ def detect_bridges(graph_data: dict[str, Any],
 
     # Sort bridges deterministically: cross-crime first, then by number of evidence records
     bridges.sort(
-        key=lambda b: (-len(b.crime_types), -len(b.communities), -len(b.evidence_record_ids), b.node_id)
+        key=lambda b: (
+            -len(b.crime_types),
+            -len(b.communities),
+            -len(b.evidence_record_ids),
+            b.node_id,
+        )
     )
 
     return bridges

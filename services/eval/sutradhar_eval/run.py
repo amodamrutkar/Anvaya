@@ -8,7 +8,6 @@ CLI: python -m sutradhar_eval.run --data data/v1 --truth data/truth/v1 --artifac
 """
 
 import json
-import os
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -18,7 +17,7 @@ def _read_jsonl(path: Path) -> list[dict]:
     """Read a JSONL file into a list of dicts."""
     if not path.exists():
         return []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return [json.loads(line) for line in f if line.strip()]
 
 
@@ -26,13 +25,13 @@ def _read_json(path: Path) -> Any:
     """Read a JSON file."""
     if not path.exists():
         return {}
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return json.load(f)
 
 
-def _compute_er_metrics(truth_mentions: list[dict],
-                        pred_entities: list[dict],
-                        pred_links: list[dict]) -> dict:
+def _compute_er_metrics(
+    truth_mentions: list[dict], pred_entities: list[dict], pred_links: list[dict]
+) -> dict:
     """
     Compute ER metrics: pairwise precision, recall, F1, wrong-merge rate,
     review share, split by difficulty.
@@ -93,8 +92,19 @@ def _compute_er_metrics(truth_mentions: list[dict],
     auto_recall = auto_tp / (auto_tp + auto_fn) if (auto_tp + auto_fn) > 0 else 0.0
 
     # Split by difficulty
-    hard_tags = {"translit", "alias", "initials", "missing_father", "collision", "old_phone",
-                 "script_mix", "word_order", "typo", "address_change", "age_drift"}
+    hard_tags = {
+        "translit",
+        "alias",
+        "initials",
+        "missing_father",
+        "collision",
+        "old_phone",
+        "script_mix",
+        "word_order",
+        "typo",
+        "address_change",
+        "age_drift",
+    }
     easy_mentions = set()
     hard_mentions = set()
     for mid, tags in mention_difficulty.items():
@@ -127,12 +137,20 @@ def _compute_er_metrics(truth_mentions: list[dict],
         "overall_f1": round(f1, 4),
         "by_difficulty": {
             "easy": {
-                "precision": round(easy_tp / (easy_tp + easy_fp_c) if (easy_tp + easy_fp_c) > 0 else 0.0, 4),
-                "recall": round(easy_tp / (easy_tp + easy_fn_c) if (easy_tp + easy_fn_c) > 0 else 0.0, 4),
+                "precision": round(
+                    easy_tp / (easy_tp + easy_fp_c) if (easy_tp + easy_fp_c) > 0 else 0.0, 4
+                ),
+                "recall": round(
+                    easy_tp / (easy_tp + easy_fn_c) if (easy_tp + easy_fn_c) > 0 else 0.0, 4
+                ),
             },
             "hard": {
-                "precision": round(hard_tp / (hard_tp + hard_fp_c) if (hard_tp + hard_fp_c) > 0 else 0.0, 4),
-                "recall": round(hard_tp / (hard_tp + hard_fn_c) if (hard_tp + hard_fn_c) > 0 else 0.0, 4),
+                "precision": round(
+                    hard_tp / (hard_tp + hard_fp_c) if (hard_tp + hard_fp_c) > 0 else 0.0, 4
+                ),
+                "recall": round(
+                    hard_tp / (hard_tp + hard_fn_c) if (hard_tp + hard_fn_c) > 0 else 0.0, 4
+                ),
             },
         },
         "wrong_merge_rate": round(wrong_merge_rate, 4),
@@ -140,10 +158,12 @@ def _compute_er_metrics(truth_mentions: list[dict],
     }
 
 
-def _compute_network_metrics(truth_networks: dict,
-                             pred_communities: list[dict],
-                             pred_roles: list[dict],
-                             pred_bridges: list[dict]) -> dict:
+def _compute_network_metrics(
+    truth_networks: dict,
+    pred_communities: list[dict],
+    pred_roles: list[dict],
+    pred_bridges: list[dict],
+) -> dict:
     """Compute network recovery metrics."""
     planted = 3  # A, B, C
     recovered = 0
@@ -208,8 +228,7 @@ def _compute_network_metrics(truth_networks: dict,
     }
 
 
-def _compute_mule_metrics(truth_accounts: list[dict],
-                          pred_chains: list[dict]) -> dict:
+def _compute_mule_metrics(truth_accounts: list[dict], pred_chains: list[dict]) -> dict:
     """Compute mule chain tracing metrics."""
     max_depth = 0
     recruiter_detected = False
@@ -239,7 +258,9 @@ def _compute_mule_metrics(truth_accounts: list[dict],
             if truth_class == "DECEIVED":
                 deceived_total += 1
 
-    deceived_precision = deceived_tp / (deceived_tp + deceived_fp) if (deceived_tp + deceived_fp) > 0 else 0.0
+    deceived_precision = (
+        deceived_tp / (deceived_tp + deceived_fp) if (deceived_tp + deceived_fp) > 0 else 0.0
+    )
 
     return {
         "max_depth": max_depth,
@@ -264,19 +285,28 @@ def _compute_fairness(truth_persons: list[dict]) -> dict:
         surname_role[surname][role] += 1
 
     # Check if any surname is disproportionately assigned criminal roles
-    criminal_roles = {"RECRUITER", "CONTROLLER", "LEADER", "BROKER",
-                      "MEMBER", "COURIER", "FINANCIER"}
+    criminal_roles = {
+        "RECRUITER",
+        "CONTROLLER",
+        "LEADER",
+        "BROKER",
+        "MEMBER",
+        "COURIER",
+        "FINANCIER",
+    }
     concerns = []
     for surname, roles in surname_role.items():
         total = sum(roles.values())
         criminal_count = sum(roles.get(r, 0) for r in criminal_roles)
         if total >= 3 and criminal_count / total > 0.8:
-            concerns.append({
-                "surname": surname,
-                "total": total,
-                "criminal_count": criminal_count,
-                "ratio": round(criminal_count / total, 2),
-            })
+            concerns.append(
+                {
+                    "surname": surname,
+                    "total": total,
+                    "criminal_count": criminal_count,
+                    "ratio": round(criminal_count / total, 2),
+                }
+            )
 
     return {
         "passed": len(concerns) == 0,
@@ -285,8 +315,7 @@ def _compute_fairness(truth_persons: list[dict]) -> dict:
     }
 
 
-def run_evaluation(data_dir: str, truth_dir: str,
-                   artifacts_dir: str, out_path: str) -> dict:
+def run_evaluation(data_dir: str, truth_dir: str, artifacts_dir: str, out_path: str) -> dict:
     """
     Run the full evaluation harness.
 

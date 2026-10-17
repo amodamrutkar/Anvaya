@@ -10,15 +10,18 @@ dominant crime types, activity periods, and monthly timelines.
 from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Any
+
 import networkx as nx
 
 from .models import CommunityModel, TimelineActivity
 
 
-def detect_communities(graph_data: dict[str, Any],
-                       seed: int = 42,
-                       hub_degree_threshold: int = 15,
-                       min_community_size: int = 4) -> list[CommunityModel]:
+def detect_communities(
+    graph_data: dict[str, Any],
+    seed: int = 42,
+    hub_degree_threshold: int = 15,
+    min_community_size: int = 4,
+) -> list[CommunityModel]:
     """
     Detect criminal syndicates / communities from graph.json data.
 
@@ -78,7 +81,8 @@ def detect_communities(graph_data: dict[str, Any],
             # 2. Shared Strong Identifiers (Phone, Account, Vehicle) -> 1.0
             # Apply Hub Guard: ignore if node degree exceeds threshold
             shared_ids = {
-                nid for nid in (person_strong_ids[p1] & person_strong_ids[p2])
+                nid
+                for nid in (person_strong_ids[p1] & person_strong_ids[p2])
                 if node_degrees[nid] <= hub_degree_threshold
             }
             if shared_ids:
@@ -87,7 +91,8 @@ def detect_communities(graph_data: dict[str, Any],
             # 3. Shared Address (WEAK link) -> 0.1
             # HUB GUARD: If address has degree > hub_degree_threshold, down-weight to 0.0!
             shared_addrs = {
-                aid for aid in (person_addresses[p1] & person_addresses[p2])
+                aid
+                for aid in (person_addresses[p1] & person_addresses[p2])
                 if node_degrees[aid] <= hub_degree_threshold
             }
             if shared_addrs:
@@ -193,8 +198,7 @@ def detect_communities(graph_data: dict[str, Any],
                 pass
 
         timeline = [
-            TimelineActivity(month=m, case_count=count)
-            for m, count in sorted(month_counts.items())
+            TimelineActivity(month=m, case_count=count) for m, count in sorted(month_counts.items())
         ]
 
         # Continuing activity: activity within last 12 months (relative to 2026-10)

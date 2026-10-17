@@ -8,8 +8,7 @@ Probabilities are controlled per dataset version.
 import random
 from typing import Any
 
-from .lexicons import HONORIFICS_ROM, HONORIFICS_DEV
-
+from .lexicons import HONORIFICS_DEV, HONORIFICS_ROM
 
 # Per-version noise probabilities
 VERSION_NOISE = {
@@ -177,6 +176,7 @@ def apply_noise(person, rng: random.Random, version: str) -> dict[str, Any]:
         old_phone_used = True
         # Replace one phone with a different number
         from .entities import _gen_phone
+
         old_idx = rng.randint(0, len(phones) - 1)
         phones[old_idx] = _gen_phone(rng)
 
@@ -184,6 +184,7 @@ def apply_noise(person, rng: random.Random, version: str) -> dict[str, Any]:
     if rng.random() < probs["address_change"]:
         tags.append("address_change")
         from .lexicons import DISTRICTS as _D
+
         new_dist = rng.choice(_D)
         address = f"{rng.randint(1, 999)}, New Area, {new_dist}"
 
@@ -222,9 +223,7 @@ def apply_noise(person, rng: random.Random, version: str) -> dict[str, Any]:
     if "address" in missing_fields:
         address = ""
 
-    father_name_raw = "" if father_missing else (
-        father_dev if use_devanagari else father_rom
-    )
+    father_name_raw = "" if father_missing else (father_dev if use_devanagari else father_rom)
 
     mention = {
         "name_raw": name.strip(),

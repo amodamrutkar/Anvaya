@@ -7,6 +7,7 @@ Run: python scripts/validate_fixtures.py
 CI: included in `make test`
 Owned by M4.
 """
+
 import json
 import sys
 from pathlib import Path
@@ -86,7 +87,11 @@ def validate_manifest(manifest: dict) -> tuple[int, int]:
                     import jsonschema  # noqa: F401 — optional dep
 
                     schema = json.loads(schema_path.read_text())
-                    data = json.loads(content) if not path_str.endswith(".jsonl") else load_jsonl(fpath)
+                    data = (
+                        json.loads(content)
+                        if not path_str.endswith(".jsonl")
+                        else load_jsonl(fpath)
+                    )
                     if isinstance(data, list):
                         for item in data:
                             jsonschema.validate(item, schema)
@@ -94,7 +99,9 @@ def validate_manifest(manifest: dict) -> tuple[int, int]:
                         jsonschema.validate(data, schema)
                     print(f"  PASS [schema OK]  {path_str}")
                 except ImportError:
-                    print(f"  PASS [no jsonschema] {path_str} (install jsonschema for full validation)")
+                    print(
+                        f"  PASS [no jsonschema] {path_str} (install jsonschema for full validation)"
+                    )
                 except Exception as e:
                     print(f"  FAIL [schema]   {path_str}: {e}")
                     failed += 1

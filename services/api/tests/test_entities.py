@@ -2,16 +2,21 @@
 tests/test_entities.py
 Tests for entity search, profile, and links.
 """
+
 import pytest
 
 
 @pytest.mark.asyncio
 async def test_entity_search_hit(client):
-    r = await client.get("/entities/search", params={"q": "Rakesh"}, headers={"X-Demo-User": "analyst1"})
+    r = await client.get(
+        "/entities/search", params={"q": "Rakesh"}, headers={"X-Demo-User": "analyst1"}
+    )
     assert r.status_code == 200
     body = r.json()
     assert isinstance(body, list)
-    assert any("Rakesh" in e.get("canonical_name", "") for e in body), "Expected Rakesh Pawar in results"
+    assert any("Rakesh" in e.get("canonical_name", "") for e in body), (
+        "Expected Rakesh Pawar in results"
+    )
 
 
 @pytest.mark.asyncio

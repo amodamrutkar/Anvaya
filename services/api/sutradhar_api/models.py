@@ -3,6 +3,7 @@ sutradhar_api/models.py
 Pydantic request/response models for all API endpoints.
 All models are entirely synthetic — no real person or case is represented.
 """
+
 from __future__ import annotations
 
 from enum import Enum
@@ -10,10 +11,10 @@ from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # ─────────────────────────────────────────────────────────────
 # Enums
 # ─────────────────────────────────────────────────────────────
+
 
 class Agency(str, Enum):
     STATE_POLICE = "STATE_POLICE"
@@ -77,6 +78,7 @@ class DossierExportFormat(str, Enum):
 # Generic
 # ─────────────────────────────────────────────────────────────
 
+
 class ErrorDetail(BaseModel):
     code: str
     message: str
@@ -90,6 +92,7 @@ class ErrorResponse(BaseModel):
 # Auth / User
 # ─────────────────────────────────────────────────────────────
 
+
 class UserInfo(BaseModel):
     user_id: str
     role: Role
@@ -100,6 +103,7 @@ class UserInfo(BaseModel):
 # ─────────────────────────────────────────────────────────────
 # Federated query
 # ─────────────────────────────────────────────────────────────
+
 
 class FederatedQueryRequest(BaseModel):
     querying_agency: Agency
@@ -123,6 +127,7 @@ class FederatedQueryResponse(BaseModel):
 # Review queue
 # ─────────────────────────────────────────────────────────────
 
+
 class ReviewDecisionRequest(BaseModel):
     decision: ReviewDecision
     reason: str = Field(min_length=3)
@@ -135,6 +140,7 @@ class UnlinkRequest(BaseModel):
 # ─────────────────────────────────────────────────────────────
 # Dossier
 # ─────────────────────────────────────────────────────────────
+
 
 class DossierGenerateRequest(BaseModel):
     community_id: str
@@ -149,6 +155,7 @@ class DossierExportRequest(BaseModel):
 # Kumbh
 # ─────────────────────────────────────────────────────────────
 
+
 class KumbhAlertActionRequest(BaseModel):
     action: AlertAction
     reason: str | None = None
@@ -157,6 +164,7 @@ class KumbhAlertActionRequest(BaseModel):
 # ─────────────────────────────────────────────────────────────
 # Generic passthrough (for fixture-mode responses)
 # ─────────────────────────────────────────────────────────────
+
 
 class AnyDict(BaseModel):
     model_config = {"extra": "allow"}

@@ -11,6 +11,7 @@ Synthesizes multi-case syndicates into comprehensive prosecution dossiers:
 from datetime import datetime
 from pathlib import Path
 from typing import Any
+
 import yaml
 
 from .models import (
@@ -33,7 +34,7 @@ def load_dossier_rules(config_path: Path | str | None = None) -> dict[str, Any]:
         config_path = Path(__file__).parent / "dossier_rules.yaml"
     path = Path(config_path)
     if path.exists():
-        with open(path, "r", encoding="utf-8") as f:
+        with open(path, encoding="utf-8") as f:
             return yaml.safe_load(f) or {}
     return {
         "mcoca": {
@@ -48,12 +49,14 @@ def load_dossier_rules(config_path: Path | str | None = None) -> dict[str, Any]:
     }
 
 
-def generate_dossier(community_id: str,
-                     graph_data: dict[str, Any],
-                     communities: list[CommunityModel],
-                     roles: list[RoleAssignment],
-                     records: list[dict[str, Any]] | None = None,
-                     rules: dict[str, Any] | None = None) -> DossierModel:
+def generate_dossier(
+    community_id: str,
+    graph_data: dict[str, Any],
+    communities: list[CommunityModel],
+    roles: list[RoleAssignment],
+    records: list[dict[str, Any]] | None = None,
+    rules: dict[str, Any] | None = None,
+) -> DossierModel:
     """
     Generate an MCOCA-readiness intelligence dossier for a target community.
 
@@ -93,7 +96,9 @@ def generate_dossier(community_id: str,
         min_chargesheets_required=mcoca_cfg.get("min_chargesheets_required", 2),
         min_gang_members_required=mcoca_cfg.get("min_gang_members_required", 2),
         verified=False,
-        disclaimer=mcoca_cfg.get("disclaimer", "Draft to support officer judgement. Synthetic data."),
+        disclaimer=mcoca_cfg.get(
+            "disclaimer", "Draft to support officer judgement. Synthetic data."
+        ),
     )
 
     # Map records by record_id and case_ref
@@ -230,8 +235,7 @@ def generate_dossier(community_id: str,
 
     # Gap: Members in only 1 case
     single_case_members = [
-        assoc.name for assoc in associates
-        if person_case_counts.get(assoc.entity_id, 0) <= 1
+        assoc.name for assoc in associates if person_case_counts.get(assoc.entity_id, 0) <= 1
     ]
     if single_case_members:
         evidence_gaps.append(
@@ -291,7 +295,11 @@ def generate_dossier(community_id: str,
 
     # 7. Summary Narrative (Template-generated from structured facts)
     top_leaders = [a.name for a in associates if a.role == "KINGPIN_CANDIDATE"]
-    leader_str = f"led by kingpin candidate(s) {', '.join(top_leaders)}" if top_leaders else "operating as a coordinated collective"
+    leader_str = (
+        f"led by kingpin candidate(s) {', '.join(top_leaders)}"
+        if top_leaders
+        else "operating as a coordinated collective"
+    )
     crimes_str = ", ".join(target_comm.crime_types)
     districts_str = ", ".join(target_comm.districts)
 

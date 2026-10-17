@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import jellyfish
+
     def _metaphone(s: str) -> str:
         """Get metaphone code for a string."""
         if not s:
@@ -61,6 +62,7 @@ def _age_band(age: int | None, tolerance: int = 3) -> str:
 
 
 # ── Blocking strategies ─────────────────────────────────────────────────────
+
 
 def generate_candidate_pairs(
     mentions: list[Mention],

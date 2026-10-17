@@ -9,6 +9,7 @@ evidence trails, and confidence values per edge.
 import json
 from pathlib import Path
 from typing import Any
+
 import networkx as nx
 
 from .models import EdgeModel, EdgeStrength, EdgeType, GraphData, NodeModel, NodeType
@@ -17,7 +18,7 @@ from .models import EdgeModel, EdgeStrength, EdgeType, GraphData, NodeModel, Nod
 def _read_jsonl(path: Path) -> list[dict[str, Any]]:
     if not path.exists():
         return []
-    with open(path, "r", encoding="utf-8") as f:
+    with open(path, encoding="utf-8") as f:
         return [json.loads(line) for line in f if line.strip()]
 
 
@@ -49,8 +50,13 @@ class GraphBuilder:
         self._edge_counter += 1
         return f"EDGE-{self._edge_counter:06d}"
 
-    def _add_node(self, node_id: str, node_type: NodeType, label: str,
-                  attributes: dict[str, Any] | None = None) -> NodeModel:
+    def _add_node(
+        self,
+        node_id: str,
+        node_type: NodeType,
+        label: str,
+        attributes: dict[str, Any] | None = None,
+    ) -> NodeModel:
         if node_id in self.nodes:
             # Merge attributes if needed
             if attributes:
@@ -67,17 +73,26 @@ class GraphBuilder:
         self.nx_graph.add_node(node_id, type=node_type, label=label, **(attributes or {}))
         return node
 
-    def _add_edge(self, source: str, target: str, edge_type: EdgeType,
-                  strength: EdgeStrength = "STRONG",
-                  evidence: list[str] | None = None,
-                  confidence: float = 1.0,
-                  attributes: dict[str, Any] | None = None) -> EdgeModel:
+    def _add_edge(
+        self,
+        source: str,
+        target: str,
+        edge_type: EdgeType,
+        strength: EdgeStrength = "STRONG",
+        evidence: list[str] | None = None,
+        confidence: float = 1.0,
+        attributes: dict[str, Any] | None = None,
+    ) -> EdgeModel:
         ev_list = sorted(list(set(evidence or [])))
         edge_key = f"{source}::{edge_type}::{target}"
 
         # If edge already exists between these two with same type, merge evidence
         for existing in self.edges.values():
-            if existing.source == source and existing.target == target and existing.type == edge_type:
+            if (
+                existing.source == source
+                and existing.target == target
+                and existing.type == edge_type
+            ):
                 combined_ev = sorted(list(set(existing.evidence + ev_list)))
                 existing.evidence = combined_ev
                 if strength == "STRONG":
@@ -97,7 +112,8 @@ class GraphBuilder:
         )
         self.edges[edge_id] = edge
         self.nx_graph.add_edge(
-            source, target,
+            source,
+            target,
             key=edge_id,
             id=edge_id,
             type=edge_type,
@@ -236,14 +252,20 @@ class GraphBuilder:
                 if phone:
                     phone_node_id = f"PHONE:{phone}"
                     self._add_node(phone_node_id, "PHONE", phone)
-                    self._add_edge(person_id, phone_node_id, "USES", strength="STRONG", evidence=[rid])
+                    self._add_edge(
+                        person_id, phone_node_id, "USES", strength="STRONG", evidence=[rid]
+                    )
 
                 # Address (WEAK edge by default per PRD 4.1)
                 address = acc.get("address")
                 if address and len(address.strip()) > 3:
                     addr_node_id = f"ADDRESS:{address.strip()}"
-                    self._add_node(addr_node_id, "ADDRESS", address.strip(), attributes={"district": district})
-                    self._add_edge(person_id, addr_node_id, "LIVES_AT", strength="WEAK", evidence=[rid])
+                    self._add_node(
+                        addr_node_id, "ADDRESS", address.strip(), attributes={"district": district}
+                    )
+                    self._add_edge(
+                        person_id, addr_node_id, "LIVES_AT", strength="WEAK", evidence=[rid]
+                    )
 
             # Co-accused edges (STRONG)
             for i in range(len(accused_entities)):
@@ -257,7 +279,10 @@ class GraphBuilder:
             if isinstance(comp, dict) and comp.get("name"):
                 comp_name = comp["name"]
                 comp_mid = f"M-COMP-{rid}-{comp_name}"
-                comp_id = self.mention_to_entity.get(comp_mid) or f"ENT-COMP-{comp_name.replace(' ', '_')}"
+                comp_id = (
+                    self.mention_to_entity.get(comp_mid)
+                    or f"ENT-COMP-{comp_name.replace(' ', '_')}"
+                )
                 self._add_node(comp_id, "PERSON", comp_name, attributes={"roles": ["VICTIM"]})
                 self._add_edge(comp_id, case_ref, "VICTIM_IN", strength="STRONG", evidence=[rid])
 
@@ -288,7 +313,9 @@ class GraphBuilder:
                 continue
             acct_node_id = f"ACCOUNT:{ak}"
             self._add_node(
-                acct_node_id, "ACCOUNT", ak,
+                acct_node_id,
+                "ACCOUNT",
+                ak,
                 attributes={
                     "bank": acct.get("bank"),
                     "ifsc": acct.get("ifsc"),

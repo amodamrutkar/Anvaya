@@ -10,21 +10,21 @@ Each record has form_fields, narrative (mr/hi/en/mixed), and a slot validator.
 """
 
 import random
-import json
 from datetime import datetime, timedelta
-from typing import Any
 
 from .entities import PersonRecord, _gen_phone
-from .noise import apply_noise
 from .lexicons import (
-    POLICE_STATIONS, CRIME_SECTIONS, NARRATIVE_TEMPLATES,
-    CRIME_DESCRIPTIONS, SEIZED_ITEMS,
+    CRIME_DESCRIPTIONS,
+    CRIME_SECTIONS,
+    NARRATIVE_TEMPLATES,
+    POLICE_STATIONS,
+    SEIZED_ITEMS,
 )
+from .noise import apply_noise
 
 
 class SlotValidationError(Exception):
     """Raised when a form field value does not appear in the narrative."""
-    pass
 
 
 def validate_slots(form_fields: dict, narrative: str) -> list[str]:
@@ -124,9 +124,12 @@ class RecordEmitter:
         except KeyError:
             return template
 
-    def emit_state_police_fir(self, accused_person: PersonRecord,
-                              complainant_person: PersonRecord | None = None,
-                              crime_type: str = "EXTORTION") -> dict:
+    def emit_state_police_fir(
+        self,
+        accused_person: PersonRecord,
+        complainant_person: PersonRecord | None = None,
+        crime_type: str = "EXTORTION",
+    ) -> dict:
         """Emit an FIR/chargesheet for STATE_POLICE."""
         record_id = self._next_record_id("SPO")
         case_ref = self._next_case_id("SPO")
@@ -153,7 +156,9 @@ class RecordEmitter:
         crime_desc = crime_desc_map.get(lang_key, crime_desc_map["en"])
 
         # Determine record type
-        record_type = self.rng.choice(["FIR", "CHARGESHEET"]) if crime_type != "NARCOTICS" else "FIR"
+        record_type = (
+            self.rng.choice(["FIR", "CHARGESHEET"]) if crime_type != "NARCOTICS" else "FIR"
+        )
 
         # Build form_fields
         acc_entry = {
@@ -169,11 +174,13 @@ class RecordEmitter:
         for ak in accused_mention["accounts"]:
             parts = ak.split(":")
             if len(parts) == 2:
-                acct_list.append({
-                    "bank": parts[0],
-                    "account_no": parts[1],
-                    "holder_name": accused_mention["name_raw"],
-                })
+                acct_list.append(
+                    {
+                        "bank": parts[0],
+                        "account_no": parts[1],
+                        "holder_name": accused_mention["name_raw"],
+                    }
+                )
 
         # Narrative slots
         slots = {
@@ -229,19 +236,24 @@ class RecordEmitter:
         self.all_records.append(record)
 
         # Truth entry
-        self.all_mentions_truth.append({
-            "mention_id": mention_id,
-            "record_id": record_id,
-            "person_id": accused_person.person_id,
-            "role": "ACCUSED",
-            "difficulty_tags": diff_tags,
-        })
+        self.all_mentions_truth.append(
+            {
+                "mention_id": mention_id,
+                "record_id": record_id,
+                "person_id": accused_person.person_id,
+                "role": "ACCUSED",
+                "difficulty_tags": diff_tags,
+            }
+        )
 
         return record
 
-    def emit_maha_cyber_complaint(self, suspect_person: PersonRecord,
-                                  victim_person: PersonRecord | None = None,
-                                  amount: int | None = None) -> dict:
+    def emit_maha_cyber_complaint(
+        self,
+        suspect_person: PersonRecord,
+        victim_person: PersonRecord | None = None,
+        amount: int | None = None,
+    ) -> dict:
         """Emit a COMPLAINT record for MAHA_CYBER (1930/NCRP-style)."""
         record_id = self._next_record_id("CYB")
         case_ref = self._next_case_id("CYB")
@@ -267,11 +279,13 @@ class RecordEmitter:
         for ak in suspect_mention["accounts"]:
             parts = ak.split(":")
             if len(parts) == 2:
-                acct_list.append({
-                    "bank": parts[0],
-                    "account_no": parts[1],
-                    "holder_name": suspect_mention["name_raw"],
-                })
+                acct_list.append(
+                    {
+                        "bank": parts[0],
+                        "account_no": parts[1],
+                        "holder_name": suspect_mention["name_raw"],
+                    }
+                )
 
         slots = {
             "complainant_name": comp_name,
@@ -286,22 +300,27 @@ class RecordEmitter:
             "accused_age": str(suspect_mention["age"]),
             "accused_address": suspect_mention["address_raw"] or "N/A",
             "crime_desc": CRIME_DESCRIPTIONS["CYBER_FRAUD"].get(
-                lang if lang != "mixed" else "en", ""),
+                lang if lang != "mixed" else "en", ""
+            ),
             "vehicle": "N/A",
         }
 
-        tmpl_key = f"COMPLAINT_{lang}" if f"COMPLAINT_{lang}" in NARRATIVE_TEMPLATES else "COMPLAINT_en"
+        tmpl_key = (
+            f"COMPLAINT_{lang}" if f"COMPLAINT_{lang}" in NARRATIVE_TEMPLATES else "COMPLAINT_en"
+        )
         narrative = self._gen_narrative(tmpl_key, slots)
 
         form_fields = {
-            "accused": [{
-                "name": suspect_mention["name_raw"],
-                "father_name": suspect_mention["father_name_raw"],
-                "age": suspect_mention["age"],
-                "address": suspect_mention["address_raw"],
-                "phone": suspect_mention["phones"][0] if suspect_mention["phones"] else "",
-                "alias": "",
-            }],
+            "accused": [
+                {
+                    "name": suspect_mention["name_raw"],
+                    "father_name": suspect_mention["father_name_raw"],
+                    "age": suspect_mention["age"],
+                    "address": suspect_mention["address_raw"],
+                    "phone": suspect_mention["phones"][0] if suspect_mention["phones"] else "",
+                    "alias": "",
+                }
+            ],
             "complainant": {"name": comp_name, "phone": comp_phone},
             "victims": [{"name": comp_name, "phone": comp_phone}],
             "accounts": acct_list,
@@ -328,17 +347,21 @@ class RecordEmitter:
         }
 
         self.all_records.append(record)
-        self.all_mentions_truth.append({
-            "mention_id": mention_id,
-            "record_id": record_id,
-            "person_id": suspect_person.person_id,
-            "role": "SUSPECT",
-            "difficulty_tags": diff_tags,
-        })
+        self.all_mentions_truth.append(
+            {
+                "mention_id": mention_id,
+                "record_id": record_id,
+                "person_id": suspect_person.person_id,
+                "role": "SUSPECT",
+                "difficulty_tags": diff_tags,
+            }
+        )
 
         # Add accounts to the account list (deduplicating by account_key)
         for acct in suspect_person.accounts:
-            existing = next((a for a in self.all_accounts if a["account_key"] == acct["account_key"]), None)
+            existing = next(
+                (a for a in self.all_accounts if a["account_key"] == acct["account_key"]), None
+            )
             if existing:
                 if record_id not in existing["record_ids"]:
                     existing["record_ids"].append(record_id)
@@ -384,14 +407,16 @@ class RecordEmitter:
         narrative = self._gen_narrative(tmpl_key, slots)
 
         form_fields = {
-            "accused": [{
-                "name": accused_mention["name_raw"],
-                "father_name": accused_mention["father_name_raw"],
-                "age": accused_mention["age"],
-                "address": accused_mention["address_raw"],
-                "phone": accused_mention["phones"][0] if accused_mention["phones"] else "",
-                "alias": accused_mention["aliases"][0] if accused_mention["aliases"] else "",
-            }],
+            "accused": [
+                {
+                    "name": accused_mention["name_raw"],
+                    "father_name": accused_mention["father_name_raw"],
+                    "age": accused_mention["age"],
+                    "address": accused_mention["address_raw"],
+                    "phone": accused_mention["phones"][0] if accused_mention["phones"] else "",
+                    "alias": accused_mention["aliases"][0] if accused_mention["aliases"] else "",
+                }
+            ],
             "complainant": {},
             "victims": [],
             "accounts": [],
@@ -418,18 +443,21 @@ class RecordEmitter:
         }
 
         self.all_records.append(record)
-        self.all_mentions_truth.append({
-            "mention_id": mention_id,
-            "record_id": record_id,
-            "person_id": accused_person.person_id,
-            "role": "ACCUSED",
-            "difficulty_tags": diff_tags,
-        })
+        self.all_mentions_truth.append(
+            {
+                "mention_id": mention_id,
+                "record_id": record_id,
+                "person_id": accused_person.person_id,
+                "role": "ACCUSED",
+                "difficulty_tags": diff_tags,
+            }
+        )
 
         return record
 
-    def emit_transactions(self, accounts: list[dict], num_txns: int = 5,
-                          base_amount: int = 100000) -> list[dict]:
+    def emit_transactions(
+        self, accounts: list[dict], num_txns: int = 5, base_amount: int = 100000
+    ) -> list[dict]:
         """Emit synthetic transactions between accounts."""
         txns = []
         for _ in range(num_txns):

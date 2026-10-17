@@ -12,15 +12,17 @@ Every role assignment provides an objective score, explicit human-readable reaso
 and verifiable evidence record IDs.
 """
 
-from collections import Counter, defaultdict
+from collections import defaultdict
 from typing import Any
+
 import networkx as nx
 
 from .models import CommunityModel, RoleAssignment
 
 
-def detect_roles(graph_data: dict[str, Any],
-                 communities: list[CommunityModel]) -> list[RoleAssignment]:
+def detect_roles(
+    graph_data: dict[str, Any], communities: list[CommunityModel]
+) -> list[RoleAssignment]:
     """
     Detect roles for key individuals across the network.
 
@@ -91,7 +93,9 @@ def detect_roles(graph_data: dict[str, Any],
 
     # Calculate directed PageRank on flow graph (funds sink / command destination)
     try:
-        pagerank_scores = nx.pagerank(G_flow, weight="weight") if G_flow.number_of_nodes() > 0 else {}
+        pagerank_scores = (
+            nx.pagerank(G_flow, weight="weight") if G_flow.number_of_nodes() > 0 else {}
+        )
     except Exception:
         pagerank_scores = {p: 1.0 / len(person_nodes) for p in person_nodes}
 
@@ -185,13 +189,17 @@ def detect_roles(graph_data: dict[str, Any],
             if is_cross_crime:
                 score += 0.15
                 crimes_str = ", ".join(sorted(list(crimes)))
-                reasons.append(f"Cross-crime operational bridge across {len(crimes)} domains: {crimes_str}")
+                reasons.append(
+                    f"Cross-crime operational bridge across {len(crimes)} domains: {crimes_str}"
+                )
             if is_cross_comm:
                 score += 0.10
                 comms_str = ", ".join(sorted(list(adjacent_comms)))
                 reasons.append(f"Connects multiple distinct syndicates: {comms_str}")
             if b_score > 0.05:
-                reasons.append(f"High betweenness centrality ({b_score:.4f}) as vital network intermediary")
+                reasons.append(
+                    f"High betweenness centrality ({b_score:.4f}) as vital network intermediary"
+                )
 
             role_assignments.append(
                 RoleAssignment(

@@ -18,6 +18,7 @@ logger = logging.getLogger(__name__)
 
 try:
     from rapidfuzz.distance import JaroWinkler
+
     def jaro_winkler_sim(a: str, b: str) -> float:
         if not a or not b:
             return 0.0
@@ -42,12 +43,18 @@ except ImportError:
             return 0.0
         a_tokens = a.strip().split()
         b_tokens = b.strip().split()
-        if len(a_tokens) >= 2 and len(b_tokens) >= 2 and a_tokens[0] == b_tokens[0] and a_tokens[-1] == b_tokens[-1]:
+        if (
+            len(a_tokens) >= 2
+            and len(b_tokens) >= 2
+            and a_tokens[0] == b_tokens[0]
+            and a_tokens[-1] == b_tokens[-1]
+        ):
             return 0.94
         return 0.5
 
 
 # ── Score one pair ───────────────────────────────────────────────────────────
+
 
 def score_pair(
     a: Mention,
@@ -71,36 +78,42 @@ def score_pair(
     shared_phones = set(a.phones) & set(b.phones)
     if shared_phones:
         w = weights.get("shared_phone", 0.55)
-        reasons.append(Reason(
-            clue="SHARED_PHONE",
-            direction="FOR",
-            weight=w,
-            detail=f"both list {', '.join(sorted(shared_phones))}",
-        ))
+        reasons.append(
+            Reason(
+                clue="SHARED_PHONE",
+                direction="FOR",
+                weight=w,
+                detail=f"both list {', '.join(sorted(shared_phones))}",
+            )
+        )
         has_strong_id = True
 
     # ── Shared account ───────────────────────────────────────────────────
     shared_accounts = set(a.accounts) & set(b.accounts)
     if shared_accounts:
         w = weights.get("shared_account", 0.60)
-        reasons.append(Reason(
-            clue="SHARED_ACCOUNT",
-            direction="FOR",
-            weight=w,
-            detail=f"both list {', '.join(sorted(shared_accounts))}",
-        ))
+        reasons.append(
+            Reason(
+                clue="SHARED_ACCOUNT",
+                direction="FOR",
+                weight=w,
+                detail=f"both list {', '.join(sorted(shared_accounts))}",
+            )
+        )
         has_strong_id = True
 
     # ── Shared vehicle ───────────────────────────────────────────────────
     shared_vehicles = set(a.vehicles) & set(b.vehicles)
     if shared_vehicles:
         w = weights.get("shared_vehicle", 0.50)
-        reasons.append(Reason(
-            clue="SHARED_VEHICLE",
-            direction="FOR",
-            weight=w,
-            detail=f"both list {', '.join(sorted(shared_vehicles))}",
-        ))
+        reasons.append(
+            Reason(
+                clue="SHARED_VEHICLE",
+                direction="FOR",
+                weight=w,
+                detail=f"both list {', '.join(sorted(shared_vehicles))}",
+            )
+        )
         has_strong_id = True
 
     # ── Name similarity ──────────────────────────────────────────────────
@@ -111,22 +124,26 @@ def score_pair(
             base_w = weights.get("name_similarity", 0.25)
             # Scale weight by how far above threshold
             scaled = base_w * ((name_sim - jw_threshold) / (1.0 - jw_threshold + 0.001) * 0.5 + 0.5)
-            reasons.append(Reason(
-                clue="NAME_SIMILARITY",
-                direction="FOR",
-                weight=round(scaled, 4),
-                detail=f"{a.name_norm} vs {b.name_norm}: {name_sim:.3f}",
-            ))
+            reasons.append(
+                Reason(
+                    clue="NAME_SIMILARITY",
+                    direction="FOR",
+                    weight=round(scaled, 4),
+                    detail=f"{a.name_norm} vs {b.name_norm}: {name_sim:.3f}",
+                )
+            )
 
     # ── Strong ID + Name corroboration bonus (PRD 8.3) ───────────────────
     if has_strong_id and any(r.clue == "NAME_SIMILARITY" for r in reasons):
         w = weights.get("strong_id_corroboration", 0.11)
-        reasons.append(Reason(
-            clue="STRONG_ID_CORROBORATION",
-            direction="FOR",
-            weight=w,
-            detail="strong identifier verified by near-identical name",
-        ))
+        reasons.append(
+            Reason(
+                clue="STRONG_ID_CORROBORATION",
+                direction="FOR",
+                weight=w,
+                detail="strong identifier verified by near-identical name",
+            )
+        )
 
     # ── Alias match ──────────────────────────────────────────────────────
     a_all_names = {a.name_norm} | set(a.aliases)
@@ -134,88 +151,103 @@ def score_pair(
     alias_overlap = (a_all_names & b_all_names) - {""}
     if alias_overlap:
         w = weights.get("alias_match", 0.15)
-        reasons.append(Reason(
-            clue="ALIAS_MATCH",
-            direction="FOR",
-            weight=w,
-            detail=f"alias overlap: {', '.join(sorted(alias_overlap))}",
-        ))
+        reasons.append(
+            Reason(
+                clue="ALIAS_MATCH",
+                direction="FOR",
+                weight=w,
+                detail=f"alias overlap: {', '.join(sorted(alias_overlap))}",
+            )
+        )
 
     # ── Father's name ────────────────────────────────────────────────────
     if a.father_name_norm and b.father_name_norm:
         father_sim = jaro_winkler_sim(a.father_name_norm, b.father_name_norm)
         if father_sim >= 0.85:
             w = weights.get("father_name_match", 0.25)
-            reasons.append(Reason(
-                clue="FATHER_NAME_MATCH",
-                direction="FOR",
-                weight=w,
-                detail=f"{a.father_name_norm} vs {b.father_name_norm}: {father_sim:.3f}",
-            ))
+            reasons.append(
+                Reason(
+                    clue="FATHER_NAME_MATCH",
+                    direction="FOR",
+                    weight=w,
+                    detail=f"{a.father_name_norm} vs {b.father_name_norm}: {father_sim:.3f}",
+                )
+            )
         elif father_sim < 0.60:
             w = weights.get("father_name_conflict", -0.30)
-            reasons.append(Reason(
-                clue="FATHER_NAME_CONFLICT",
-                direction="AGAINST",
-                weight=w,
-                detail=f"{a.father_name_norm} vs {b.father_name_norm}: {father_sim:.3f}",
-            ))
-    elif (a.father_name_norm and not b.father_name_norm) or (not a.father_name_norm and b.father_name_norm):
+            reasons.append(
+                Reason(
+                    clue="FATHER_NAME_CONFLICT",
+                    direction="AGAINST",
+                    weight=w,
+                    detail=f"{a.father_name_norm} vs {b.father_name_norm}: {father_sim:.3f}",
+                )
+            )
+    elif (a.father_name_norm and not b.father_name_norm) or (
+        not a.father_name_norm and b.father_name_norm
+    ):
         # One missing: no penalty, note it
-        reasons.append(Reason(
-            clue="FATHER_NAME_MISMATCH",
-            direction="AGAINST",
-            weight=0.0,
-            detail="father's name missing in one record",
-        ))
+        reasons.append(
+            Reason(
+                clue="FATHER_NAME_MISMATCH",
+                direction="AGAINST",
+                weight=0.0,
+                detail="father's name missing in one record",
+            )
+        )
 
     # ── Age ──────────────────────────────────────────────────────────────
     if a.age is not None and b.age is not None:
         age_diff = abs(a.age - b.age)
         if age_diff <= 2:
             w = weights.get("age_within_2", 0.05)
-            reasons.append(Reason(
-                clue="AGE_MATCH",
-                direction="FOR",
-                weight=w,
-                detail=f"age {a.age} vs {b.age} (diff={age_diff})",
-            ))
+            reasons.append(
+                Reason(
+                    clue="AGE_MATCH",
+                    direction="FOR",
+                    weight=w,
+                    detail=f"age {a.age} vs {b.age} (diff={age_diff})",
+                )
+            )
         elif age_diff > 5:
             w = weights.get("age_differ_5", -0.20)
-            reasons.append(Reason(
-                clue="AGE_CONFLICT",
-                direction="AGAINST",
-                weight=w,
-                detail=f"age {a.age} vs {b.age} (diff={age_diff})",
-            ))
+            reasons.append(
+                Reason(
+                    clue="AGE_CONFLICT",
+                    direction="AGAINST",
+                    weight=w,
+                    detail=f"age {a.age} vs {b.age} (diff={age_diff})",
+                )
+            )
 
     # ── Same district ────────────────────────────────────────────────────
     if a.district and b.district and a.district.lower() == b.district.lower():
         w = weights.get("same_district", 0.05)
-        reasons.append(Reason(
-            clue="SAME_DISTRICT",
-            direction="FOR",
-            weight=w,
-            detail=f"both in {a.district}",
-        ))
+        reasons.append(
+            Reason(
+                clue="SAME_DISTRICT",
+                direction="FOR",
+                weight=w,
+                detail=f"both in {a.district}",
+            )
+        )
 
     # ── Name-only penalty ────────────────────────────────────────────────
     # Different phone AND different district AND name-only match
     if not has_strong_id:
         different_phone = not shared_phones and (a.phones or b.phones)
-        different_district = (
-            a.district and b.district
-            and a.district.lower() != b.district.lower()
-        )
+        different_district = a.district and b.district and a.district.lower() != b.district.lower()
         name_only = any(r.clue == "NAME_SIMILARITY" for r in reasons)
         if name_only and (different_phone or different_district):
             w = weights.get("name_only_penalty", -0.15)
-            reasons.append(Reason(
-                clue="NAME_ONLY_PENALTY",
-                direction="AGAINST",
-                weight=w,
-                detail="name match only with different phone/district",
-            ))
+            reasons.append(
+                Reason(
+                    clue="NAME_ONLY_PENALTY",
+                    direction="AGAINST",
+                    weight=w,
+                    detail="name match only with different phone/district",
+                )
+            )
 
     # ── Common-name guard ────────────────────────────────────────────────
     is_common_name = False
@@ -237,6 +269,7 @@ def score_pair(
 
 # ── Apply hard rules and decisions ──────────────────────────────────────────
 
+
 def apply_hard_rules(
     score: float,
     reasons: list[Reason],
@@ -257,23 +290,14 @@ def apply_hard_rules(
     common_name_threshold = cfg.get("name_similarity", {}).get("common_name_threshold", 5)
 
     has_strong_id = any(
-        r.clue in ("SHARED_PHONE", "SHARED_ACCOUNT", "SHARED_VEHICLE")
-        and r.direction == "FOR"
+        r.clue in ("SHARED_PHONE", "SHARED_ACCOUNT", "SHARED_VEHICLE") and r.direction == "FOR"
         for r in reasons
     )
     has_name_match = any(
-        r.clue in ("NAME_SIMILARITY", "ALIAS_MATCH")
-        and r.direction == "FOR"
-        for r in reasons
+        r.clue in ("NAME_SIMILARITY", "ALIAS_MATCH") and r.direction == "FOR" for r in reasons
     )
-    has_father_match = any(
-        r.clue == "FATHER_NAME_MATCH" and r.direction == "FOR"
-        for r in reasons
-    )
-    same_district = any(
-        r.clue == "SAME_DISTRICT" and r.direction == "FOR"
-        for r in reasons
-    )
+    has_father_match = any(r.clue == "FATHER_NAME_MATCH" and r.direction == "FOR" for r in reasons)
+    same_district = any(r.clue == "SAME_DISTRICT" and r.direction == "FOR" for r in reasons)
 
     # Common name check
     is_common = False
@@ -283,12 +307,20 @@ def apply_hard_rules(
 
     # ── Hard rule: same record, different name → never merge ─────────────
     if a.record_id == b.record_id and a.name_norm != b.name_norm:
-        return 0.0, "SEPARATE", "ACTIVE", reasons + [Reason(
-            clue="SAME_RECORD_DIFFERENT_NAME",
-            direction="AGAINST",
-            weight=-1.0,
-            detail=f"same record {a.record_id}, different names",
-        )]
+        return (
+            0.0,
+            "SEPARATE",
+            "ACTIVE",
+            reasons
+            + [
+                Reason(
+                    clue="SAME_RECORD_DIFFERENT_NAME",
+                    direction="AGAINST",
+                    weight=-1.0,
+                    detail=f"same record {a.record_id}, different names",
+                )
+            ],
+        )
 
     # ── Hard rule: name-only never AUTO ──────────────────────────────────
     # AUTO requires at least one strong identifier, or name + father + same area
@@ -301,30 +333,48 @@ def apply_hard_rules(
     # ── Hard rule: common name guard ─────────────────────────────────────
     if is_common and not has_strong_id:
         score = min(score, auto_threshold - 0.01)
-        reasons = reasons + [Reason(
-            clue="COMMON_NAME_GUARD",
-            direction="AGAINST",
-            weight=0.0,
-            detail=f"common name, requires strong identifier for AUTO",
-        )]
+        reasons = reasons + [
+            Reason(
+                clue="COMMON_NAME_GUARD",
+                direction="AGAINST",
+                weight=0.0,
+                detail="common name, requires strong identifier for AUTO",
+            )
+        ]
 
     # ── Decisions: must-link / cannot-link ───────────────────────────────
     decision = decisions_map.get(link_key)
     if decision:
         if decision.decision in ("REJECT", "UNLINK"):
-            return 0.0, "SEPARATE", "UNLINKED", reasons + [Reason(
-                clue="DECISION_CANNOT_LINK",
-                direction="AGAINST",
-                weight=-1.0,
-                detail=f"rejected/unlinked by {decision.actor}: {decision.reason}",
-            )]
+            return (
+                0.0,
+                "SEPARATE",
+                "UNLINKED",
+                reasons
+                + [
+                    Reason(
+                        clue="DECISION_CANNOT_LINK",
+                        direction="AGAINST",
+                        weight=-1.0,
+                        detail=f"rejected/unlinked by {decision.actor}: {decision.reason}",
+                    )
+                ],
+            )
         elif decision.decision == "CONFIRM":
-            return max(score, auto_threshold), "AUTO", "ACTIVE", reasons + [Reason(
-                clue="DECISION_MUST_LINK",
-                direction="FOR",
-                weight=0.0,
-                detail=f"confirmed by {decision.actor}: {decision.reason}",
-            )]
+            return (
+                max(score, auto_threshold),
+                "AUTO",
+                "ACTIVE",
+                reasons
+                + [
+                    Reason(
+                        clue="DECISION_MUST_LINK",
+                        direction="FOR",
+                        weight=0.0,
+                        detail=f"confirmed by {decision.actor}: {decision.reason}",
+                    )
+                ],
+            )
 
     # ── Determine band ───────────────────────────────────────────────────
     if score >= auto_threshold:
@@ -341,6 +391,7 @@ def apply_hard_rules(
 
 
 # ── Score all candidate pairs ────────────────────────────────────────────────
+
 
 def score_all_pairs(
     candidate_pairs: list[tuple[str, str]],
@@ -393,9 +444,9 @@ def score_all_pairs(
         pair_key = f"{a_id}|{b_id}"
         reverse_key = f"{b_id}|{a_id}"
         decision_for_pair = None
-        for d in (decisions or []):
+        for d in decisions or []:
             # Match decisions against the mention pair
-            if hasattr(d, '_pair_key'):
+            if hasattr(d, "_pair_key"):
                 if d._pair_key in (pair_key, reverse_key):
                     decision_for_pair = d
                     break
@@ -404,7 +455,14 @@ def score_all_pairs(
             decisions_map[link_id] = decision_for_pair
 
         final_score, band, status, final_reasons = apply_hard_rules(
-            raw_score, reasons, a, b, cfg, name_freq, decisions_map, link_id,
+            raw_score,
+            reasons,
+            a,
+            b,
+            cfg,
+            name_freq,
+            decisions_map,
+            link_id,
         )
 
         # Only keep AUTO and REVIEW links (and SEPARATE with decisions)
@@ -412,17 +470,19 @@ def score_all_pairs(
         if band == "SEPARATE" and not keep_separate and status != "UNLINKED":
             continue
 
-        links.append(Link(
-            link_id=link_id,
-            a_mention_id=a_id,
-            b_mention_id=b_id,
-            score=round(final_score, 4),
-            band=band,
-            reasons=final_reasons,
-            explanation_text="",  # filled by explain module
-            explanation_source="TEMPLATE",
-            status=status,
-        ))
+        links.append(
+            Link(
+                link_id=link_id,
+                a_mention_id=a_id,
+                b_mention_id=b_id,
+                score=round(final_score, 4),
+                band=band,
+                reasons=final_reasons,
+                explanation_text="",  # filled by explain module
+                explanation_source="TEMPLATE",
+                status=status,
+            )
+        )
 
     logger.info(
         f"Scored {len(candidate_pairs)} pairs → "

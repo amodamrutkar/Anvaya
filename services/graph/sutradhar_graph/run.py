@@ -14,17 +14,15 @@ Generates artifacts/graph:
 
 import argparse
 import json
-import os
-import sys
 from pathlib import Path
 from typing import Any
 
+from .bridges import detect_bridges
 from .build import GraphBuilder
 from .communities import detect_communities
-from .roles import detect_roles
-from .bridges import detect_bridges
-from .mule import trace_mule_chains
 from .dossier import generate_dossier, load_dossier_rules
+from .mule import trace_mule_chains
+from .roles import detect_roles
 
 
 def _write_json(path: Path, data: Any) -> None:
@@ -33,10 +31,12 @@ def _write_json(path: Path, data: Any) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def run_pipeline(data_dir: str | Path,
-                 er_dir: str | Path | None = None,
-                 out_dir: str | Path = "artifacts/graph",
-                 seed: int = 42) -> dict[str, Any]:
+def run_pipeline(
+    data_dir: str | Path,
+    er_dir: str | Path | None = None,
+    out_dir: str | Path = "artifacts/graph",
+    seed: int = 42,
+) -> dict[str, Any]:
     """
     Execute full graph construction, community detection, role assignment,
     mule tracing, bridge detection, and dossier generation.

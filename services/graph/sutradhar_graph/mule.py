@@ -11,13 +11,13 @@ with full audit reasons.
 from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Any
+
 import networkx as nx
 
 from .models import AccountClass, MuleAccountModel, MuleChainModel, MuleTransferEdge
 
 
-def trace_mule_chains(graph_data: dict[str, Any],
-                      data_dir: Any = None) -> list[MuleChainModel]:
+def trace_mule_chains(graph_data: dict[str, Any], data_dir: Any = None) -> list[MuleChainModel]:
     """
     Trace layered mule accounts and classify accounts with explainable evidence.
 
@@ -76,13 +76,15 @@ def trace_mule_chains(graph_data: dict[str, Any],
             pass
 
         G_tx.add_edge(src, tgt, amount=amt, ts=ts_str, channel=channel)
-        transfer_details.append({
-            "from_account": src.replace("ACCOUNT:", ""),
-            "to_account": tgt.replace("ACCOUNT:", ""),
-            "amount": amt,
-            "ts": ts_str,
-            "channel": channel,
-        })
+        transfer_details.append(
+            {
+                "from_account": src.replace("ACCOUNT:", ""),
+                "to_account": tgt.replace("ACCOUNT:", ""),
+                "amount": amt,
+                "ts": ts_str,
+                "channel": channel,
+            }
+        )
 
     # Step 2: Identify Layer 1 Accounts (Victim-Receiving Inflow Nodes)
     # Layer 1 = nodes with complaint counts > 0 or with in-degree == 0 / receiving first victim funds
@@ -96,7 +98,9 @@ def trace_mule_chains(graph_data: dict[str, Any],
 
     if not layer1_nodes:
         # Fallback: take nodes with out_degree > 0
-        layer1_nodes = {n for n in G_tx.nodes() if G_tx.out_degree(n) > 0 and G_tx.in_degree(n) == 0}
+        layer1_nodes = {
+            n for n in G_tx.nodes() if G_tx.out_degree(n) > 0 and G_tx.in_degree(n) == 0
+        }
     if not layer1_nodes:
         layer1_nodes = set(list(G_tx.nodes())[:1])
 
@@ -145,7 +149,10 @@ def trace_mule_chains(graph_data: dict[str, Any],
         ts_list = sorted(account_timestamps.get(anid, []))
         passthrough_min = 15.0
         if len(ts_list) >= 2:
-            deltas = [(ts_list[k + 1] - ts_list[k]).total_seconds() / 60.0 for k in range(len(ts_list) - 1)]
+            deltas = [
+                (ts_list[k + 1] - ts_list[k]).total_seconds() / 60.0
+                for k in range(len(ts_list) - 1)
+            ]
             deltas = [d for d in deltas if d >= 0]
             if deltas:
                 deltas.sort()
@@ -187,7 +194,9 @@ def trace_mule_chains(graph_data: dict[str, Any],
         elif org_score <= 0.35 and layer <= 2:
             classification = "LIKELY_DECEIVED"
             score = round(1.0 - org_score, 2)
-            reasons.append("Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate")
+            reasons.append(
+                "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+            )
         else:
             classification = "UNCERTAIN"
             score = round(org_score, 2)
