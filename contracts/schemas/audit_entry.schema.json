@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "audit_entry.schema.json",
+  "title": "AuditEntry",
+  "description": "A hash-chained audit log entry.",
+  "type": "object",
+  "required": ["seq", "ts", "actor", "role", "action", "summary", "prev_hash", "hash"],
+  "properties": {
+    "seq": {"type": "integer", "minimum": 1},
+    "ts": {"type": "string", "format": "date-time"},
+    "actor": {"type": "string"},
+    "role": {"type": "string", "enum": ["ANALYST", "INSPECTOR", "APPROVING_OFFICER", "LIAISON", "AUDITOR", "SYSTEM"]},
+    "action": {"type": "string"},
+    "purpose": {"type": ["string", "null"], "enum": ["INVESTIGATION", "ALERT_VERIFICATION", "AUDIT", null]},
+    "case_ref": {"type": ["string", "null"]},
+    "summary": {"type": "string"},
+    "prev_hash": {"type": "string"},
+    "hash": {"type": "string"}
+  }
+}

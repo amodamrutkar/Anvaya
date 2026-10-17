@@ -1,0 +1,23 @@
+# Dev dependencies shared across the repo workspace.
+# Install with: pip install -r requirements-dev.txt
+# Owned by M4.
+
+# --- Linting / Formatting ---
+ruff>=0.3.0
+
+# --- Type checking ---
+mypy>=1.8.0
+
+# --- Testing ---
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
+httpx>=0.27.0
+
+# --- Pre-commit ---
+pre-commit>=3.6.0
+
+# --- API dev extras ---
+fastapi>=0.110.0
+uvicorn[standard]>=0.29.0
+pydantic>=2.6.0
+python-dotenv>=1.0.0

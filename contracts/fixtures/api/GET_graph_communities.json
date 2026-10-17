@@ -1,0 +1,26 @@
+[
+  {
+    "community_id": "COM-001",
+    "label": "Cyber-fraud mule ring (suspected)",
+    "size": 12,
+    "crime_types": ["CYBER_FRAUD"],
+    "districts": ["Pune", "Mumbai Suburban"],
+    "agencies": ["MAHA_CYBER"],
+    "cohesion": 0.68,
+    "first_activity": "2024-01-10",
+    "last_activity": "2026-09-15",
+    "case_ids": ["CASE-CYB-000011"]
+  },
+  {
+    "community_id": "COM-002",
+    "label": "Urban extortion gang (suspected)",
+    "size": 9,
+    "crime_types": ["EXTORTION", "CYBER_FRAUD", "NARCOTICS"],
+    "districts": ["Thane", "Pune", "Mumbai Suburban"],
+    "agencies": ["STATE_POLICE", "MAHA_CYBER", "CENTRAL_AGENCY"],
+    "cohesion": 0.71,
+    "first_activity": "2023-02-10",
+    "last_activity": "2026-08-01",
+    "case_ids": ["CASE-SPO-000031"]
+  }
+]

@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "metrics.schema.json",
+  "title": "Metrics",
+  "description": "Evaluation metrics output from sutradhar_eval.",
+  "type": "object",
+  "required": ["dataset_version", "er", "network", "mule"],
+  "properties": {
+    "dataset_version": {"type": "string"},
+    "er": {
+      "type": "object",
+      "properties": {
+        "auto_precision": {"type": "number"},
+        "auto_recall": {"type": "number"},
+        "overall_recall": {"type": "number"},
+        "wrong_merge_rate": {"type": "number"},
+        "review_share": {"type": "number"}
+      }
+    },
+    "network": {
+      "type": "object",
+      "properties": {
+        "planted": {"type": "integer"},
+        "recovered": {"type": "integer"},
+        "bridges_found": {"type": "integer"},
+        "bridges_planted": {"type": "integer"}
+      }
+    },
+    "mule": {
+      "type": "object",
+      "properties": {
+        "max_depth": {"type": "integer"},
+        "recruiter_detected": {"type": "boolean"},
+        "deceived_precision": {"type": "number"}
+      }
+    },
+    "time_saved": {"type": "object"}
+  }
+}

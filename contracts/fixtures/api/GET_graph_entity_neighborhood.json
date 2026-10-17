@@ -1,0 +1,1 @@
+{"nodes": [{"id": "P-000045", "type": "PERSON"}, {"id": "P-000050", "type": "PERSON"}], "edges": [{"edge_id": "E-000100", "source": "P-000045", "target": "P-000050", "type": "CO_ACCUSED_WITH", "strength": "STRONG", "evidence": ["R-SPO-000123"], "confidence": 0.91, "weight": null}]}
