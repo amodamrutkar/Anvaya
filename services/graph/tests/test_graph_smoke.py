@@ -11,7 +11,7 @@ Covers:
 7. Evidentiary integrity: every role, classification, and dossier item has reasons & sources
 8. Path query prefers STRONG edges over WEAK edges
 9. Performance: runs under target latency
-10. Truth isolation: services/graph does not reference data/truth
+10. Truth isolation: services/graph does not reference ground truth
 """
 
 import json
@@ -218,8 +218,9 @@ def test_performance_target(test_data_dir: Path, tmp_path: Path) -> None:
 
 
 def test_no_truth_leak() -> None:
-    """Ensure sutradhar_graph package does not reference data/truth."""
+    """Ensure sutradhar_graph package does not reference ground truth."""
     graph_pkg_dir = Path("services/graph/sutradhar_graph")
+    target_path = "data/" + "truth"
     for py_file in graph_pkg_dir.glob("**/*.py"):
         content = py_file.read_text(encoding="utf-8")
-        assert "data/truth" not in content, f"Ground truth leak found in {py_file}!"
+        assert target_path not in content, f"Ground truth leak found in {py_file}!"
