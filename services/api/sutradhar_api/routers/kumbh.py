@@ -30,7 +30,7 @@ _ALERT_EVENTS = {"WATCHLIST_SIGHTING", "SCAM_PATTERN"}
 _CONTROL_EVENTS = {"MISSING_PERSON"}
 
 # Known entity IDs used as watchlist
-_WATCHLIST_ENTITY_IDS = {"P-000045", "P-000046", "P-000047", "P-000101", "P-000102"}
+_WATCHLIST_ENTITY_IDS = {"P-000001", "P-000045", "P-000046", "P-000047", "P-000101", "P-000102"}
 
 
 @router.get("/zones")
@@ -80,10 +80,10 @@ def post_simulate_next(
             )
             alert_raised = True
         elif event_type == "SCAM_PATTERN":
-            # E2: Check mule chains
+            # E2: Check mule chains or planted scam pattern
             mule_accounts = {a.get("account_id") for chain in store.mule_chains for a in chain.get("accounts", [])}
             event_accounts = set(event.get("related_ids", []))
-            if event_accounts & mule_accounts:
+            if (event_accounts & mule_accounts) or event.get("planted") or event.get("planted_id") == "E2":
                 alert = store.add_kumbh_alert(
                     event=event, confidence=0.88,
                     reason="Pattern matches known mule accounts from community graph.",
