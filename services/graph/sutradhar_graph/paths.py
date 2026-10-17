@@ -8,6 +8,7 @@ Used by Backend and UI:
 """
 
 from typing import Any
+
 import networkx as nx
 
 
@@ -34,13 +35,10 @@ def neighborhood(graph_data: dict[str, Any], entity_id: str, hops: int = 1) -> d
     # Calculate k-hop nodes using ego_graph or single_source_shortest_path_length
     sub_node_ids = set(nx.single_source_shortest_path_length(G, entity_id, cutoff=hops).keys())
 
-    sub_nodes = [nodes_map[nid] for nid in sorted(list(sub_node_ids)) if nid in nodes_map]
+    sub_nodes = [nodes_map[nid] for nid in sorted(sub_node_ids) if nid in nodes_map]
 
     # Collect edges where both endpoints are in sub_nodes
-    sub_edges = [
-        e for e in edges
-        if e["source"] in sub_node_ids and e["target"] in sub_node_ids
-    ]
+    sub_edges = [e for e in edges if e["source"] in sub_node_ids and e["target"] in sub_node_ids]
 
     return {
         "nodes": sub_nodes,
@@ -109,15 +107,17 @@ def shortest_path(graph_data: dict[str, Any], a: str, b: str) -> dict[str, Any]:
         for i in range(len(path_nodes) - 1):
             u, v = path_nodes[i], path_nodes[i + 1]
             e_info = G[u][v]["edge_info"]
-            traversed_edges.append({
-                "id": e_info.get("id"),
-                "source": e_info.get("source"),
-                "target": e_info.get("target"),
-                "type": e_info.get("type"),
-                "strength": e_info.get("strength"),
-                "evidence": e_info.get("evidence", []),
-                "confidence": e_info.get("confidence", 1.0),
-            })
+            traversed_edges.append(
+                {
+                    "id": e_info.get("id"),
+                    "source": e_info.get("source"),
+                    "target": e_info.get("target"),
+                    "type": e_info.get("type"),
+                    "strength": e_info.get("strength"),
+                    "evidence": e_info.get("evidence", []),
+                    "confidence": e_info.get("confidence", 1.0),
+                }
+            )
 
         return {
             "found": True,

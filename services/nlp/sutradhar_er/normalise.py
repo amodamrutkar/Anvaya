@@ -13,7 +13,6 @@ from __future__ import annotations
 
 import re
 import unicodedata
-from typing import Optional
 
 # ── Devanagari detection ─────────────────────────────────────────────────────
 
@@ -54,23 +53,70 @@ def detect_language(text: str) -> str:
 # Basic Devanagari to Latin mapping covering common characters
 _DEVANAGARI_TO_LATIN: dict[str, str] = {
     # Vowels
-    "अ": "a", "आ": "aa", "इ": "i", "ई": "ii", "उ": "u", "ऊ": "uu",
-    "ऋ": "ri", "ए": "e", "ऐ": "ai", "ओ": "o", "औ": "au",
+    "अ": "a",
+    "आ": "aa",
+    "इ": "i",
+    "ई": "ii",
+    "उ": "u",
+    "ऊ": "uu",
+    "ऋ": "ri",
+    "ए": "e",
+    "ऐ": "ai",
+    "ओ": "o",
+    "औ": "au",
     # Vowel marks (matras)
-    "ा": "a", "ि": "i", "ी": "i", "ु": "u", "ू": "u",
-    "ृ": "ri", "े": "e", "ै": "ai", "ो": "o", "ौ": "au",
+    "ा": "a",
+    "ि": "i",
+    "ी": "i",
+    "ु": "u",
+    "ू": "u",
+    "ृ": "ri",
+    "े": "e",
+    "ै": "ai",
+    "ो": "o",
+    "ौ": "au",
     # Consonants
-    "क": "k", "ख": "kh", "ग": "g", "घ": "gh", "ङ": "ng",
-    "च": "ch", "छ": "chh", "ज": "j", "झ": "jh", "ञ": "ny",
-    "ट": "t", "ठ": "th", "ड": "d", "ढ": "dh", "ण": "n",
-    "त": "t", "थ": "th", "द": "d", "ध": "dh", "न": "n",
-    "प": "p", "फ": "ph", "ब": "b", "भ": "bh", "म": "m",
-    "य": "y", "र": "r", "ल": "l", "व": "v", "श": "sh",
-    "ष": "sh", "स": "s", "ह": "h",
+    "क": "k",
+    "ख": "kh",
+    "ग": "g",
+    "घ": "gh",
+    "ङ": "ng",
+    "च": "ch",
+    "छ": "chh",
+    "ज": "j",
+    "झ": "jh",
+    "ञ": "ny",
+    "ट": "t",
+    "ठ": "th",
+    "ड": "d",
+    "ढ": "dh",
+    "ण": "n",
+    "त": "t",
+    "थ": "th",
+    "द": "d",
+    "ध": "dh",
+    "न": "n",
+    "प": "p",
+    "फ": "ph",
+    "ब": "b",
+    "भ": "bh",
+    "म": "m",
+    "य": "y",
+    "र": "r",
+    "ल": "l",
+    "व": "v",
+    "श": "sh",
+    "ष": "sh",
+    "स": "s",
+    "ह": "h",
     "ळ": "l",  # Marathi-specific
-    "क्ष": "ksh", "त्र": "tr", "ज्ञ": "dny",  # conjuncts
+    "क्ष": "ksh",
+    "त्र": "tr",
+    "ज्ञ": "dny",  # conjuncts
     # Misc
-    "ं": "n", "ँ": "n", "ः": "h",
+    "ं": "n",
+    "ँ": "n",
+    "ः": "h",
     "्": "",  # halant — removes inherent 'a'
     "़": "",  # nukta
     "ॅ": "e",  # candra e
@@ -86,6 +132,7 @@ def transliterate_devanagari(text: str) -> str:
     """
     try:
         from indic_transliteration import sanscript
+
         trans = sanscript.transliterate(text, sanscript.DEVANAGARI, sanscript.ITRANS).lower()
         trans = trans.replace("~n", "n").replace(".n", "n").replace(".m", "m")
         parts = []
@@ -94,7 +141,7 @@ def transliterate_devanagari(text: str) -> str:
                 word = word[:-1]
             parts.append(word)
         return " ".join(parts)
-    except Exception:
+    except (ImportError, ValueError, TypeError, AttributeError):
         pass
 
     result: list[str] = []
@@ -142,183 +189,383 @@ def transliterate_devanagari(text: str) -> str:
 
 SURNAME_LEXICON: dict[str, str] = {
     # Canonical: "pavar" — the Pawar/Powar family
-    "pawar": "pavar", "powar": "pavar", "pavar": "pavar", "pawaar": "pavar",
-    "पवार": "pavar", "पोवार": "pavar", "पवर": "pavar",
+    "pawar": "pavar",
+    "powar": "pavar",
+    "pavar": "pavar",
+    "pawaar": "pavar",
+    "पवार": "pavar",
+    "पोवार": "pavar",
+    "पवर": "pavar",
     # Canonical: "jadhav"
-    "jadhav": "jadhav", "jadav": "jadhav", "yadav": "jadhav", "जाधव": "jadhav", "यादव": "jadhav",
+    "jadhav": "jadhav",
+    "jadav": "jadhav",
+    "yadav": "jadhav",
+    "जाधव": "jadhav",
+    "यादव": "jadhav",
     # Canonical: "shinde"
-    "shinde": "shinde", "shindey": "shinde", "sinde": "shinde", "शिंदे": "shinde", "शिन्दे": "shinde",
+    "shinde": "shinde",
+    "shindey": "shinde",
+    "sinde": "shinde",
+    "शिंदे": "shinde",
+    "शिन्दे": "shinde",
     # Canonical: "gaikwad"
-    "gaikwad": "gaikwad", "gaikawad": "gaikwad", "gaekwad": "gaikwad", "गायकवाड": "gaikwad", "गाइकवाड": "gaikwad",
+    "gaikwad": "gaikwad",
+    "gaikawad": "gaikwad",
+    "gaekwad": "gaikwad",
+    "गायकवाड": "gaikwad",
+    "गाइकवाड": "gaikwad",
     # Canonical: "kale"
-    "kale": "kale", "kaale": "kale", "काळे": "kale", "काले": "kale",
+    "kale": "kale",
+    "kaale": "kale",
+    "काळे": "kale",
+    "काले": "kale",
     # Canonical: "patil"
-    "patil": "patil", "patel": "patil", "paatil": "patil", "पाटील": "patil", "पटेल": "patil",
+    "patil": "patil",
+    "patel": "patil",
+    "paatil": "patil",
+    "पाटील": "patil",
+    "पटेल": "patil",
     # Canonical: "deshmukh"
-    "deshmukh": "deshmukh", "deshmukhh": "deshmukh", "देशमुख": "deshmukh",
+    "deshmukh": "deshmukh",
+    "deshmukhh": "deshmukh",
+    "देशमुख": "deshmukh",
     # Canonical: "kulkarni"
-    "kulkarni": "kulkarni", "kulkarnee": "kulkarni", "कुलकर्णी": "kulkarni",
+    "kulkarni": "kulkarni",
+    "kulkarnee": "kulkarni",
+    "कुलकर्णी": "kulkarni",
     # Canonical: "more"
-    "more": "more", "morey": "more", "मोरे": "more",
+    "more": "more",
+    "morey": "more",
+    "मोरे": "more",
     # Canonical: "bhosale"
-    "bhosale": "bhosale", "bhosle": "bhosale", "भोसले": "bhosale", "भोसळे": "bhosale",
+    "bhosale": "bhosale",
+    "bhosle": "bhosale",
+    "भोसले": "bhosale",
+    "भोसळे": "bhosale",
     # Canonical: "rathore"
-    "rathore": "rathore", "rathor": "rathore", "rathod": "rathore", "राठोर": "rathore", "राठोड": "rathore",
+    "rathore": "rathore",
+    "rathor": "rathore",
+    "rathod": "rathore",
+    "राठोर": "rathore",
+    "राठोड": "rathore",
     # Canonical: "chavan"
-    "chavan": "chavan", "chauhan": "chavan", "चव्हाण": "chavan", "चौहान": "chavan",
+    "chavan": "chavan",
+    "chauhan": "chavan",
+    "चव्हाण": "chavan",
+    "चौहान": "chavan",
     # Canonical: "kamble"
-    "kamble": "kamble", "kambale": "kamble", "कांबळे": "kamble", "कांबले": "kamble",
+    "kamble": "kamble",
+    "kambale": "kamble",
+    "कांबळे": "kamble",
+    "कांबले": "kamble",
     # Canonical: "solanke"
-    "solanke": "solanke", "solanki": "solanke", "सोळंके": "solanke", "सोलंकी": "solanke",
+    "solanke": "solanke",
+    "solanki": "solanke",
+    "सोळंके": "solanke",
+    "सोलंकी": "solanke",
     # Canonical: "nikam"
-    "nikam": "nikam", "nikkam": "nikam", "निकम": "nikam",
+    "nikam": "nikam",
+    "nikkam": "nikam",
+    "निकम": "nikam",
     # Canonical: "thorat"
-    "thorat": "thorat", "thoraat": "thorat", "थोरात": "thorat",
+    "thorat": "thorat",
+    "thoraat": "thorat",
+    "थोरात": "thorat",
     # Canonical: "ghodke"
-    "ghodke": "ghodke", "ghodkey": "ghodke", "घोडके": "ghodke",
+    "ghodke": "ghodke",
+    "ghodkey": "ghodke",
+    "घोडके": "ghodke",
     # Canonical: "waghmare"
-    "waghmare": "vaghmare", "vaghmare": "vaghmare", "waghamare": "vaghmare",
-    "वाघमारे": "vaghmare", "वाघमारे": "vaghmare",
+    "waghmare": "vaghmare",
+    "vaghmare": "vaghmare",
+    "waghamare": "vaghmare",
+    "वाघमारे": "vaghmare",
     # Canonical: "mane"
-    "mane": "mane", "maane": "mane", "माने": "mane",
+    "mane": "mane",
+    "maane": "mane",
+    "माने": "mane",
     # Canonical: "joshi"
-    "joshi": "joshi", "joshee": "joshi", "जोशी": "joshi",
+    "joshi": "joshi",
+    "joshee": "joshi",
+    "जोशी": "joshi",
     # Canonical: "deshpande"
-    "deshpande": "deshpande", "deshpandey": "deshpande", "देशपांडे": "deshpande",
+    "deshpande": "deshpande",
+    "deshpandey": "deshpande",
+    "देशपांडे": "deshpande",
     # Canonical: "sawant"
-    "sawant": "savant", "savant": "savant", "सावंत": "savant",
+    "sawant": "savant",
+    "savant": "savant",
+    "सावंत": "savant",
     # Canonical: "salunke"
-    "salunke": "salunke", "salunkhe": "salunke", "साळुंके": "salunke",
+    "salunke": "salunke",
+    "salunkhe": "salunke",
+    "साळुंके": "salunke",
     # Canonical: "londhe"
-    "londhe": "londhe", "londhey": "londhe", "लोंढे": "londhe",
+    "londhe": "londhe",
+    "londhey": "londhe",
+    "लोंढे": "londhe",
     # Canonical: "wagh"
-    "wagh": "vagh", "vagh": "vagh", "वाघ": "vagh",
+    "wagh": "vagh",
+    "vagh": "vagh",
+    "वाघ": "vagh",
     # Canonical: "shirke"
-    "shirke": "shirke", "shirkey": "shirke", "शिर्के": "shirke",
+    "shirke": "shirke",
+    "shirkey": "shirke",
+    "शिर्के": "shirke",
     # Canonical: "thakur"
-    "thakur": "thakur", "thakkar": "thakur", "ठाकूर": "thakur",
+    "thakur": "thakur",
+    "thakkar": "thakur",
+    "ठाकूर": "thakur",
     # Canonical: "ingale"
-    "ingale": "ingale", "ingaley": "ingale", "इंगळे": "ingale",
+    "ingale": "ingale",
+    "ingaley": "ingale",
+    "इंगळे": "ingale",
     # Canonical: "mhatre"
-    "mhatre": "mhatre", "mhatrey": "mhatre", "म्हात्रे": "mhatre",
+    "mhatre": "mhatre",
+    "mhatrey": "mhatre",
+    "म्हात्रे": "mhatre",
     # Canonical: "naik"
-    "naik": "naik", "nayak": "naik", "नाईक": "naik", "नायक": "naik",
+    "naik": "naik",
+    "nayak": "naik",
+    "नाईक": "naik",
+    "नायक": "naik",
     # Canonical: "gavhane"
-    "gavhane": "gavhane", "gawane": "gavhane", "गव्हाणे": "gavhane",
+    "gavhane": "gavhane",
+    "gawane": "gavhane",
+    "गव्हाणे": "gavhane",
     # Canonical: "lokhande"
-    "lokhande": "lokhande", "lokhandey": "lokhande", "लोखंडे": "lokhande",
+    "lokhande": "lokhande",
+    "lokhandey": "lokhande",
+    "लोखंडे": "lokhande",
     # Canonical: "parab"
-    "parab": "parab", "paraab": "parab", "पारब": "parab",
+    "parab": "parab",
+    "paraab": "parab",
+    "पारब": "parab",
     # Canonical: "suryavanshi"
-    "suryavanshi": "suryavanshi", "suryawanshi": "suryavanshi", "सूर्यवंशी": "suryavanshi",
+    "suryavanshi": "suryavanshi",
+    "suryawanshi": "suryavanshi",
+    "सूर्यवंशी": "suryavanshi",
     # Canonical: "kadam"
-    "kadam": "kadam", "kadaam": "kadam", "कदम": "kadam",
+    "kadam": "kadam",
+    "kadaam": "kadam",
+    "कदम": "kadam",
     # Canonical: "ghule"
-    "ghule": "ghule", "ghuley": "ghule", "घुले": "ghule",
+    "ghule": "ghule",
+    "ghuley": "ghule",
+    "घुले": "ghule",
     # Canonical: "bhor"
-    "bhor": "bhor", "bhoar": "bhor", "भोर": "bhor",
+    "bhor": "bhor",
+    "bhoar": "bhor",
+    "भोर": "bhor",
     # Canonical: "rane"
-    "rane": "rane", "raney": "rane", "राणे": "rane",
+    "rane": "rane",
+    "raney": "rane",
+    "राणे": "rane",
     # Canonical: "shelke"
-    "shelke": "shelke", "shelkey": "shelke", "शेळके": "shelke",
+    "shelke": "shelke",
+    "shelkey": "shelke",
+    "शेळके": "shelke",
     # Canonical: "dhage"
-    "dhage": "dhage", "dhagey": "dhage", "ढगे": "dhage",
+    "dhage": "dhage",
+    "dhagey": "dhage",
+    "ढगे": "dhage",
     # Canonical: "garje"
-    "garje": "garje", "garjey": "garje", "गर्जे": "garje",
+    "garje": "garje",
+    "garjey": "garje",
+    "गर्जे": "garje",
     # Canonical: "potdar"
-    "potdar": "potdar", "potdaar": "potdar", "पोतदार": "potdar",
+    "potdar": "potdar",
+    "potdaar": "potdar",
+    "पोतदार": "potdar",
     # Canonical: "khan"
-    "khan": "khan", "khaan": "khan", "खान": "khan",
+    "khan": "khan",
+    "khaan": "khan",
+    "खान": "khan",
     # Canonical: "shaikh"
-    "shaikh": "shaikh", "sheikh": "shaikh", "shaik": "shaikh", "शेख": "shaikh", "शैख": "shaikh",
+    "shaikh": "shaikh",
+    "sheikh": "shaikh",
+    "shaik": "shaikh",
+    "शेख": "shaikh",
+    "शैख": "shaikh",
     # Canonical: "syed"
-    "syed": "syed", "sayyed": "syed", "sayyad": "syed", "सय्यद": "syed",
+    "syed": "syed",
+    "sayyed": "syed",
+    "sayyad": "syed",
+    "सय्यद": "syed",
 }
 
 FIRST_NAME_LEXICON: dict[str, str] = {
     # Canonical: "rakesh"
-    "rakesh": "rakesh", "raakesh": "rakesh", "raksh": "rakesh",
-    "राकेश": "rakesh", "राकेष": "rakesh",
+    "rakesh": "rakesh",
+    "raakesh": "rakesh",
+    "raksh": "rakesh",
+    "राकेश": "rakesh",
+    "राकेष": "rakesh",
     # Canonical: "sachin"
-    "sachin": "sachin", "sacheen": "sachin", "सचिन": "sachin",
+    "sachin": "sachin",
+    "sacheen": "sachin",
+    "सचिन": "sachin",
     # Canonical: "nitin"
-    "nitin": "nitin", "nittin": "nitin", "नितिन": "nitin", "नितीन": "nitin",
+    "nitin": "nitin",
+    "nittin": "nitin",
+    "नितिन": "nitin",
+    "नितीन": "nitin",
     # Canonical: "anil"
-    "anil": "anil", "aneel": "anil", "अनिल": "anil",
+    "anil": "anil",
+    "aneel": "anil",
+    "अनिल": "anil",
     # Canonical: "prakash"
-    "prakash": "prakash", "prakaash": "prakash", "प्रकाश": "prakash",
+    "prakash": "prakash",
+    "prakaash": "prakash",
+    "प्रकाश": "prakash",
     # Canonical: "mahendra"
-    "mahendra": "mahendra", "mahendara": "mahendra", "महेंद्र": "mahendra", "महेन्द्र": "mahendra",
+    "mahendra": "mahendra",
+    "mahendara": "mahendra",
+    "महेंद्र": "mahendra",
+    "महेन्द्र": "mahendra",
     # Canonical: "sunil"
-    "sunil": "sunil", "suneel": "sunil", "सुनील": "sunil", "सुनिल": "sunil",
+    "sunil": "sunil",
+    "suneel": "sunil",
+    "सुनील": "sunil",
+    "सुनिल": "sunil",
     # Canonical: "ramesh"
-    "ramesh": "ramesh", "ramsh": "ramesh", "रमेश": "ramesh",
+    "ramesh": "ramesh",
+    "ramsh": "ramesh",
+    "रमेश": "ramesh",
     # Canonical: "rajesh"
-    "rajesh": "rajesh", "raajesh": "rajesh", "राजेश": "rajesh",
+    "rajesh": "rajesh",
+    "raajesh": "rajesh",
+    "राजेश": "rajesh",
     # Canonical: "vijay"
-    "vijay": "vijay", "vijaay": "vijay", "विजय": "vijay",
+    "vijay": "vijay",
+    "vijaay": "vijay",
+    "विजय": "vijay",
     # Canonical: "sanjay"
-    "sanjay": "sanjay", "sanjaay": "sanjay", "संजय": "sanjay",
+    "sanjay": "sanjay",
+    "sanjaay": "sanjay",
+    "संजय": "sanjay",
     # Canonical: "ganesh"
-    "ganesh": "ganesh", "ganeesh": "ganesh", "गणेश": "ganesh",
+    "ganesh": "ganesh",
+    "ganeesh": "ganesh",
+    "गणेश": "ganesh",
     # Canonical: "dagdu"
-    "dagdu": "dagdu", "dagadu": "dagdu", "दगडू": "dagdu", "दगडु": "dagdu",
+    "dagdu": "dagdu",
+    "dagadu": "dagdu",
+    "दगडू": "dagdu",
+    "दगडु": "dagdu",
     # Canonical: "bharat"
-    "bharat": "bharat", "bharaat": "bharat", "भारत": "bharat",
+    "bharat": "bharat",
+    "bharaat": "bharat",
+    "भारत": "bharat",
     # Canonical: "suresh"
-    "suresh": "suresh", "sureesh": "suresh", "सुरेश": "suresh",
+    "suresh": "suresh",
+    "sureesh": "suresh",
+    "सुरेश": "suresh",
     # Canonical: "manoj"
-    "manoj": "manoj", "maanuj": "manoj", "मनोज": "manoj",
+    "manoj": "manoj",
+    "maanuj": "manoj",
+    "मनोज": "manoj",
     # Canonical: "ashok"
-    "ashok": "ashok", "aashok": "ashok", "अशोक": "ashok",
+    "ashok": "ashok",
+    "aashok": "ashok",
+    "अशोक": "ashok",
     # Canonical: "dinesh"
-    "dinesh": "dinesh", "dineesh": "dinesh", "दिनेश": "dinesh",
+    "dinesh": "dinesh",
+    "dineesh": "dinesh",
+    "दिनेश": "dinesh",
     # Canonical: "pradeep"
-    "pradeep": "pradip", "pradip": "pradip", "प्रदीप": "pradip",
+    "pradeep": "pradip",
+    "pradip": "pradip",
+    "प्रदीप": "pradip",
     # Canonical: "deepak"
-    "deepak": "dipak", "dipak": "dipak", "दीपक": "dipak",
+    "deepak": "dipak",
+    "dipak": "dipak",
+    "दीपक": "dipak",
     # Canonical: "yogesh"
-    "yogesh": "yogesh", "yogeesh": "yogesh", "योगेश": "yogesh",
+    "yogesh": "yogesh",
+    "yogeesh": "yogesh",
+    "योगेश": "yogesh",
     # Canonical: "rahul"
-    "rahul": "rahul", "raahul": "rahul", "राहुल": "rahul",
+    "rahul": "rahul",
+    "raahul": "rahul",
+    "राहुल": "rahul",
     # Canonical: "amol"
-    "amol": "amol", "amool": "amol", "अमोल": "amol",
+    "amol": "amol",
+    "amool": "amol",
+    "अमोल": "amol",
     # Canonical: "tushar"
-    "tushar": "tushar", "tushaar": "tushar", "तुषार": "tushar",
+    "tushar": "tushar",
+    "tushaar": "tushar",
+    "तुषार": "tushar",
     # Canonical: "vishal"
-    "vishal": "vishal", "vishaal": "vishal", "विशाल": "vishal",
+    "vishal": "vishal",
+    "vishaal": "vishal",
+    "विशाल": "vishal",
     # Canonical: "sandip"
-    "sandip": "sandip", "sandeep": "sandip", "संदीप": "sandip",
+    "sandip": "sandip",
+    "sandeep": "sandip",
+    "संदीप": "sandip",
     # Canonical: "kiran"
-    "kiran": "kiran", "keeran": "kiran", "किरण": "kiran",
+    "kiran": "kiran",
+    "keeran": "kiran",
+    "किरण": "kiran",
     # Canonical: "ajay"
-    "ajay": "ajay", "ajaay": "ajay", "अजय": "ajay",
+    "ajay": "ajay",
+    "ajaay": "ajay",
+    "अजय": "ajay",
     # Canonical: "hemant"
-    "hemant": "hemant", "hemanta": "hemant", "हेमंत": "hemant",
+    "hemant": "hemant",
+    "hemanta": "hemant",
+    "हेमंत": "hemant",
     # Canonical: "milind"
-    "milind": "milind", "millind": "milind", "मिलिंद": "milind",
+    "milind": "milind",
+    "millind": "milind",
+    "मिलिंद": "milind",
     # Canonical: "balaji"
-    "balaji": "balaji", "baalaji": "balaji", "बालाजी": "balaji",
+    "balaji": "balaji",
+    "baalaji": "balaji",
+    "बालाजी": "balaji",
     # Canonical: "santosh"
-    "santosh": "santosh", "santoosh": "santosh", "संतोष": "santosh",
+    "santosh": "santosh",
+    "santoosh": "santosh",
+    "संतोष": "santosh",
     # Canonical: "pravin"
-    "pravin": "pravin", "praveen": "pravin", "प्रवीण": "pravin",
+    "pravin": "pravin",
+    "praveen": "pravin",
+    "प्रवीण": "pravin",
     # Canonical: "ravi"
-    "ravi": "ravi", "ravee": "ravi", "रवी": "ravi", "रवि": "ravi",
+    "ravi": "ravi",
+    "ravee": "ravi",
+    "रवी": "ravi",
+    "रवि": "ravi",
     # Canonical: "tanaji"
-    "tanaji": "tanaji", "taanaji": "tanaji", "तानाजी": "tanaji",
+    "tanaji": "tanaji",
+    "taanaji": "tanaji",
+    "तानाजी": "tanaji",
     # Canonical: "popat"
-    "popat": "popat", "poapat": "popat", "पोपट": "popat",
+    "popat": "popat",
+    "poapat": "popat",
+    "पोपट": "popat",
     # Canonical: "ankush"
-    "ankush": "ankush", "ankuush": "ankush", "अंकुश": "ankush",
+    "ankush": "ankush",
+    "ankuush": "ankush",
+    "अंकुश": "ankush",
     # Canonical: "arvind"
-    "arvind": "arvind", "aravind": "arvind", "अरविंद": "arvind",
+    "arvind": "arvind",
+    "aravind": "arvind",
+    "अरविंद": "arvind",
     # Canonical: "dattatray"
-    "dattatray": "dattatray", "dattatrey": "dattatray", "दत्तात्रय": "dattatray",
+    "dattatray": "dattatray",
+    "dattatrey": "dattatray",
+    "दत्तात्रय": "dattatray",
     # Canonical: "mohan"
-    "mohan": "mohan", "mohaan": "mohan", "मोहन": "mohan",
+    "mohan": "mohan",
+    "mohaan": "mohan",
+    "मोहन": "mohan",
     # Canonical: "narayan"
-    "narayan": "narayan", "naraayan": "narayan", "नारायण": "narayan",
+    "narayan": "narayan",
+    "naraayan": "narayan",
+    "नारायण": "narayan",
 }
 
 # Combined name lexicon (first + surname)
@@ -328,8 +575,20 @@ _NAME_LEXICON = {**SURNAME_LEXICON, **FIRST_NAME_LEXICON}
 # ── Honorifics ───────────────────────────────────────────────────────────────
 
 _HONORIFICS_SET = {
-    "shri", "shree", "smt", "mr", "mrs", "ms", "dr", "prof",
-    "श्री", "श्रीमती", "श्रीम", "सौ", "कु", "मा",
+    "shri",
+    "shree",
+    "smt",
+    "mr",
+    "mrs",
+    "ms",
+    "dr",
+    "prof",
+    "श्री",
+    "श्रीमती",
+    "श्रीम",
+    "सौ",
+    "कु",
+    "मा",
 }
 
 _INITIAL_PATTERN = re.compile(r"\b([A-Za-z])\.\s*")  # "R. " or "D. "
@@ -345,9 +604,9 @@ _EQUIVALENCES: list[tuple[str, str]] = [
     ("uu", "u"),
     ("ph", "f"),
     ("w", "v"),
-    ("sh", "sh"),   # keep 'sh' as-is
+    ("sh", "sh"),  # keep 'sh' as-is
     ("chh", "ch"),
-    ("th", "th"),   # keep 'th' — common in Indian names
+    ("th", "th"),  # keep 'th' — common in Indian names
     ("dh", "dh"),
     ("bh", "bh"),
     ("gh", "gh"),
@@ -370,6 +629,7 @@ def _apply_equivalences(text: str) -> str:
 
 
 # ── Public API ───────────────────────────────────────────────────────────────
+
 
 def normalise_name(raw: str) -> str:
     """Normalise a person name to a canonical Latin form.

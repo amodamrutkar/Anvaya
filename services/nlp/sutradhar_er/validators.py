@@ -17,6 +17,7 @@ _VEHICLE_RE = re.compile(r"^[A-Z]{2}\d{2}[A-Z]{1,3}\d{4}$")
 @dataclass
 class ValidationStats:
     """Counts of accepted vs rejected values per field type."""
+
     accepted: int = 0
     rejected: int = 0
     rejected_values: list[str] = field(default_factory=list)

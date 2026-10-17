@@ -17,7 +17,6 @@ from typing import Any
 
 from .models import Mention, SourceRecord
 from .normalise import (
-    detect_language,
     detect_script,
     expand_aliases,
     normalise_father_name,
@@ -66,6 +65,7 @@ _VEHICLE_NARRATIVE = re.compile(
 
 # ── Form field extraction ───────────────────────────────────────────────────
 
+
 def _extract_from_form_fields(
     record: SourceRecord,
     mention_counter: list[int],
@@ -107,26 +107,28 @@ def _extract_from_form_fields(
         if alias_raw:
             raw_aliases = expand_aliases(str(alias_raw))
 
-        mentions.append(Mention(
-            mention_id=mid,
-            record_id=record.record_id,
-            agency=record.agency,
-            role="ACCUSED",
-            name_raw=name_raw,
-            name_norm=normalise_name(name_raw),
-            name_script=detect_script(name_raw),
-            father_name_raw=acc.get("father_name", ""),
-            father_name_norm=normalise_father_name(acc.get("father_name", "")),
-            age=acc.get("age"),
-            address_raw=acc.get("address", ""),
-            district=record.district or acc.get("district", ""),
-            phones=valid_phones,
-            accounts=[],
-            vehicles=valid_vehicles,
-            aliases=raw_aliases,
-            extraction_method="FORM",
-            extraction_confidence=0.99,
-        ))
+        mentions.append(
+            Mention(
+                mention_id=mid,
+                record_id=record.record_id,
+                agency=record.agency,
+                role="ACCUSED",
+                name_raw=name_raw,
+                name_norm=normalise_name(name_raw),
+                name_script=detect_script(name_raw),
+                father_name_raw=acc.get("father_name", ""),
+                father_name_norm=normalise_father_name(acc.get("father_name", "")),
+                age=acc.get("age"),
+                address_raw=acc.get("address", ""),
+                district=record.district or acc.get("district", ""),
+                phones=valid_phones,
+                accounts=[],
+                vehicles=valid_vehicles,
+                aliases=raw_aliases,
+                extraction_method="FORM",
+                extraction_confidence=0.99,
+            )
+        )
 
     # Complainant
     complainant = form.get("complainant")
@@ -138,26 +140,28 @@ def _extract_from_form_fields(
             raw_phones.append(str(complainant["phone"]))
         valid_phones = validate_batch(raw_phones, validate_phone, phone_stats)
 
-        mentions.append(Mention(
-            mention_id=mid,
-            record_id=record.record_id,
-            agency=record.agency,
-            role="COMPLAINANT",
-            name_raw=complainant["name"],
-            name_norm=normalise_name(complainant["name"]),
-            name_script=detect_script(complainant["name"]),
-            father_name_raw=complainant.get("father_name", ""),
-            father_name_norm=normalise_father_name(complainant.get("father_name", "")),
-            age=complainant.get("age"),
-            address_raw=complainant.get("address", ""),
-            district=record.district,
-            phones=valid_phones,
-            accounts=[],
-            vehicles=[],
-            aliases=[],
-            extraction_method="FORM",
-            extraction_confidence=0.99,
-        ))
+        mentions.append(
+            Mention(
+                mention_id=mid,
+                record_id=record.record_id,
+                agency=record.agency,
+                role="COMPLAINANT",
+                name_raw=complainant["name"],
+                name_norm=normalise_name(complainant["name"]),
+                name_script=detect_script(complainant["name"]),
+                father_name_raw=complainant.get("father_name", ""),
+                father_name_norm=normalise_father_name(complainant.get("father_name", "")),
+                age=complainant.get("age"),
+                address_raw=complainant.get("address", ""),
+                district=record.district,
+                phones=valid_phones,
+                accounts=[],
+                vehicles=[],
+                aliases=[],
+                extraction_method="FORM",
+                extraction_confidence=0.99,
+            )
+        )
 
     # Record-level phones (attach to all accused in this record as extra identifiers)
     record_phones = form.get("phones", [])
@@ -203,6 +207,7 @@ def _extract_from_form_fields(
 
 
 # ── Narrative regex extraction ───────────────────────────────────────────────
+
 
 def _extract_from_narrative(
     record: SourceRecord,
@@ -255,9 +260,32 @@ def _extract_from_narrative(
 
     # Narrative stop words indicating continuation of sentence rather than name
     stop_words = {
-        "यांनी", "याने", "यांच्या", "यावर", "आहे", "होता", "केली", "मागितली", "केले", "दाखल",
-        "contacted", "victims", "victim", "police", "station", "officer", "using", "phone",
-        "account", "dated", "arrested", "seized", "reported", "alleged", "stated", "विरुद्ध",
+        "यांनी",
+        "याने",
+        "यांच्या",
+        "यावर",
+        "आहे",
+        "होता",
+        "केली",
+        "मागितली",
+        "केले",
+        "दाखल",
+        "contacted",
+        "victims",
+        "victim",
+        "police",
+        "station",
+        "officer",
+        "using",
+        "phone",
+        "account",
+        "dated",
+        "arrested",
+        "seized",
+        "reported",
+        "alleged",
+        "stated",
+        "विरुद्ध",
     }
 
     # Extract names (accused/suspect cues)
@@ -278,31 +306,34 @@ def _extract_from_narrative(
         mention_counter[0] += 1
         mid = f"M-{record.record_id}-{mention_counter[0]}"
 
-        mentions.append(Mention(
-            mention_id=mid,
-            record_id=record.record_id,
-            agency=record.agency,
-            role="ACCUSED",
-            name_raw=name_raw,
-            name_norm=normalise_name(name_raw),
-            name_script=detect_script(name_raw),
-            father_name_raw="",
-            father_name_norm="",
-            age=None,
-            address_raw="",
-            district=record.district,
-            phones=phones_found[:],
-            accounts=accounts_found[:],
-            vehicles=vehicles_found[:],
-            aliases=[],
-            extraction_method="REGEX",
-            extraction_confidence=0.70,
-        ))
+        mentions.append(
+            Mention(
+                mention_id=mid,
+                record_id=record.record_id,
+                agency=record.agency,
+                role="ACCUSED",
+                name_raw=name_raw,
+                name_norm=normalise_name(name_raw),
+                name_script=detect_script(name_raw),
+                father_name_raw="",
+                father_name_norm="",
+                age=None,
+                address_raw="",
+                district=record.district,
+                phones=phones_found[:],
+                accounts=accounts_found[:],
+                vehicles=vehicles_found[:],
+                aliases=[],
+                extraction_method="REGEX",
+                extraction_confidence=0.70,
+            )
+        )
 
     return mentions
 
 
 # ── LLM extraction (optional, behind LLM_PROVIDER) ──────────────────────────
+
 
 def _extract_with_llm(
     record: SourceRecord,
@@ -335,26 +366,31 @@ def _extract_with_llm(
         for cm in cached.get("mentions", []):
             mention_counter[0] += 1
             mid = f"M-{record.record_id}-{mention_counter[0]}"
-            mentions.append(Mention(
-                mention_id=mid,
-                record_id=record.record_id,
-                agency=record.agency,
-                role=cm.get("role", "ACCUSED"),
-                name_raw=cm.get("name_raw", ""),
-                name_norm=normalise_name(cm.get("name_raw", "")),
-                name_script=detect_script(cm.get("name_raw", "")),
-                extraction_method="LLM",
-                extraction_confidence=0.80,
-                district=record.district,
-            ))
+            mentions.append(
+                Mention(
+                    mention_id=mid,
+                    record_id=record.record_id,
+                    agency=record.agency,
+                    role=cm.get("role", "ACCUSED"),
+                    name_raw=cm.get("name_raw", ""),
+                    name_norm=normalise_name(cm.get("name_raw", "")),
+                    name_script=detect_script(cm.get("name_raw", "")),
+                    extraction_method="LLM",
+                    extraction_confidence=0.80,
+                    district=record.district,
+                )
+            )
         return mentions
 
     # Actual LLM call would go here — stubbed for now
-    logger.info(f"LLM extraction not implemented for provider={provider}, record={record.record_id}")
+    logger.info(
+        f"LLM extraction not implemented for provider={provider}, record={record.record_id}"
+    )
     return []
 
 
 # ── Main extraction function ────────────────────────────────────────────────
+
 
 def extract_mentions(
     records: list[SourceRecord],
@@ -373,9 +409,6 @@ def extract_mentions(
     account_stats = ValidationStats()
 
     for record in sorted(records, key=lambda r: r.record_id):
-        # Reset per-record mention counter suffix
-        record_mention_start = mention_counter[0]
-
         # FORM extraction (highest priority)
         form_mentions = _extract_from_form_fields(
             record, mention_counter, phone_stats, vehicle_stats, account_stats
@@ -418,6 +451,7 @@ def extract_mentions(
 
 # ── Load records from disk ───────────────────────────────────────────────────
 
+
 def load_records(data_dir: Path) -> list[SourceRecord]:
     """Load source records from data/<version>/<AGENCY>/records.jsonl or directly."""
     records: list[SourceRecord] = []
@@ -449,7 +483,7 @@ def load_records(data_dir: Path) -> list[SourceRecord]:
                 try:
                     data = json.loads(line)
                     records.append(SourceRecord(**data))
-                except Exception as e:
+                except (json.JSONDecodeError, ValueError, TypeError) as e:
                     logger.warning(f"Skipping line {line_num} in {records_file}: {e}")
 
     logger.info(f"Loaded {len(records)} records from {data_dir}")

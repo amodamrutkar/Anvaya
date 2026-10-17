@@ -13,16 +13,12 @@ Verifies:
 
 import json
 import random
-import tempfile
 from pathlib import Path
-
-import pytest
 
 from sutradhar_data.entities import EntityGenerator
 from sutradhar_data.generate import generate_dataset
 from sutradhar_data.kumbh import generate_kumbh_events
-from sutradhar_data.noise import apply_noise
-from sutradhar_data.records import RecordEmitter, validate_slots
+from sutradhar_data.records import validate_slots
 
 
 def test_determinism(tmp_path: Path) -> None:
@@ -65,13 +61,15 @@ def test_collision_and_innocent_counts() -> None:
     eg = EntityGenerator(rng, version="v1")
     cast = eg.generate_planted_cast()
 
-    assert len(cast["collisions"]) >= 30, f"Expected >= 30 collisions, got {len(cast['collisions'])}"
+    assert len(cast["collisions"]) >= 30, (
+        f"Expected >= 30 collisions, got {len(cast['collisions'])}"
+    )
     assert len(cast["innocents"]) >= 10, f"Expected >= 10 innocents, got {len(cast['innocents'])}"
 
 
 def test_rakesh_pawar_multi_agency_renderings(tmp_path: Path) -> None:
     """Rakesh Pawar must appear across all 3 agencies."""
-    summary = generate_dataset(version="v0", seed=42, out_dir=str(tmp_path))
+    generate_dataset(version="v0", seed=42, out_dir=str(tmp_path))
 
     # Read records across all 3 agencies
     spo_path = tmp_path / "v0" / "STATE_POLICE" / "records.jsonl"
@@ -83,22 +81,32 @@ def test_rakesh_pawar_multi_agency_renderings(tmp_path: Path) -> None:
     assert cen_path.exists()
 
     truth_path = tmp_path / "truth" / "v0" / "mention_truth.jsonl"
-    mentions = [json.loads(line) for line in truth_path.read_text(encoding="utf-8").splitlines() if line]
+    mentions = [
+        json.loads(line) for line in truth_path.read_text(encoding="utf-8").splitlines() if line
+    ]
 
-    networks_truth = json.loads((tmp_path / "truth" / "v0" / "networks_truth.json").read_text(encoding="utf-8"))
+    networks_truth = json.loads(
+        (tmp_path / "truth" / "v0" / "networks_truth.json").read_text(encoding="utf-8")
+    )
     rakesh_id = networks_truth["bridge_1"]["person_id"]
 
     rakesh_mentions = [m for m in mentions if m["person_id"] == rakesh_id]
     # Appears at least 5 times across records
-    assert len(rakesh_mentions) >= 5, f"Expected >= 5 mentions of Rakesh Pawar, got {len(rakesh_mentions)}"
+    assert len(rakesh_mentions) >= 5, (
+        f"Expected >= 5 mentions of Rakesh Pawar, got {len(rakesh_mentions)}"
+    )
 
     # Check agency coverage of his records
     all_recs = []
     for p in [spo_path, cyb_path, cen_path]:
-        all_recs.extend([json.loads(line) for line in p.read_text(encoding="utf-8").splitlines() if line])
+        all_recs.extend(
+            [json.loads(line) for line in p.read_text(encoding="utf-8").splitlines() if line]
+        )
 
     rec_by_id = {r["record_id"]: r for r in all_recs}
-    rakesh_agencies = {rec_by_id[m["record_id"]]["agency"] for m in rakesh_mentions if m["record_id"] in rec_by_id}
+    rakesh_agencies = {
+        rec_by_id[m["record_id"]]["agency"] for m in rakesh_mentions if m["record_id"] in rec_by_id
+    }
     assert rakesh_agencies == {"STATE_POLICE", "MAHA_CYBER", "CENTRAL_AGENCY"}
 
 

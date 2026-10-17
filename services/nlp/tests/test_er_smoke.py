@@ -15,24 +15,19 @@ Acceptance Criteria tested:
 from __future__ import annotations
 
 import json
-import tempfile
 import time
 from pathlib import Path
 
-import pytest
-
 from sutradhar_er.config import load_config
 from sutradhar_er.decisions import apply_decisions
-from sutradhar_er.extract import extract_mentions
 from sutradhar_er.models import (
     Decision,
     Entity,
     Link,
     Mention,
-    SourceRecord,
 )
-from sutradhar_er.normalise import normalise_father_name, normalise_name
-from sutradhar_er.run import run_pipeline, write_jsonl
+from sutradhar_er.normalise import normalise_name
+from sutradhar_er.run import run_pipeline
 from sutradhar_er.score import score_pair
 from sutradhar_er.validators import (
     ValidationStats,
@@ -43,8 +38,8 @@ from sutradhar_er.validators import (
     validate_vehicle,
 )
 
-
 # ── 1. Hero Rakesh Pawar Test ────────────────────────────────────────────────
+
 
 def test_hero_rakesh_pawar_resolution(tmp_path: Path):
     """Hero case: 5 Rakesh Pawar renderings resolve to one PERSON entity with reasons.
@@ -64,14 +59,16 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "language": "mr",
             "sections": ["BNS-308"],
             "form_fields": {
-                "accused": [{
-                    "name": "राकेश दगडू पवार",
-                    "father_name": "दगडू",
-                    "age": 34,
-                    "address": "कळवा, ठाणे",
-                    "phone": "9000012345",
-                    "alias": "राका",
-                }],
+                "accused": [
+                    {
+                        "name": "राकेश दगडू पवार",
+                        "father_name": "दगडू",
+                        "age": 34,
+                        "address": "कळवा, ठाणे",
+                        "phone": "9000012345",
+                        "alias": "राका",
+                    }
+                ],
             },
             "narrative": "आरोपी राकेश दगडू पवार यांनी खंडणी मागितली.",
         },
@@ -88,13 +85,15 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "language": "en",
             "sections": ["IT-66D"],
             "form_fields": {
-                "accused": [{
-                    "name": "Rakesh D. Pawar",
-                    "father_name": "Dagdu",
-                    "age": 35,
-                    "address": "Pune",
-                    "phone": "9000012345",
-                }],
+                "accused": [
+                    {
+                        "name": "Rakesh D. Pawar",
+                        "father_name": "Dagdu",
+                        "age": 35,
+                        "address": "Pune",
+                        "phone": "9000012345",
+                    }
+                ],
             },
             "narrative": "Accused contacted victims using phone 9000012345.",
         },
@@ -111,11 +110,13 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "language": "en",
             "sections": ["NDPS-21"],
             "form_fields": {
-                "accused": [{
-                    "name": "Rakesh Powar",
-                    "phone": "9000012345",
-                    "alias": "Raka",
-                }],
+                "accused": [
+                    {
+                        "name": "Rakesh Powar",
+                        "phone": "9000012345",
+                        "alias": "Raka",
+                    }
+                ],
             },
             "narrative": "Contact seized in narcotics courier phone: 9000012345.",
         },
@@ -131,13 +132,15 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "filed_date": "2025-12-01",
             "language": "mr",
             "form_fields": {
-                "accused": [{
-                    "name": "Rakesh Pawar",
-                    "father_name": "Dagdu Pawar",
-                    "age": 34,
-                    "phone": "9000012345",
-                    "alias": "Raka",
-                }],
+                "accused": [
+                    {
+                        "name": "Rakesh Pawar",
+                        "father_name": "Dagdu Pawar",
+                        "age": 34,
+                        "phone": "9000012345",
+                        "alias": "Raka",
+                    }
+                ],
             },
             "narrative": "",
         },
@@ -153,13 +156,15 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "filed_date": "2026-01-05",
             "language": "mr",
             "form_fields": {
-                "accused": [{
-                    "name": "श्री राकेश पवार",
-                    "father_name": "दगडू",
-                    "age": 34,
-                    "address": "ठाणे",
-                    "phone": "9000012345",
-                }],
+                "accused": [
+                    {
+                        "name": "श्री राकेश पवार",
+                        "father_name": "दगडू",
+                        "age": 34,
+                        "address": "ठाणे",
+                        "phone": "9000012345",
+                    }
+                ],
             },
             "narrative": "",
         },
@@ -174,12 +179,14 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "filed_date": "2025-11-20",
             "language": "en",
             "form_fields": {
-                "accused": [{
-                    "name": "Rakesh Pawar",
-                    "father_name": "Kashinath",
-                    "age": 45,
-                    "phone": "9888811111",
-                }],
+                "accused": [
+                    {
+                        "name": "Rakesh Pawar",
+                        "father_name": "Kashinath",
+                        "age": 45,
+                        "phone": "9888811111",
+                    }
+                ],
             },
             "narrative": "",
         },
@@ -194,12 +201,14 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "filed_date": "2025-11-22",
             "language": "mr",
             "form_fields": {
-                "accused": [{
-                    "name": "राकेश पवार",
-                    "father_name": "बबन",
-                    "age": 22,
-                    "phone": "9777722222",
-                }],
+                "accused": [
+                    {
+                        "name": "राकेश पवार",
+                        "father_name": "बबन",
+                        "age": 22,
+                        "phone": "9777722222",
+                    }
+                ],
             },
             "narrative": "",
         },
@@ -210,8 +219,7 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
     data_dir.mkdir()
     records_file = data_dir / "records.jsonl"
     with open(records_file, "w", encoding="utf-8") as f:
-        for r in records_data:
-            f.write(json.dumps(r, ensure_ascii=False) + "\n")
+        f.writelines(json.dumps(r, ensure_ascii=False) + "\n" for r in records_data)
 
     out_dir = tmp_path / "artifacts" / "er"
 
@@ -235,7 +243,13 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
     person_entities = [e for e in entities if e.entity_type == "PERSON"]
 
     # Hero mentions are from records 1 to 5
-    hero_record_ids = {"R-SPO-000001", "R-CYB-000002", "R-CEN-000003", "R-SPO-000004", "R-SPO-000005"}
+    hero_record_ids = {
+        "R-SPO-000001",
+        "R-CYB-000002",
+        "R-CEN-000003",
+        "R-SPO-000004",
+        "R-SPO-000005",
+    }
     decoy1_record_id = "R-SPO-000006"
     decoy2_record_id = "R-SPO-000007"
 
@@ -264,23 +278,27 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
     # Decoys must be strictly separate entities!
     assert hero_entity.entity_id != decoy1_entity.entity_id, "Decoy 1 was wrongly merged with Hero!"
     assert hero_entity.entity_id != decoy2_entity.entity_id, "Decoy 2 was wrongly merged with Hero!"
-    assert decoy1_entity.entity_id != decoy2_entity.entity_id, "Decoy 1 and Decoy 2 should be separate!"
+    assert decoy1_entity.entity_id != decoy2_entity.entity_id, (
+        "Decoy 1 and Decoy 2 should be separate!"
+    )
 
     # Every link must have reasons and non-empty explanation_text
-    for l in links:
-        assert len(l.reasons) > 0, f"Link {l.link_id} has no reasons"
-        assert len(l.explanation_text.strip()) > 0, f"Link {l.link_id} has empty explanation_text"
+    for lnk in links:
+        assert len(lnk.reasons) > 0, f"Link {lnk.link_id} has no reasons"
+        assert len(lnk.explanation_text.strip()) > 0, (
+            f"Link {lnk.link_id} has empty explanation_text"
+        )
 
     # Hero links must include Marathi translation "[mr]"
     hero_links = [
-        l for l in links
-        if any(r in l.explanation_text for r in ["9000012345", "rakesh"])
+        lnk for lnk in links if any(r in lnk.explanation_text for r in ["9000012345", "rakesh"])
     ]
-    has_marathi = any("[mr]" in l.explanation_text for l in hero_links)
+    has_marathi = any("[mr]" in lnk.explanation_text for lnk in hero_links)
     assert has_marathi, "Hero links must contain bilingual Marathi translation"
 
 
 # ── 2. Name-only Match Never AUTO ────────────────────────────────────────────
+
 
 def test_no_name_only_auto():
     """Unit test: a pair with identical name but no shared identifiers or father/area never reaches AUTO."""
@@ -306,10 +324,12 @@ def test_no_name_only_auto():
     )
 
     from collections import Counter
+
     score, reasons = score_pair(m1, m2, cfg, Counter({"rakesh pavar": 1}))
 
     from sutradhar_er.score import apply_hard_rules
-    final_score, band, status, final_reasons = apply_hard_rules(
+
+    final_score, band, _status, _final_reasons = apply_hard_rules(
         score, reasons, m1, m2, cfg, Counter(), {}, "L-test"
     )
 
@@ -318,6 +338,7 @@ def test_no_name_only_auto():
 
 
 # ── 3. Same-record Different-name Never Merged ────────────────────────────────
+
 
 def test_same_record_rule():
     """Unit test: Two mentions in the same record with different names are never merged (cannot-link)."""
@@ -341,10 +362,12 @@ def test_same_record_rule():
     )
 
     from collections import Counter
+
     score, reasons = score_pair(m1, m2, cfg, Counter())
 
     from sutradhar_er.score import apply_hard_rules
-    final_score, band, status, final_reasons = apply_hard_rules(
+
+    final_score, band, _status, final_reasons = apply_hard_rules(
         score, reasons, m1, m2, cfg, Counter(), {}, "L-test"
     )
 
@@ -355,6 +378,7 @@ def test_same_record_rule():
 
 # ── 4. Reject-then-rerun Stays Separate ──────────────────────────────────────
 
+
 def test_reject_then_rerun_stays_separate(tmp_path: Path):
     """Rejecting a link and rerunning never re-merges the pair (PRD Section 7 Acceptance Criteria)."""
     records_data = [
@@ -363,11 +387,13 @@ def test_reject_then_rerun_stays_separate(tmp_path: Path):
             "agency": "STATE_POLICE",
             "district": "Thane",
             "form_fields": {
-                "accused": [{
-                    "name": "Anil Jadhav",
-                    "father_name": "Baburao",
-                    "phone": "9800011111",
-                }],
+                "accused": [
+                    {
+                        "name": "Anil Jadhav",
+                        "father_name": "Baburao",
+                        "phone": "9800011111",
+                    }
+                ],
             },
         },
         {
@@ -375,11 +401,13 @@ def test_reject_then_rerun_stays_separate(tmp_path: Path):
             "agency": "MAHA_CYBER",
             "district": "Thane",
             "form_fields": {
-                "accused": [{
-                    "name": "Anil Jadhav",
-                    "father_name": "Baburao",
-                    "phone": "9800011111",
-                }],
+                "accused": [
+                    {
+                        "name": "Anil Jadhav",
+                        "father_name": "Baburao",
+                        "phone": "9800011111",
+                    }
+                ],
             },
         },
     ]
@@ -387,20 +415,21 @@ def test_reject_then_rerun_stays_separate(tmp_path: Path):
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     with open(data_dir / "records.jsonl", "w", encoding="utf-8") as f:
-        for r in records_data:
-            f.write(json.dumps(r) + "\n")
+        f.writelines(json.dumps(r) + "\n" for r in records_data)
 
     out_dir_1 = tmp_path / "out_1"
     run_pipeline(data_dir=data_dir, out_dir=out_dir_1)
 
     # First run should merge them
-    entities_1 = [Entity(**json.loads(l)) for l in open(out_dir_1 / "entities.jsonl")]
+    with open(out_dir_1 / "entities.jsonl", encoding="utf-8") as f:
+        entities_1 = [Entity(**json.loads(line)) for line in f]
     person_entities_1 = [e for e in entities_1 if e.entity_type == "PERSON"]
     assert len(person_entities_1) == 1
     assert len(person_entities_1[0].record_ids) == 2
 
     # Now simulate human reviewer rejecting link L-000001
-    links_1 = [Link(**json.loads(l)) for l in open(out_dir_1 / "links.jsonl")]
+    with open(out_dir_1 / "links.jsonl", encoding="utf-8") as f:
+        links_1 = [Link(**json.loads(line)) for line in f]
     target_link = links_1[0]
 
     decisions_file = tmp_path / "decisions.jsonl"
@@ -418,19 +447,22 @@ def test_reject_then_rerun_stays_separate(tmp_path: Path):
     out_dir_2 = tmp_path / "out_2"
     run_pipeline(data_dir=data_dir, out_dir=out_dir_2, decisions_path=decisions_file)
 
-    entities_2 = [Entity(**json.loads(l)) for l in open(out_dir_2 / "entities.jsonl")]
+    with open(out_dir_2 / "entities.jsonl", encoding="utf-8") as f:
+        entities_2 = [Entity(**json.loads(line)) for line in f]
     person_entities_2 = [e for e in entities_2 if e.entity_type == "PERSON"]
 
     # Must now be 2 separate person entities!
     assert len(person_entities_2) == 2, "Rejected link re-merged the entities on rerun!"
 
-    links_2 = [Link(**json.loads(l)) for l in open(out_dir_2 / "links.jsonl")]
-    unlinked = [l for l in links_2 if l.status == "UNLINKED" or l.band == "SEPARATE"]
+    with open(out_dir_2 / "links.jsonl", encoding="utf-8") as f:
+        links_2 = [Link(**json.loads(line)) for line in f]
+    unlinked = [lnk for lnk in links_2 if lnk.status == "UNLINKED" or lnk.band == "SEPARATE"]
     assert len(unlinked) >= 1
     assert unlinked[0].decided_by == "inspector_patil"
 
 
 # ── 5. Validator Behaviour ───────────────────────────────────────────────────
+
 
 def test_validator_behaviour():
     """Validators reject malformed inputs and track counts accurately."""
@@ -440,15 +472,15 @@ def test_validator_behaviour():
     assert validate_phone("91-9000012345") == "9000012345"
     assert validate_phone("09000012345") == "9000012345"
     assert validate_phone("5000012345") is None  # invalid start digit
-    assert validate_phone("90000123") is None     # too short
-    assert validate_phone("abcdefghij") is None   # not numeric
+    assert validate_phone("90000123") is None  # too short
+    assert validate_phone("abcdefghij") is None  # not numeric
 
     # IFSC
     assert validate_ifsc("HDFC0001234") == "HDFC0001234"
     assert validate_ifsc("SBIN0000691") == "SBIN0000691"
     assert validate_ifsc("hdfc0001234") == "HDFC0001234"
     assert validate_ifsc("HDFC1001234") is None  # 5th char must be 0
-    assert validate_ifsc("HDF0001234") is None   # too short
+    assert validate_ifsc("HDF0001234") is None  # too short
 
     # Vehicle
     assert validate_vehicle("MH12AB1234") == "MH12AB1234"
@@ -474,18 +506,21 @@ def test_validator_behaviour():
 
 # ── 6. Determinism ───────────────────────────────────────────────────────────
 
+
 def test_pipeline_determinism(tmp_path: Path):
     """Running the pipeline twice on identical input produces byte-identical output."""
     records_data = [
-        {"record_id": f"R-{i:03d}", "agency": "STATE_POLICE",
-         "form_fields": {"accused": [{"name": f"Person {i % 5}", "phone": f"900000000{i % 3}"}]}}
+        {
+            "record_id": f"R-{i:03d}",
+            "agency": "STATE_POLICE",
+            "form_fields": {"accused": [{"name": f"Person {i % 5}", "phone": f"900000000{i % 3}"}]},
+        }
         for i in range(15)
     ]
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     with open(data_dir / "records.jsonl", "w", encoding="utf-8") as f:
-        for r in records_data:
-            f.write(json.dumps(r) + "\n")
+        f.writelines(json.dumps(r) + "\n" for r in records_data)
 
     out_1 = tmp_path / "run_1"
     out_2 = tmp_path / "run_2"
@@ -501,42 +536,54 @@ def test_pipeline_determinism(tmp_path: Path):
 
 # ── 7. Schema Validity ───────────────────────────────────────────────────────
 
+
 def test_schema_validity(tmp_path: Path):
     """All output models conform to PRD Section 8.3 definitions without schema errors."""
     records_data = [
-        {"record_id": "R-100", "agency": "STATE_POLICE",
-         "form_fields": {"accused": [{"name": "Sachin Kale", "phone": "9999988888", "alias": "Sachu"}]}},
-        {"record_id": "R-200", "agency": "MAHA_CYBER",
-         "form_fields": {"accused": [{"name": "Sachin Kale", "phone": "9999988888"}]}},
+        {
+            "record_id": "R-100",
+            "agency": "STATE_POLICE",
+            "form_fields": {
+                "accused": [{"name": "Sachin Kale", "phone": "9999988888", "alias": "Sachu"}]
+            },
+        },
+        {
+            "record_id": "R-200",
+            "agency": "MAHA_CYBER",
+            "form_fields": {"accused": [{"name": "Sachin Kale", "phone": "9999988888"}]},
+        },
     ]
     data_dir = tmp_path / "data"
     data_dir.mkdir()
     with open(data_dir / "records.jsonl", "w", encoding="utf-8") as f:
-        for r in records_data:
-            f.write(json.dumps(r) + "\n")
+        f.writelines(json.dumps(r) + "\n" for r in records_data)
 
     out_dir = tmp_path / "out"
     run_pipeline(data_dir=data_dir, out_dir=out_dir)
 
-    for line in open(out_dir / "mentions.jsonl", encoding="utf-8"):
-        m = Mention.model_validate_json(line)
-        assert m.mention_id.startswith("M-")
-        assert m.extraction_method in ("FORM", "REGEX", "LLM")
+    with open(out_dir / "mentions.jsonl", encoding="utf-8") as f:
+        for line in f:
+            m = Mention.model_validate_json(line)
+            assert m.mention_id.startswith("M-")
+            assert m.extraction_method in ("FORM", "REGEX", "LLM")
 
-    for line in open(out_dir / "entities.jsonl", encoding="utf-8"):
-        e = Entity.model_validate_json(line)
-        assert e.entity_id.split("-")[0] in ("P", "PH", "AC", "VH", "AD")
-        assert e.status in ("ACTIVE", "MERGED")
+    with open(out_dir / "entities.jsonl", encoding="utf-8") as f:
+        for line in f:
+            e = Entity.model_validate_json(line)
+            assert e.entity_id.split("-")[0] in ("P", "PH", "AC", "VH", "AD")
+            assert e.status in ("ACTIVE", "MERGED")
 
-    for line in open(out_dir / "links.jsonl", encoding="utf-8"):
-        l = Link.model_validate_json(line)
-        assert l.link_id.startswith("L-")
-        assert l.band in ("AUTO", "REVIEW", "SEPARATE")
-        assert l.status in ("ACTIVE", "PENDING_REVIEW", "UNLINKED")
-        assert l.explanation_source in ("TEMPLATE", "LLM")
+    with open(out_dir / "links.jsonl", encoding="utf-8") as f:
+        for line in f:
+            lnk = Link.model_validate_json(line)
+            assert lnk.link_id.startswith("L-")
+            assert lnk.band in ("AUTO", "REVIEW", "SEPARATE")
+            assert lnk.status in ("ACTIVE", "PENDING_REVIEW", "UNLINKED")
+            assert lnk.explanation_source in ("TEMPLATE", "LLM")
 
 
 # ── 8. Fast Pure Function apply_decisions ────────────────────────────────────
+
 
 def test_apply_decisions_fast_performance():
     """apply_decisions is a pure function that runs in < 50ms for UI instant confirm/unlink."""
@@ -575,12 +622,12 @@ def test_apply_decisions_fast_performance():
     ]
 
     t0 = time.perf_counter()
-    new_entities, new_links = apply_decisions(entities, links, decisions)
+    _new_entities, new_links = apply_decisions(entities, links, decisions)
     elapsed = time.perf_counter() - t0
 
     assert elapsed < 0.20, f"apply_decisions took {elapsed:.4f}s, must be < 200ms"
     # Verify state of decided links
-    link_map = {l.link_id: l for l in new_links}
+    link_map = {lnk.link_id: lnk for lnk in new_links}
     assert link_map["L-000000"].band == "AUTO"
     assert link_map["L-000000"].status == "ACTIVE"
     assert link_map["L-000001"].band == "SEPARATE"
@@ -588,6 +635,7 @@ def test_apply_decisions_fast_performance():
 
 
 # ── 9. Normalisation Lexicon & Equivalence Tests ──────────────────────────────
+
 
 def test_normalisation_lexicons():
     """Verify Marathi/Hindi surnames, first names, honorific stripping, equivalences."""

@@ -20,7 +20,6 @@ from .config import load_config
 from .decisions import apply_decisions, load_decisions
 from .explain import generate_all_explanations
 from .extract import extract_mentions, load_records
-from .models import Entity, Link, Mention
 
 logger = logging.getLogger("sutradhar_er")
 
@@ -84,6 +83,7 @@ def run_pipeline(
     decisions = load_decisions(decisions_path)
 
     from .score import score_all_pairs
+
     links = score_all_pairs(candidate_pairs, mention_map, cfg, decisions)
 
     # Stage 5: Clustering
@@ -111,8 +111,8 @@ def run_pipeline(
 
     # Summary
     person_entities = [e for e in entities if e.entity_type == "PERSON"]
-    auto_links = [l for l in links if l.band == "AUTO"]
-    review_links = [l for l in links if l.band == "REVIEW"]
+    auto_links = [lnk for lnk in links if lnk.band == "AUTO"]
+    review_links = [lnk for lnk in links if lnk.band == "REVIEW"]
 
     summary = {
         "status": "ok",
@@ -128,8 +128,7 @@ def run_pipeline(
         "entities_account": sum(1 for e in entities if e.entity_type == "ACCOUNT"),
         "entities_vehicle": sum(1 for e in entities if e.entity_type == "VEHICLE"),
         "validation_stats": {
-            k: {"accepted": v.accepted, "rejected": v.rejected}
-            for k, v in validation_stats.items()
+            k: {"accepted": v.accepted, "rejected": v.rejected} for k, v in validation_stats.items()
         },
     }
 
@@ -150,23 +149,33 @@ def main() -> None:
         description="Sutradhar Entity Resolution — cross-agency identity resolution",
     )
     parser.add_argument(
-        "--data", required=True, type=Path,
+        "--data",
+        required=True,
+        type=Path,
         help="Path to data directory (e.g. data/v1 or contracts/fixtures/data)",
     )
     parser.add_argument(
-        "--out", required=True, type=Path,
+        "--out",
+        required=True,
+        type=Path,
         help="Output directory for mentions.jsonl, entities.jsonl, links.jsonl",
     )
     parser.add_argument(
-        "--decisions", type=Path, default=None,
+        "--decisions",
+        type=Path,
+        default=None,
         help="Path to decisions.jsonl (reviewer must-link/cannot-link)",
     )
     parser.add_argument(
-        "--config", type=Path, default=None,
+        "--config",
+        type=Path,
+        default=None,
         help="Path to config.yaml (defaults to bundled config)",
     )
     parser.add_argument(
-        "--verbose", "-v", action="store_true",
+        "--verbose",
+        "-v",
+        action="store_true",
         help="Enable debug logging",
     )
 

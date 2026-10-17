@@ -9,11 +9,10 @@ Mock connectors for agency data feeds:
 ALL DATA IS SYNTHETIC. ALL CONNECTORS ARE SIMULATED.
 No live external network requests are ever made.
 """
+
 from __future__ import annotations
 
 from typing import Any
-from pathlib import Path
-from sutradhar_api.config import CONTRACTS_FIXTURES_DIR, DATA_DIR
 
 
 class BaseSimulatedConnector:

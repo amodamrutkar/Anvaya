@@ -2,6 +2,7 @@
 sutradhar_api/routers/graph.py
 Community, neighborhood, path, role, bridge, and mule chain endpoints.
 """
+
 from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -17,12 +18,18 @@ router = APIRouter(tags=["graph"])
 # Communities
 # ─────────────────────────────────────────────────────────────
 
+
 @router.get("/graph/communities")
 def get_communities(
     user: UserInfo = Depends(require_action("GRAPH_VIEW")),
 ):
     store = get_store()
-    store.record_audit(actor=user.user_id, role=user.role.value, action="COMMUNITIES_VIEW", summary="Listed all communities.")
+    store.record_audit(
+        actor=user.user_id,
+        role=user.role.value,
+        action="COMMUNITIES_VIEW",
+        summary="Listed all communities.",
+    )
     return list(store.communities.values())
 
 
@@ -34,13 +41,20 @@ def get_community(
     store = get_store()
     community = store.communities.get(community_id)
     if not community:
-        raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Community {community_id!r} not found."}})
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {"code": "NOT_FOUND", "message": f"Community {community_id!r} not found."}
+            },
+        )
     # Enrich with roles for this community
     community_roles = [r for r in store.roles if r.get("community_id") == community_id]
     result = dict(community)
     result["roles"] = community_roles
     store.record_audit(
-        actor=user.user_id, role=user.role.value, action="COMMUNITY_VIEW",
+        actor=user.user_id,
+        role=user.role.value,
+        action="COMMUNITY_VIEW",
         summary=f"Viewed community {community_id}.",
     )
     return result
@@ -49,6 +63,7 @@ def get_community(
 # ─────────────────────────────────────────────────────────────
 # Subgraph / path
 # ─────────────────────────────────────────────────────────────
+
 
 @router.get("/graph/entity/{entity_id}/neighborhood")
 def get_neighborhood(
@@ -59,11 +74,15 @@ def get_neighborhood(
     store = get_store()
     entity = store.entities.get(entity_id)
     if not entity:
-        raise HTTPException(status_code=404, detail={"error": {"code": "NOT_FOUND", "message": f"Entity {entity_id!r} not found."}})
+        raise HTTPException(
+            status_code=404,
+            detail={"error": {"code": "NOT_FOUND", "message": f"Entity {entity_id!r} not found."}},
+        )
     # Simplified: return all entity nodes + links connected to this entity's mentions
     mention_ids = set(entity.get("mention_ids", []))
     related_links = [
-        lnk for lnk in store.links.values()
+        lnk
+        for lnk in store.links.values()
         if lnk.get("a_mention_id") in mention_ids or lnk.get("b_mention_id") in mention_ids
     ]
     # Collect connected entity IDs
@@ -75,7 +94,9 @@ def get_neighborhood(
                     connected_eids.add(e["entity_id"])
     nodes = [store.entities[eid] for eid in connected_eids if eid in store.entities]
     store.record_audit(
-        actor=user.user_id, role=user.role.value, action="NEIGHBORHOOD_VIEW",
+        actor=user.user_id,
+        role=user.role.value,
+        action="NEIGHBORHOOD_VIEW",
         summary=f"Viewed neighborhood for {entity_id}: {len(nodes)} nodes, {len(related_links)} links.",
     )
     return {"nodes": nodes, "edges": related_links}
@@ -93,6 +114,7 @@ def get_graph_path(
 # ─────────────────────────────────────────────────────────────
 # Roles, bridges, mules
 # ─────────────────────────────────────────────────────────────
+
 
 @router.get("/roles")
 def get_roles(

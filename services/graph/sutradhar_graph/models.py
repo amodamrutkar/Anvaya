@@ -11,16 +11,23 @@ Mirrors main PRD Section 8.4 specifications for graph artifacts:
 """
 
 from typing import Any, Literal
-from pydantic import BaseModel, Field
 
+from pydantic import BaseModel, Field
 
 # --------------------------------------------------------------------------- #
 # 1. Graph Model (graph.json)
 # --------------------------------------------------------------------------- #
 NodeType = Literal["PERSON", "PHONE", "ACCOUNT", "VEHICLE", "ADDRESS", "CASE", "PLACE"]
 EdgeType = Literal[
-    "USES", "OWNS", "ACCUSED_IN", "VICTIM_IN", "TRANSFERRED_TO",
-    "RECRUITED", "CO_ACCUSED_WITH", "SEEN_AT", "LIVES_AT"
+    "USES",
+    "OWNS",
+    "ACCUSED_IN",
+    "VICTIM_IN",
+    "TRANSFERRED_TO",
+    "RECRUITED",
+    "CO_ACCUSED_WITH",
+    "SEEN_AT",
+    "LIVES_AT",
 ]
 EdgeStrength = Literal["STRONG", "WEAK"]
 
@@ -76,8 +83,13 @@ class CommunityModel(BaseModel):
 # 3. Roles Model (roles.json)
 # --------------------------------------------------------------------------- #
 RoleName = Literal[
-    "BROKER", "KINGPIN_CANDIDATE", "RECRUITER", "CONTROLLER",
-    "LIKELY_ORGANISER", "LIKELY_DECEIVED_HOLDER", "MEMBER"
+    "BROKER",
+    "KINGPIN_CANDIDATE",
+    "RECRUITER",
+    "CONTROLLER",
+    "LIKELY_ORGANISER",
+    "LIKELY_DECEIVED_HOLDER",
+    "MEMBER",
 ]
 
 

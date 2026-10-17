@@ -8,7 +8,6 @@ from __future__ import annotations
 import json
 import logging
 from pathlib import Path
-from typing import Any
 
 from .models import Decision, Entity, Link
 
@@ -33,7 +32,7 @@ def load_decisions(decisions_path: Path | str | None) -> list[Decision]:
             try:
                 data = json.loads(line)
                 decisions.append(Decision(**data))
-            except Exception as e:
+            except (json.JSONDecodeError, ValueError, TypeError) as e:
                 logger.warning(f"Skipping decision line: {e}")
 
     logger.info(f"Loaded {len(decisions)} decisions from {path}")
@@ -61,7 +60,7 @@ def apply_decisions(
         return entities, links
 
     # Build link map
-    link_map = {l.link_id: l for l in links}
+    link_map = {link_item.link_id: link_item for link_item in links}
 
     # Track which entities need re-clustering
     needs_recluster = False

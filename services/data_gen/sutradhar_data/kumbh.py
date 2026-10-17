@@ -12,9 +12,8 @@ import json
 import random
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import Any
 
-from .lexicons import KUMBH_ZONES, KUMBH_EVENT_TYPES
+from .lexicons import KUMBH_EVENT_TYPES, KUMBH_ZONES
 
 
 def generate_kumbh_events(seed: int = 42, out_dir: str = "data") -> list[dict]:
@@ -40,51 +39,60 @@ def generate_kumbh_events(seed: int = 42, out_dir: str = "data") -> list[dict]:
 
     # --- Planted Event E1: Watchlist entity sighting ---
     # An associate of the extortion gang flagged in Ramkund
-    events.append({
-        "event_id": _next_event_id(),
-        "ts": (base_time + timedelta(days=3, hours=10, minutes=15)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "zone": "Ramkund",
-        "event_type": "WATCHLIST_SIGHTING",
-        "subject_token": "TOK-EXTORT-ASSOC-001",
-        "related_ids": ["P-000001"],  # Rakesh Pawar (bridge)
-        "details": "Synthetic sighting: subject matching watchlist entity observed near Ramkund bathing ghat. Token-based identification. No real biometric data used.",
-        "planted": True,
-        "planted_id": "E1",
-    })
+    events.append(
+        {
+            "event_id": _next_event_id(),
+            "ts": (base_time + timedelta(days=3, hours=10, minutes=15)).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            ),
+            "zone": "Ramkund",
+            "event_type": "WATCHLIST_SIGHTING",
+            "subject_token": "TOK-EXTORT-ASSOC-001",
+            "related_ids": ["P-000001"],  # Rakesh Pawar (bridge)
+            "details": "Synthetic sighting: subject matching watchlist entity observed near Ramkund bathing ghat. Token-based identification. No real biometric data used.",
+            "planted": True,
+            "planted_id": "E1",
+        }
+    )
 
     # --- Planted Event E2: Pilgrim-targeted scam pattern ---
     # Fake booking links, 14 complaints in 2 hours, matched to Network A accounts
     e2_base = base_time + timedelta(days=7, hours=14)
-    events.append({
-        "event_id": _next_event_id(),
-        "ts": e2_base.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "zone": "Panchavati",
-        "event_type": "SCAM_PATTERN",
-        "subject_token": "TOK-SCAM-PATTERN-001",
-        "related_ids": ["P-000002", "P-000003"],  # Sachin Kale, Nitin Gaikwad
-        "details": "Synthetic scam alert: 14 complaints in 120 minutes about fake dharamshala booking links. Payment traced to accounts linked to Network A mule ring. All data synthetic.",
-        "planted": True,
-        "planted_id": "E2",
-    })
+    events.append(
+        {
+            "event_id": _next_event_id(),
+            "ts": e2_base.strftime("%Y-%m-%dT%H:%M:%SZ"),
+            "zone": "Panchavati",
+            "event_type": "SCAM_PATTERN",
+            "subject_token": "TOK-SCAM-PATTERN-001",
+            "related_ids": ["P-000002", "P-000003"],  # Sachin Kale, Nitin Gaikwad
+            "details": "Synthetic scam alert: 14 complaints in 120 minutes about fake dharamshala booking links. Payment traced to accounts linked to Network A mule ring. All data synthetic.",
+            "planted": True,
+            "planted_id": "E2",
+        }
+    )
 
     # --- Planted Event E3: Missing person (control case) ---
     # No gang link; must NOT raise organized-crime alert
-    events.append({
-        "event_id": _next_event_id(),
-        "ts": (base_time + timedelta(days=12, hours=8, minutes=30)).strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "zone": "Trimbakeshwar",
-        "event_type": "MISSING_PERSON",
-        "subject_token": "TOK-MISSING-001",
-        "related_ids": [],
-        "details": "Synthetic missing person report: elderly pilgrim separated from family group near Trimbakeshwar temple. No criminal network connection. Control case for alert system.",
-        "planted": True,
-        "planted_id": "E3",
-    })
+    events.append(
+        {
+            "event_id": _next_event_id(),
+            "ts": (base_time + timedelta(days=12, hours=8, minutes=30)).strftime(
+                "%Y-%m-%dT%H:%M:%SZ"
+            ),
+            "zone": "Trimbakeshwar",
+            "event_type": "MISSING_PERSON",
+            "subject_token": "TOK-MISSING-001",
+            "related_ids": [],
+            "details": "Synthetic missing person report: elderly pilgrim separated from family group near Trimbakeshwar temple. No criminal network connection. Control case for alert system.",
+            "planted": True,
+            "planted_id": "E3",
+        }
+    )
 
     # --- Background events (~50) ---
     bg_event_types = [
-        et for et in KUMBH_EVENT_TYPES
-        if et not in ("WATCHLIST_SIGHTING", "SCAM_PATTERN")
+        et for et in KUMBH_EVENT_TYPES if et not in ("WATCHLIST_SIGHTING", "SCAM_PATTERN")
     ]
 
     bg_details_templates = {
@@ -128,17 +136,19 @@ def generate_kumbh_events(seed: int = 42, out_dir: str = "data") -> list[dict]:
             count=rng.randint(1, 50),
         )
 
-        events.append({
-            "event_id": _next_event_id(),
-            "ts": _random_ts(),
-            "zone": zone,
-            "event_type": evt_type,
-            "subject_token": f"TOK-BG-{rng.randint(1000, 9999)}",
-            "related_ids": [],
-            "details": detail,
-            "planted": False,
-            "planted_id": None,
-        })
+        events.append(
+            {
+                "event_id": _next_event_id(),
+                "ts": _random_ts(),
+                "zone": zone,
+                "event_type": evt_type,
+                "subject_token": f"TOK-BG-{rng.randint(1000, 9999)}",
+                "related_ids": [],
+                "details": detail,
+                "planted": False,
+                "planted_id": None,
+            }
+        )
 
     # Sort by timestamp
     events.sort(key=lambda e: e["ts"])
