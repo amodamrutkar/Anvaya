@@ -7,18 +7,22 @@ executes deterministic Louvain community detection, and calculates cohesion,
 dominant crime types, activity periods, and monthly timelines.
 """
 
+import contextlib
 from collections import Counter, defaultdict
 from datetime import datetime
 from typing import Any
+
 import networkx as nx
 
 from .models import CommunityModel, TimelineActivity
 
 
-def detect_communities(graph_data: dict[str, Any],
-                       seed: int = 42,
-                       hub_degree_threshold: int = 15,
-                       min_community_size: int = 4) -> list[CommunityModel]:
+def detect_communities(
+    graph_data: dict[str, Any],
+    seed: int = 42,
+    hub_degree_threshold: int = 15,
+    min_community_size: int = 4,
+) -> list[CommunityModel]:
     """
     Detect criminal syndicates / communities from graph.json data.
 
@@ -61,7 +65,7 @@ def detect_communities(graph_data: dict[str, Any],
     for p in person_nodes:
         G_proj.add_node(p)
 
-    persons_list = sorted(list(person_nodes))
+    persons_list = sorted(person_nodes)
 
     # Weight definitions per PRD 4.2
     # Shared case: 1.0, Shared phone/account: 1.0, Transfer: 0.7, Shared address: 0.1
@@ -78,7 +82,8 @@ def detect_communities(graph_data: dict[str, Any],
             # 2. Shared Strong Identifiers (Phone, Account, Vehicle) -> 1.0
             # Apply Hub Guard: ignore if node degree exceeds threshold
             shared_ids = {
-                nid for nid in (person_strong_ids[p1] & person_strong_ids[p2])
+                nid
+                for nid in (person_strong_ids[p1] & person_strong_ids[p2])
                 if node_degrees[nid] <= hub_degree_threshold
             }
             if shared_ids:
@@ -87,7 +92,8 @@ def detect_communities(graph_data: dict[str, Any],
             # 3. Shared Address (WEAK link) -> 0.1
             # HUB GUARD: If address has degree > hub_degree_threshold, down-weight to 0.0!
             shared_addrs = {
-                aid for aid in (person_addresses[p1] & person_addresses[p2])
+                aid
+                for aid in (person_addresses[p1] & person_addresses[p2])
                 if node_degrees[aid] <= hub_degree_threshold
             }
             if shared_addrs:
@@ -103,6 +109,7 @@ def detect_communities(graph_data: dict[str, Any],
             tgt_acct = e["target"]
             holders1 = account_to_persons.get(src_acct, set())
             holders2 = account_to_persons.get(tgt_acct, set())
+
             for h1 in holders1:
                 for h2 in holders2:
                     if h1 != h2:
@@ -117,7 +124,11 @@ def detect_communities(graph_data: dict[str, Any],
     if subgraph.number_of_nodes() == 0:
         raw_communities = []
     else:
-        raw_communities = nx.community.louvain_communities(subgraph, weight="weight", seed=seed)
+        raw_communities = nx.community.louvain_communities(
+            subgraph,
+            weight="weight",
+            seed=seed,
+        )
 
     # Step 4: Format Communities per PRD 8.4
     communities: list[CommunityModel] = []
@@ -126,7 +137,7 @@ def detect_communities(graph_data: dict[str, Any],
     # Sort communities by size descending, then first member ID for determinism
     sorted_raw = sorted(
         raw_communities,
-        key=lambda c: (-len(c), sorted(list(c))[0] if c else ""),
+        key=lambda c: (-len(c), sorted(c)[0] if c else ""),
     )
 
     for comm_set in sorted_raw:
@@ -135,7 +146,7 @@ def detect_communities(graph_data: dict[str, Any],
 
         comm_idx += 1
         comm_id = f"COM-{comm_idx:03d}"
-        members = sorted(list(comm_set))
+        members = sorted(comm_set)
 
         # Calculate Cohesion (internal edge density)
         internal_edges = 0
@@ -167,19 +178,23 @@ def detect_communities(graph_data: dict[str, Any],
                 c_node = case_nodes.get(cid, {})
                 c_attrs = c_node.get("attributes", {})
                 ctype = c_attrs.get("crime_type")
+
                 if ctype:
                     crime_types[ctype] += 1
+
                 c_agency = c_attrs.get("agency")
                 if c_agency:
                     agencies.add(c_agency)
+
                 c_dist = c_attrs.get("district")
                 if c_dist:
                     districts.add(c_dist)
+
                 c_date = c_attrs.get("filed_date")
                 if c_date:
                     dates.append(c_date)
 
-        sorted_cases = sorted(list(comm_case_ids))
+        sorted_cases = sorted(comm_case_ids)
         sorted_dates = sorted(dates) if dates else ["2025-01-01"]
         first_act = sorted_dates[0]
         last_act = sorted_dates[-1]
@@ -187,21 +202,20 @@ def detect_communities(graph_data: dict[str, Any],
         # Monthly timeline aggregation
         month_counts: Counter[str] = Counter()
         for d in sorted_dates:
-            try:
+            with contextlib.suppress(TypeError, IndexError):
                 month_counts[d[:7]] += 1
-            except Exception:
-                pass
 
         timeline = [
-            TimelineActivity(month=m, case_count=count)
-            for m, count in sorted(month_counts.items())
+            TimelineActivity(month=m, case_count=count) for m, count in sorted(month_counts.items())
         ]
 
         # Continuing activity: activity within last 12 months (relative to 2026-10)
         continuing = False
+
         if sorted_dates:
             try:
                 latest_dt = datetime.strptime(last_act, "%Y-%m-%d")
+
                 # Active if within 12 months of 2026-10-17
                 if (datetime(2026, 10, 17) - latest_dt).days <= 365:
                     continuing = True
@@ -211,14 +225,19 @@ def detect_communities(graph_data: dict[str, Any],
         # Dominant crime type and label
         top_crimes = [c for c, _ in crime_types.most_common()] or ["ORGANIZED_CRIME"]
         primary_crime = top_crimes[0]
-        dominant_dist = sorted(list(districts))[0] if districts else "Maharashtra"
+
+        dominant_dist = sorted(districts)[0] if districts else "Maharashtra"
 
         crime_labels = {
             "EXTORTION": "Extortion Syndicate",
             "CYBER_FRAUD": "Cyber-Fraud Mule Ring",
             "NARCOTICS": "Interstate Narcotics Network",
         }
-        label_prefix = crime_labels.get(primary_crime, f"{primary_crime.title()} Group")
+
+        label_prefix = crime_labels.get(
+            primary_crime,
+            f"{primary_crime.title()} Group",
+        )
         comm_label = f"{label_prefix} ({dominant_dist})"
 
         communities.append(
@@ -229,8 +248,8 @@ def detect_communities(graph_data: dict[str, Any],
                 members=members,
                 member_count=n_members,
                 cohesion=cohesion,
-                districts=sorted(list(districts)),
-                agencies=sorted(list(agencies)),
+                districts=sorted(districts),
+                agencies=sorted(agencies),
                 case_ids=sorted_cases,
                 first_activity=first_act,
                 last_activity=last_act,

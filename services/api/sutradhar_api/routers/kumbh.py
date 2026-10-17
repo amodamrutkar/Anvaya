@@ -30,11 +30,19 @@ ZONES = [
 
 # Events that should trigger an alert
 _ALERT_EVENTS = {"WATCHLIST_SIGHTING", "SCAM_PATTERN"}
+
 # Events that must NOT trigger an organised-crime alert (control cases)
 _CONTROL_EVENTS = {"MISSING_PERSON"}
 
 # Known entity IDs used as watchlist
-_WATCHLIST_ENTITY_IDS = {"P-000001", "P-000045", "P-000046", "P-000047", "P-000101", "P-000102"}
+_WATCHLIST_ENTITY_IDS = {
+    "P-000001",
+    "P-000045",
+    "P-000046",
+    "P-000047",
+    "P-000101",
+    "P-000102",
+}
 
 
 @router.get("/zones")
@@ -44,10 +52,12 @@ def get_kumbh_zones(
     store = get_store()
     zone_states = []
     alerts = store.kumbh_alerts
+
     for zone in ZONES:
         zone_alerts = [
             a for a in alerts if a.get("zone") == zone["zone"] and a.get("state") == "OPEN"
         ]
+
         zone_states.append(
             {
                 "zone": zone["zone"],
@@ -55,6 +65,7 @@ def get_kumbh_zones(
                 "active_alerts": len(zone_alerts),
             }
         )
+
     return zone_states
 
 
@@ -71,6 +82,7 @@ def post_simulate_next(
 ):
     store = get_store()
     event = store.play_next_kumbh_event()
+
     if not event:
         return {
             "message": "No more events in the feed.",
@@ -85,6 +97,7 @@ def post_simulate_next(
     if event_type in _ALERT_EVENTS:
         # E1: Watchlist sighting — check related entity IDs
         related = set(event.get("related_ids", []))
+
         if event_type == "WATCHLIST_SIGHTING" and related & _WATCHLIST_ENTITY_IDS:
             alert = store.add_kumbh_alert(
                 event=event,
@@ -92,6 +105,7 @@ def post_simulate_next(
                 reason="Subject token maps to known watchlist entity. " + str(related),
             )
             alert_raised = True
+
         elif event_type == "SCAM_PATTERN":
             # E2: Check mule chains or planted scam pattern
             mule_accounts = {
@@ -99,19 +113,14 @@ def post_simulate_next(
                 for chain in store.mule_chains
                 for a in chain.get("accounts", [])
             }
+
             event_accounts = set(event.get("related_ids", []))
+
             if (
                 (event_accounts & mule_accounts)
                 or event.get("planted")
                 or event.get("planted_id") == "E2"
             ):
-                alert = store.add_kumbh_alert(
-                    event=event,
-                    confidence=0.88,
-                    reason="Pattern matches known mule accounts from community graph.",
-                )
-                alert_raised = True
-            if (event_accounts & mule_accounts) or event.get("planted") or event.get("planted_id") == "E2":
                 alert = store.add_kumbh_alert(
                     event=event,
                     confidence=0.88,
@@ -128,8 +137,12 @@ def post_simulate_next(
         actor=user.user_id,
         role=user.role.value,
         action="KUMBH_EVENT_PLAYED",
-        summary=f"Played event {event.get('event_id')} ({event_type}) in {event.get('zone')}. Alert raised: {alert_raised}.",
+        summary=(
+            f"Played event {event.get('event_id')} ({event_type}) "
+            f"in {event.get('zone')}. Alert raised: {alert_raised}."
+        ),
     )
+
     return {
         "event_played": event,
         "alert_raised": alert_raised,
@@ -155,19 +168,28 @@ def post_kumbh_alert_confirm(
                 }
             },
         )
+
     store = get_store()
     alert = store.update_kumbh_alert(alert_id, body.action.value)
+
     if not alert:
         raise HTTPException(
             status_code=404,
-            detail={"error": {"code": "NOT_FOUND", "message": f"Alert {alert_id!r} not found."}},
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": f"Alert {alert_id!r} not found.",
+                }
+            },
         )
+
     seq = store.record_audit(
         actor=user.user_id,
         role=user.role.value,
         action=f"KUMBH_ALERT_{body.action.value}",
         summary=f"Alert {alert_id}: {body.action.value}. Reason: {body.reason!r}",
     )
+
     return {
         "alert_id": alert_id,
         "action": body.action.value,

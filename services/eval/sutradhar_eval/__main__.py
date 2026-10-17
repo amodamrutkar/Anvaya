@@ -6,7 +6,6 @@ Usage: python -m sutradhar_eval.run --data data/v1 --truth data/truth/v1 --artif
 
 import argparse
 import json
-import sys
 
 from .run import run_evaluation
 
@@ -17,19 +16,27 @@ def main() -> None:
         prog="python -m sutradhar_eval.run",
     )
     parser.add_argument(
-        "--data", type=str, required=True,
+        "--data",
+        type=str,
+        required=True,
         help="Path to data version directory (e.g., data/v1)",
     )
     parser.add_argument(
-        "--truth", type=str, required=True,
+        "--truth",
+        type=str,
+        required=True,
         help="Path to truth directory (e.g., data/truth/v1)",
     )
     parser.add_argument(
-        "--artifacts", type=str, default="artifacts",
+        "--artifacts",
+        type=str,
+        default="artifacts",
         help="Path to pipeline artifacts directory",
     )
     parser.add_argument(
-        "--out", type=str, default="artifacts/metrics.json",
+        "--out",
+        type=str,
+        default="artifacts/metrics.json",
         help="Output path for metrics JSON",
     )
 
