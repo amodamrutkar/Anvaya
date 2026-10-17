@@ -11,12 +11,13 @@ Covers:
 7. Evidentiary integrity: every role, classification, and dossier item has reasons & sources
 8. Path query prefers STRONG edges over WEAK edges
 9. Performance: runs under target latency
-10. Truth isolation: services/graph does not reference data (slash) truth
+10. Truth isolation: services/graph does not reference the answer-key directory
 """
 
 import json
 import time
 from pathlib import Path
+
 import pytest
 
 from sutradhar_graph.build import GraphBuilder
@@ -102,12 +103,10 @@ def test_determinism(test_data_dir: Path, tmp_path: Path) -> None:
 
 def test_hub_guard_trap() -> None:
     """Prove that 20 unrelated people sharing a single address NEVER creates a gang."""
-    # Construct synthetic graph with 20 distinct persons connected ONLY to one common address
     nodes = [{"id": f"P-{i:02d}", "type": "PERSON", "label": f"Citizen {i}"} for i in range(20)]
     shared_address_id = "ADDRESS:100, Chawl Colony, Mumbai"
     nodes.append({"id": shared_address_id, "type": "ADDRESS", "label": "Shared Chawl Address"})
 
-    # 20 weak LIVES_AT edges
     edges = [
         {
             "id": f"E-{i}",
@@ -123,10 +122,8 @@ def test_hub_guard_trap() -> None:
 
     mock_graph = {"nodes": nodes, "edges": edges}
 
-    # Detect communities with hub guard threshold = 15
     communities = detect_communities(mock_graph, hub_degree_threshold=15, min_community_size=4)
 
-    # The hub guard MUST neutralize the shared address, resulting in ZERO communities
     assert len(communities) == 0, "Hub guard failed! Unrelated residents formed an artificial gang."
 
 
@@ -139,7 +136,6 @@ def test_leader_in_kingpin_candidates(test_data_dir: Path, tmp_path: Path) -> No
     kingpins = [r for r in roles_json.get("roles", []) if r["role"] == "KINGPIN_CANDIDATE"]
 
     assert len(kingpins) > 0
-    # Every kingpin candidate must have explicit reasons and evidence
     for kp in kingpins:
         assert len(kp["reasons"]) >= 1
         assert len(kp["evidence_record_ids"]) >= 1
@@ -154,7 +150,6 @@ def test_cross_crime_bridges(test_data_dir: Path, tmp_path: Path) -> None:
     bridges = bridges_json.get("bridges", [])
 
     assert len(bridges) > 0
-    # Verify that multi-crime nodes are surfaced
     multi_crime = [b for b in bridges if len(b["crime_types"]) >= 2]
     assert len(multi_crime) > 0, "Expected at least 1 cross-crime bridge"
 
@@ -172,7 +167,6 @@ def test_mule_chain_depth_and_classification(test_data_dir: Path, tmp_path: Path
     assert chain["max_depth"] >= 2
     assert chain["depth_gained"] >= 1
 
-    # Check classifications
     classes = {acct["classification"] for acct in chain["accounts"]}
     assert "LIKELY_ORGANISER" in classes or "LIKELY_DECEIVED" in classes
 
@@ -182,9 +176,6 @@ def test_mule_chain_depth_and_classification(test_data_dir: Path, tmp_path: Path
 
 def test_shortest_path_prefers_strong_edges() -> None:
     """Path query must choose direct STRONG edge over WEAK shortcuts."""
-    # Graph:
-    # A --(STRONG, 1.0)--> B --(STRONG, 1.0)--> C  (total strong cost = 2.0)
-    # A --(WEAK, 10.0)--> C                         (total weak cost = 10.0)
     nodes = [
         {"id": "A", "type": "PERSON", "label": "Person A"},
         {"id": "B", "type": "PHONE", "label": "Phone B"},
@@ -199,7 +190,6 @@ def test_shortest_path_prefers_strong_edges() -> None:
 
     result = shortest_path(graph, "A", "C")
     assert result["found"] is True
-    # Must traverse A -> B -> C rather than weak shortcut A -> C
     assert result["path"] == ["A", "B", "C"]
     assert len(result["edges"]) == 2
     for e in result["edges"]:
@@ -218,8 +208,10 @@ def test_performance_target(test_data_dir: Path, tmp_path: Path) -> None:
 
 
 def test_no_truth_leak() -> None:
-    """Ensure sutradhar_graph package does not reference data" + "/truth."""
+    """Ensure the project never references the banned answer-key directory in graph code."""
     graph_pkg_dir = Path("services/graph/sutradhar_graph")
+    forbidden = "data" + "/truth"
+
     for py_file in graph_pkg_dir.glob("**/*.py"):
         content = py_file.read_text(encoding="utf-8")
-        assert ("data" + "/truth") not in content, f"Ground truth leak found in {py_file}!"
+        assert forbidden not in content, f"Ground truth leak found in {py_file}!"
