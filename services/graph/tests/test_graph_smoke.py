@@ -11,7 +11,7 @@ Covers:
 7. Evidentiary integrity: every role, classification, and dossier item has reasons & sources
 8. Path query prefers STRONG edges over WEAK edges
 9. Performance: runs under target latency
-10. Truth isolation: services/graph does not reference the answer-key directory
+10. Truth isolation: services/graph does not reference ground truth
 """
 
 import json
@@ -20,9 +20,7 @@ from pathlib import Path
 
 import pytest
 
-from sutradhar_graph.build import GraphBuilder
 from sutradhar_graph.communities import detect_communities
-from sutradhar_graph.dossier import generate_dossier, load_dossier_rules
 from sutradhar_graph.models import (
     CommunityModel,
     DossierModel,
@@ -30,7 +28,7 @@ from sutradhar_graph.models import (
     MuleChainModel,
     RoleAssignment,
 )
-from sutradhar_graph.paths import neighborhood, shortest_path
+from sutradhar_graph.paths import shortest_path
 from sutradhar_graph.run import run_pipeline
 
 
@@ -98,7 +96,9 @@ def test_determinism(test_data_dir: Path, tmp_path: Path) -> None:
     assert sum1["total_edges"] == sum2["total_edges"]
     assert sum1["total_communities"] == sum2["total_communities"]
 
-    assert (out1 / "communities.json").read_text(encoding="utf-8") == (out2 / "communities.json").read_text(encoding="utf-8")
+    assert (out1 / "communities.json").read_text(encoding="utf-8") == (
+        out2 / "communities.json"
+    ).read_text(encoding="utf-8")
 
 
 def test_hub_guard_trap() -> None:
@@ -182,9 +182,30 @@ def test_shortest_path_prefers_strong_edges() -> None:
         {"id": "C", "type": "PERSON", "label": "Person C"},
     ]
     edges = [
-        {"id": "E1", "source": "A", "target": "B", "type": "USES", "strength": "STRONG", "evidence": ["R1"]},
-        {"id": "E2", "source": "B", "target": "C", "type": "USES", "strength": "STRONG", "evidence": ["R2"]},
-        {"id": "E3", "source": "A", "target": "C", "type": "LIVES_AT", "strength": "WEAK", "evidence": ["R3"]},
+        {
+            "id": "E1",
+            "source": "A",
+            "target": "B",
+            "type": "USES",
+            "strength": "STRONG",
+            "evidence": ["R1"],
+        },
+        {
+            "id": "E2",
+            "source": "B",
+            "target": "C",
+            "type": "USES",
+            "strength": "STRONG",
+            "evidence": ["R2"],
+        },
+        {
+            "id": "E3",
+            "source": "A",
+            "target": "C",
+            "type": "LIVES_AT",
+            "strength": "WEAK",
+            "evidence": ["R3"],
+        },
     ]
     graph = {"nodes": nodes, "edges": edges}
 
@@ -208,10 +229,9 @@ def test_performance_target(test_data_dir: Path, tmp_path: Path) -> None:
 
 
 def test_no_truth_leak() -> None:
-    """Ensure the project never references the banned answer-key directory in graph code."""
+    """Ensure sutradhar_graph package does not reference ground truth."""
     graph_pkg_dir = Path("services/graph/sutradhar_graph")
-    forbidden = "data" + "/truth"
-
+    target_path = "data/" + "truth"
     for py_file in graph_pkg_dir.glob("**/*.py"):
         content = py_file.read_text(encoding="utf-8")
-        assert forbidden not in content, f"Ground truth leak found in {py_file}!"
+        assert target_path not in content, f"Ground truth leak found in {py_file}!"

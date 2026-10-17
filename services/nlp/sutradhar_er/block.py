@@ -21,6 +21,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import jellyfish
+
     def _metaphone(s: str) -> str:
         """Get metaphone code for a string."""
         if not s:
@@ -62,6 +63,7 @@ def _age_band(age: int | None, tolerance: int = 3) -> str:
 
 # ── Blocking strategies ─────────────────────────────────────────────────────
 
+
 def generate_candidate_pairs(
     mentions: list[Mention],
     cfg: dict[str, Any],
@@ -75,7 +77,7 @@ def generate_candidate_pairs(
     age_tolerance = cfg.get("blocking", {}).get("age_band_tolerance", 3)
 
     # Index mentions by id
-    mention_map = {m.mention_id: m for m in mentions}
+    {m.mention_id: m for m in mentions}
 
     # We only block PERSON-like mentions (accused, suspect, etc.)
     person_roles = {"ACCUSED", "SUSPECT", "VICTIM", "WITNESS", "COMPLAINANT", "ACCOUNT_HOLDER"}

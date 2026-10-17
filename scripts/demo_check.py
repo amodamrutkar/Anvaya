@@ -6,8 +6,8 @@ Requires the API to be running (make api or make demo).
 Usage: python scripts/demo_check.py [--base-url http://localhost:8000]
 Owned by M4.
 """
+
 import argparse
-import json
 import sys
 from typing import Any
 
@@ -21,7 +21,9 @@ DEMO_USER = "analyst1"
 HEADERS = {"X-Demo-User": DEMO_USER}
 
 
-def check(label: str, response: httpx.Response, expected_status: int = 200) -> dict[str, Any] | None:
+def check(
+    label: str, response: httpx.Response, expected_status: int = 200
+) -> dict[str, Any] | None:
     if response.status_code == expected_status:
         print(f"  PASS [{response.status_code}] {label}")
         try:

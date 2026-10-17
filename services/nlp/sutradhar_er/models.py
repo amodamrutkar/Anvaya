@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-import datetime
-from enum import Enum
-from typing import Any, Optional
+from enum import StrEnum
+from typing import Any
 
 from pydantic import BaseModel, Field
 
-
 # ── Enums ────────────────────────────────────────────────────────────────────
 
-class Agency(str, Enum):
+
+class Agency(StrEnum):
     STATE_POLICE = "STATE_POLICE"
     MAHA_CYBER = "MAHA_CYBER"
     CENTRAL_AGENCY = "CENTRAL_AGENCY"
@@ -24,21 +23,21 @@ AGENCY_CODE = {
 }
 
 
-class RecordType(str, Enum):
+class RecordType(StrEnum):
     FIR = "FIR"
     CHARGESHEET = "CHARGESHEET"
     COMPLAINT = "COMPLAINT"
     SEIZURE_REPORT = "SEIZURE_REPORT"
 
 
-class CrimeType(str, Enum):
+class CrimeType(StrEnum):
     CYBER_FRAUD = "CYBER_FRAUD"
     EXTORTION = "EXTORTION"
     NARCOTICS = "NARCOTICS"
     MISSING_PERSON = "MISSING_PERSON"
 
 
-class MentionRole(str, Enum):
+class MentionRole(StrEnum):
     ACCUSED = "ACCUSED"
     SUSPECT = "SUSPECT"
     VICTIM = "VICTIM"
@@ -47,19 +46,19 @@ class MentionRole(str, Enum):
     ACCOUNT_HOLDER = "ACCOUNT_HOLDER"
 
 
-class ExtractionMethod(str, Enum):
+class ExtractionMethod(StrEnum):
     FORM = "FORM"
     REGEX = "REGEX"
     LLM = "LLM"
 
 
-class NameScript(str, Enum):
+class NameScript(StrEnum):
     DEVANAGARI = "DEVANAGARI"
     LATIN = "LATIN"
     MIXED = "MIXED"
 
 
-class EntityType(str, Enum):
+class EntityType(StrEnum):
     PERSON = "PERSON"
     PHONE = "PHONE"
     ACCOUNT = "ACCOUNT"
@@ -67,34 +66,34 @@ class EntityType(str, Enum):
     ADDRESS = "ADDRESS"
 
 
-class Band(str, Enum):
+class Band(StrEnum):
     AUTO = "AUTO"
     REVIEW = "REVIEW"
     SEPARATE = "SEPARATE"
 
 
-class LinkStatus(str, Enum):
+class LinkStatus(StrEnum):
     ACTIVE = "ACTIVE"
     PENDING_REVIEW = "PENDING_REVIEW"
     UNLINKED = "UNLINKED"
 
 
-class EntityStatus(str, Enum):
+class EntityStatus(StrEnum):
     ACTIVE = "ACTIVE"
     MERGED = "MERGED"
 
 
-class ClueDirection(str, Enum):
+class ClueDirection(StrEnum):
     FOR = "FOR"
     AGAINST = "AGAINST"
 
 
-class ExplanationSource(str, Enum):
+class ExplanationSource(StrEnum):
     TEMPLATE = "TEMPLATE"
     LLM = "LLM"
 
 
-class DecisionType(str, Enum):
+class DecisionType(StrEnum):
     CONFIRM = "CONFIRM"
     REJECT = "REJECT"
     UNLINK = "UNLINK"
@@ -102,11 +101,13 @@ class DecisionType(str, Enum):
 
 # ── Source record (what M1 writes, M2 reads) ────────────────────────────────
 
+
 class AccusedField(BaseModel):
     """A single accused entry in form_fields."""
+
     name: str = ""
     father_name: str = ""
-    age: Optional[int] = None
+    age: int | None = None
     address: str = ""
     phone: str = ""
     alias: str = ""
@@ -114,7 +115,7 @@ class AccusedField(BaseModel):
 
 class FormFields(BaseModel):
     accused: list[AccusedField] = Field(default_factory=list)
-    complainant: Optional[dict[str, Any]] = None
+    complainant: dict[str, Any] | None = None
     victims: list[dict[str, Any]] = Field(default_factory=list)
     accounts: list[dict[str, Any]] = Field(default_factory=list)
     phones: list[str] = Field(default_factory=list)
@@ -123,6 +124,7 @@ class FormFields(BaseModel):
 
 class SourceRecord(BaseModel):
     """A single agency source record (PRD 8.2)."""
+
     record_id: str
     agency: str
     record_type: str = ""
@@ -133,14 +135,16 @@ class SourceRecord(BaseModel):
     filed_date: str = ""
     language: str = "en"
     sections: list[str] = Field(default_factory=list)
-    form_fields: Optional[dict[str, Any]] = None
+    form_fields: dict[str, Any] | None = None
     narrative: str = ""
 
 
 # ── ER output: Mention ──────────────────────────────────────────────────────
 
+
 class Mention(BaseModel):
     """A single mention extracted from a source record (PRD 8.3)."""
+
     mention_id: str
     record_id: str
     agency: str
@@ -150,7 +154,7 @@ class Mention(BaseModel):
     name_script: str = "LATIN"
     father_name_raw: str = ""
     father_name_norm: str = ""
-    age: Optional[int] = None
+    age: int | None = None
     address_raw: str = ""
     district: str = ""
     phones: list[str] = Field(default_factory=list)
@@ -163,8 +167,10 @@ class Mention(BaseModel):
 
 # ── ER output: Reason / Link ────────────────────────────────────────────────
 
+
 class Reason(BaseModel):
     """A single explainable reason for/against a link."""
+
     clue: str
     direction: str  # FOR or AGAINST
     weight: float
@@ -173,6 +179,7 @@ class Reason(BaseModel):
 
 class Link(BaseModel):
     """A pairwise link between two person mentions (PRD 8.3)."""
+
     link_id: str
     a_mention_id: str
     b_mention_id: str
@@ -182,12 +189,13 @@ class Link(BaseModel):
     explanation_text: str = ""
     explanation_source: str = "TEMPLATE"
     status: str = "ACTIVE"
-    decided_by: Optional[str] = None
-    decided_at: Optional[str] = None
-    decision_reason: Optional[str] = None
+    decided_by: str | None = None
+    decided_at: str | None = None
+    decision_reason: str | None = None
 
 
 # ── ER output: Entity identifiers ───────────────────────────────────────────
+
 
 class EntityIdentifiers(BaseModel):
     phones: list[str] = Field(default_factory=list)
@@ -197,6 +205,7 @@ class EntityIdentifiers(BaseModel):
 
 class Entity(BaseModel):
     """A resolved entity (PRD 8.3)."""
+
     entity_id: str
     entity_type: str  # PERSON, PHONE, ACCOUNT, VEHICLE, ADDRESS
     canonical_name: str = ""
@@ -206,14 +215,16 @@ class Entity(BaseModel):
     record_ids: list[str] = Field(default_factory=list)
     agencies: list[str] = Field(default_factory=list)
     districts: list[str] = Field(default_factory=list)
-    min_link_confidence: Optional[float] = None
+    min_link_confidence: float | None = None
     status: str = "ACTIVE"
 
 
 # ── Decisions (written by backend, read by M2) ──────────────────────────────
 
+
 class Decision(BaseModel):
     """A reviewer decision on a link (PRD 8.3)."""
+
     link_id: str
     decision: str  # CONFIRM, REJECT, UNLINK
     reason: str = ""
@@ -223,7 +234,9 @@ class Decision(BaseModel):
 
 # ── Dev labels (data/dev/dev_labels.jsonl) ──────────────────────────────────
 
+
 class DevLabel(BaseModel):
     """Ground-truth label for tuning on data/dev."""
+
     mention_id: str
     person_id: str

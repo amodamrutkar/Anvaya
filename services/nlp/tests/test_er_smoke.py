@@ -15,24 +15,19 @@ Acceptance Criteria tested:
 from __future__ import annotations
 
 import json
-import tempfile
 import time
 from pathlib import Path
 
-import pytest
-
 from sutradhar_er.config import load_config
 from sutradhar_er.decisions import apply_decisions
-from sutradhar_er.extract import extract_mentions
 from sutradhar_er.models import (
     Decision,
     Entity,
     Link,
     Mention,
-    SourceRecord,
 )
-from sutradhar_er.normalise import normalise_father_name, normalise_name
-from sutradhar_er.run import run_pipeline, write_jsonl
+from sutradhar_er.normalise import normalise_name
+from sutradhar_er.run import run_pipeline
 from sutradhar_er.score import score_pair
 from sutradhar_er.validators import (
     ValidationStats,
@@ -43,8 +38,8 @@ from sutradhar_er.validators import (
     validate_vehicle,
 )
 
-
 # ── 1. Hero Rakesh Pawar Test ────────────────────────────────────────────────
+
 
 def test_hero_rakesh_pawar_resolution(tmp_path: Path):
     """Hero case: 5 Rakesh Pawar renderings resolve to one PERSON entity with reasons.
@@ -64,14 +59,16 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "language": "mr",
             "sections": ["BNS-308"],
             "form_fields": {
-                "accused": [{
-                    "name": "राकेश दगडू पवार",
-                    "father_name": "दगडू",
-                    "age": 34,
-                    "address": "कळवा, ठाणे",
-                    "phone": "9000012345",
-                    "alias": "राका",
-                }],
+                "accused": [
+                    {
+                        "name": "राकेश दगडू पवार",
+                        "father_name": "दगडू",
+                        "age": 34,
+                        "address": "कळवा, ठाणे",
+                        "phone": "9000012345",
+                        "alias": "राका",
+                    }
+                ],
             },
             "narrative": "आरोपी राकेश दगडू पवार यांनी खंडणी मागितली.",
         },
@@ -88,13 +85,15 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "language": "en",
             "sections": ["IT-66D"],
             "form_fields": {
-                "accused": [{
-                    "name": "Rakesh D. Pawar",
-                    "father_name": "Dagdu",
-                    "age": 35,
-                    "address": "Pune",
-                    "phone": "9000012345",
-                }],
+                "accused": [
+                    {
+                        "name": "Rakesh D. Pawar",
+                        "father_name": "Dagdu",
+                        "age": 35,
+                        "address": "Pune",
+                        "phone": "9000012345",
+                    }
+                ],
             },
             "narrative": "Accused contacted victims using phone 9000012345.",
         },
@@ -111,11 +110,13 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "language": "en",
             "sections": ["NDPS-21"],
             "form_fields": {
-                "accused": [{
-                    "name": "Rakesh Powar",
-                    "phone": "9000012345",
-                    "alias": "Raka",
-                }],
+                "accused": [
+                    {
+                        "name": "Rakesh Powar",
+                        "phone": "9000012345",
+                        "alias": "Raka",
+                    }
+                ],
             },
             "narrative": "Contact seized in narcotics courier phone: 9000012345.",
         },
@@ -131,13 +132,15 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "filed_date": "2025-12-01",
             "language": "mr",
             "form_fields": {
-                "accused": [{
-                    "name": "Rakesh Pawar",
-                    "father_name": "Dagdu Pawar",
-                    "age": 34,
-                    "phone": "9000012345",
-                    "alias": "Raka",
-                }],
+                "accused": [
+                    {
+                        "name": "Rakesh Pawar",
+                        "father_name": "Dagdu Pawar",
+                        "age": 34,
+                        "phone": "9000012345",
+                        "alias": "Raka",
+                    }
+                ],
             },
             "narrative": "",
         },
@@ -153,13 +156,15 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "filed_date": "2026-01-05",
             "language": "mr",
             "form_fields": {
-                "accused": [{
-                    "name": "श्री राकेश पवार",
-                    "father_name": "दगडू",
-                    "age": 34,
-                    "address": "ठाणे",
-                    "phone": "9000012345",
-                }],
+                "accused": [
+                    {
+                        "name": "श्री राकेश पवार",
+                        "father_name": "दगडू",
+                        "age": 34,
+                        "address": "ठाणे",
+                        "phone": "9000012345",
+                    }
+                ],
             },
             "narrative": "",
         },
@@ -174,12 +179,14 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "filed_date": "2025-11-20",
             "language": "en",
             "form_fields": {
-                "accused": [{
-                    "name": "Rakesh Pawar",
-                    "father_name": "Kashinath",
-                    "age": 45,
-                    "phone": "9888811111",
-                }],
+                "accused": [
+                    {
+                        "name": "Rakesh Pawar",
+                        "father_name": "Kashinath",
+                        "age": 45,
+                        "phone": "9888811111",
+                    }
+                ],
             },
             "narrative": "",
         },
@@ -194,12 +201,14 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
             "filed_date": "2025-11-22",
             "language": "mr",
             "form_fields": {
-                "accused": [{
-                    "name": "राकेश पवार",
-                    "father_name": "बबन",
-                    "age": 22,
-                    "phone": "9777722222",
-                }],
+                "accused": [
+                    {
+                        "name": "राकेश पवार",
+                        "father_name": "बबन",
+                        "age": 22,
+                        "phone": "9777722222",
+                    }
+                ],
             },
             "narrative": "",
         },
@@ -235,7 +244,13 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
     person_entities = [e for e in entities if e.entity_type == "PERSON"]
 
     # Hero mentions are from records 1 to 5
-    hero_record_ids = {"R-SPO-000001", "R-CYB-000002", "R-CEN-000003", "R-SPO-000004", "R-SPO-000005"}
+    hero_record_ids = {
+        "R-SPO-000001",
+        "R-CYB-000002",
+        "R-CEN-000003",
+        "R-SPO-000004",
+        "R-SPO-000005",
+    }
     decoy1_record_id = "R-SPO-000006"
     decoy2_record_id = "R-SPO-000007"
 
@@ -264,7 +279,9 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
     # Decoys must be strictly separate entities!
     assert hero_entity.entity_id != decoy1_entity.entity_id, "Decoy 1 was wrongly merged with Hero!"
     assert hero_entity.entity_id != decoy2_entity.entity_id, "Decoy 2 was wrongly merged with Hero!"
-    assert decoy1_entity.entity_id != decoy2_entity.entity_id, "Decoy 1 and Decoy 2 should be separate!"
+    assert decoy1_entity.entity_id != decoy2_entity.entity_id, (
+        "Decoy 1 and Decoy 2 should be separate!"
+    )
 
     # Every link must have reasons and non-empty explanation_text
     for l in links:
@@ -273,14 +290,14 @@ def test_hero_rakesh_pawar_resolution(tmp_path: Path):
 
     # Hero links must include Marathi translation "[mr]"
     hero_links = [
-        l for l in links
-        if any(r in l.explanation_text for r in ["9000012345", "rakesh"])
+        l for l in links if any(r in l.explanation_text for r in ["9000012345", "rakesh"])
     ]
     has_marathi = any("[mr]" in l.explanation_text for l in hero_links)
     assert has_marathi, "Hero links must contain bilingual Marathi translation"
 
 
 # ── 2. Name-only Match Never AUTO ────────────────────────────────────────────
+
 
 def test_no_name_only_auto():
     """Unit test: a pair with identical name but no shared identifiers or father/area never reaches AUTO."""
@@ -306,9 +323,11 @@ def test_no_name_only_auto():
     )
 
     from collections import Counter
+
     score, reasons = score_pair(m1, m2, cfg, Counter({"rakesh pavar": 1}))
 
     from sutradhar_er.score import apply_hard_rules
+
     final_score, band, status, final_reasons = apply_hard_rules(
         score, reasons, m1, m2, cfg, Counter(), {}, "L-test"
     )
@@ -318,6 +337,7 @@ def test_no_name_only_auto():
 
 
 # ── 3. Same-record Different-name Never Merged ────────────────────────────────
+
 
 def test_same_record_rule():
     """Unit test: Two mentions in the same record with different names are never merged (cannot-link)."""
@@ -341,9 +361,11 @@ def test_same_record_rule():
     )
 
     from collections import Counter
+
     score, reasons = score_pair(m1, m2, cfg, Counter())
 
     from sutradhar_er.score import apply_hard_rules
+
     final_score, band, status, final_reasons = apply_hard_rules(
         score, reasons, m1, m2, cfg, Counter(), {}, "L-test"
     )
@@ -355,6 +377,7 @@ def test_same_record_rule():
 
 # ── 4. Reject-then-rerun Stays Separate ──────────────────────────────────────
 
+
 def test_reject_then_rerun_stays_separate(tmp_path: Path):
     """Rejecting a link and rerunning never re-merges the pair (PRD Section 7 Acceptance Criteria)."""
     records_data = [
@@ -363,11 +386,13 @@ def test_reject_then_rerun_stays_separate(tmp_path: Path):
             "agency": "STATE_POLICE",
             "district": "Thane",
             "form_fields": {
-                "accused": [{
-                    "name": "Anil Jadhav",
-                    "father_name": "Baburao",
-                    "phone": "9800011111",
-                }],
+                "accused": [
+                    {
+                        "name": "Anil Jadhav",
+                        "father_name": "Baburao",
+                        "phone": "9800011111",
+                    }
+                ],
             },
         },
         {
@@ -375,11 +400,13 @@ def test_reject_then_rerun_stays_separate(tmp_path: Path):
             "agency": "MAHA_CYBER",
             "district": "Thane",
             "form_fields": {
-                "accused": [{
-                    "name": "Anil Jadhav",
-                    "father_name": "Baburao",
-                    "phone": "9800011111",
-                }],
+                "accused": [
+                    {
+                        "name": "Anil Jadhav",
+                        "father_name": "Baburao",
+                        "phone": "9800011111",
+                    }
+                ],
             },
         },
     ]
@@ -432,6 +459,7 @@ def test_reject_then_rerun_stays_separate(tmp_path: Path):
 
 # ── 5. Validator Behaviour ───────────────────────────────────────────────────
 
+
 def test_validator_behaviour():
     """Validators reject malformed inputs and track counts accurately."""
     # Phone
@@ -440,15 +468,15 @@ def test_validator_behaviour():
     assert validate_phone("91-9000012345") == "9000012345"
     assert validate_phone("09000012345") == "9000012345"
     assert validate_phone("5000012345") is None  # invalid start digit
-    assert validate_phone("90000123") is None     # too short
-    assert validate_phone("abcdefghij") is None   # not numeric
+    assert validate_phone("90000123") is None  # too short
+    assert validate_phone("abcdefghij") is None  # not numeric
 
     # IFSC
     assert validate_ifsc("HDFC0001234") == "HDFC0001234"
     assert validate_ifsc("SBIN0000691") == "SBIN0000691"
     assert validate_ifsc("hdfc0001234") == "HDFC0001234"
     assert validate_ifsc("HDFC1001234") is None  # 5th char must be 0
-    assert validate_ifsc("HDF0001234") is None   # too short
+    assert validate_ifsc("HDF0001234") is None  # too short
 
     # Vehicle
     assert validate_vehicle("MH12AB1234") == "MH12AB1234"
@@ -474,11 +502,15 @@ def test_validator_behaviour():
 
 # ── 6. Determinism ───────────────────────────────────────────────────────────
 
+
 def test_pipeline_determinism(tmp_path: Path):
     """Running the pipeline twice on identical input produces byte-identical output."""
     records_data = [
-        {"record_id": f"R-{i:03d}", "agency": "STATE_POLICE",
-         "form_fields": {"accused": [{"name": f"Person {i % 5}", "phone": f"900000000{i % 3}"}]}}
+        {
+            "record_id": f"R-{i:03d}",
+            "agency": "STATE_POLICE",
+            "form_fields": {"accused": [{"name": f"Person {i % 5}", "phone": f"900000000{i % 3}"}]},
+        }
         for i in range(15)
     ]
     data_dir = tmp_path / "data"
@@ -501,13 +533,22 @@ def test_pipeline_determinism(tmp_path: Path):
 
 # ── 7. Schema Validity ───────────────────────────────────────────────────────
 
+
 def test_schema_validity(tmp_path: Path):
     """All output models conform to PRD Section 8.3 definitions without schema errors."""
     records_data = [
-        {"record_id": "R-100", "agency": "STATE_POLICE",
-         "form_fields": {"accused": [{"name": "Sachin Kale", "phone": "9999988888", "alias": "Sachu"}]}},
-        {"record_id": "R-200", "agency": "MAHA_CYBER",
-         "form_fields": {"accused": [{"name": "Sachin Kale", "phone": "9999988888"}]}},
+        {
+            "record_id": "R-100",
+            "agency": "STATE_POLICE",
+            "form_fields": {
+                "accused": [{"name": "Sachin Kale", "phone": "9999988888", "alias": "Sachu"}]
+            },
+        },
+        {
+            "record_id": "R-200",
+            "agency": "MAHA_CYBER",
+            "form_fields": {"accused": [{"name": "Sachin Kale", "phone": "9999988888"}]},
+        },
     ]
     data_dir = tmp_path / "data"
     data_dir.mkdir()
@@ -537,6 +578,7 @@ def test_schema_validity(tmp_path: Path):
 
 
 # ── 8. Fast Pure Function apply_decisions ────────────────────────────────────
+
 
 def test_apply_decisions_fast_performance():
     """apply_decisions is a pure function that runs in < 50ms for UI instant confirm/unlink."""
@@ -588,6 +630,7 @@ def test_apply_decisions_fast_performance():
 
 
 # ── 9. Normalisation Lexicon & Equivalence Tests ──────────────────────────────
+
 
 def test_normalisation_lexicons():
     """Verify Marathi/Hindi surnames, first names, honorific stripping, equivalences."""
