@@ -229,10 +229,9 @@ def test_performance_target(test_data_dir: Path, tmp_path: Path) -> None:
 
 
 def test_no_truth_leak() -> None:
-    """Ensure the project never references the banned answer-key directory in graph code."""
+    """Ensure sutradhar_graph package does not reference ground truth."""
     graph_pkg_dir = Path("services/graph/sutradhar_graph")
-    forbidden = "data" + "/truth"
-
+    target_path = "data/" + "truth"
     for py_file in graph_pkg_dir.glob("**/*.py"):
         content = py_file.read_text(encoding="utf-8")
-        assert forbidden not in content, f"Ground truth leak found in {py_file}!"
+        assert target_path not in content, f"Ground truth leak found in {py_file}!"
