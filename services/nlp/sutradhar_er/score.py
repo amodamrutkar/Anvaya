@@ -25,14 +25,24 @@ try:
         if a == b:
             return 1.0
         sim = JaroWinkler.similarity(a, b)
-        # Indian naming pattern: first and last name match, middle name omitted or initial
         a_tokens = a.strip().split()
         b_tokens = b.strip().split()
         if len(a_tokens) >= 2 and len(b_tokens) >= 2:
+            # Indian naming pattern: first and last name match, middle name omitted or initial
             if a_tokens[0] == b_tokens[0] and a_tokens[-1] == b_tokens[-1]:
                 sim = max(sim, 0.94)
             elif (a_tokens[0][0] == b_tokens[0][0]) and a_tokens[-1] == b_tokens[-1]:
                 sim = max(sim, 0.92)
+            # Token reordering (e.g. Surname First Middle vs First Middle Surname)
+            sorted_sim = JaroWinkler.similarity(" ".join(sorted(a_tokens)), " ".join(sorted(b_tokens)))
+            sim = max(sim, sorted_sim)
+            # Initials matching (e.g. R A Kale vs Kale Rakesh Anil)
+            a_inits = [t[0] for t in a_tokens]
+            b_inits = [t[0] for t in b_tokens]
+            if sorted(a_inits) == sorted(b_inits):
+                full_overlap = set(a_tokens) & set(b_tokens)
+                if full_overlap and any(len(t) > 2 for t in full_overlap):
+                    sim = max(sim, 0.93)
         return sim
 except ImportError:
     # Simple fallback
@@ -51,6 +61,20 @@ except ImportError:
         ):
             return 0.94
         return 0.5
+
+
+def _is_near_phone(p1: str, p2: str) -> bool:
+    """Check if two 10-digit phone numbers differ by a single transposed adjacent pair or single digit typo."""
+    if len(p1) != 10 or len(p2) != 10:
+        return False
+    diffs = [(i, c1, c2) for i, (c1, c2) in enumerate(zip(p1, p2)) if c1 != c2]
+    if len(diffs) == 1:
+        return True
+    if len(diffs) == 2:
+        (i1, c1a, c2a), (i2, c1b, c2b) = diffs
+        if abs(i1 - i2) == 1 and c1a == c2b and c1b == c2a:
+            return True
+    return False
 
 
 # ── Score one pair ───────────────────────────────────────────────────────────
@@ -72,6 +96,7 @@ def score_pair(
 
     reasons: list[Reason] = []
     has_strong_id = False
+    has_near_phone = False
 
     # ── Shared phone ─────────────────────────────────────────────────────
     shared_phones = set(a.phones) & set(b.phones)
@@ -86,6 +111,23 @@ def score_pair(
             )
         )
         has_strong_id = True
+    elif a.phones and b.phones:
+        near_pairs = []
+        for pa in a.phones:
+            for pb in b.phones:
+                if _is_near_phone(pa, pb):
+                    near_pairs.append((pa, pb))
+        if near_pairs:
+            pa, pb = near_pairs[0]
+            reasons.append(
+                Reason(
+                    clue="NEAR_PHONE_MATCH",
+                    direction="FOR",
+                    weight=0.35,
+                    detail=f"near-identical phone {pa} vs {pb} (transposition/typo)",
+                )
+            )
+            has_near_phone = True
 
     # ── Shared account ───────────────────────────────────────────────────
     shared_accounts = set(a.accounts) & set(b.accounts)
@@ -231,9 +273,24 @@ def score_pair(
             )
         )
 
+    # ── Shared address corroboration ─────────────────────────────────────
+    if a.address_raw and b.address_raw:
+        a_addr = a.address_raw.strip().lower()
+        b_addr = b.address_raw.strip().lower()
+        if a_addr == b_addr or jaro_winkler_sim(a_addr, b_addr) >= 0.88:
+            w = weights.get("shared_address", 0.05)
+            reasons.append(
+                Reason(
+                    clue="SHARED_ADDRESS",
+                    direction="FOR",
+                    weight=w,
+                    detail=f"address match: {a.address_raw}",
+                )
+            )
+
     # ── Name-only penalty ────────────────────────────────────────────────
     # Different phone AND different district AND name-only match
-    if not has_strong_id:
+    if not has_strong_id and not has_near_phone:
         different_phone = not shared_phones and (a.phones or b.phones)
         different_district = a.district and b.district and a.district.lower() != b.district.lower()
         name_only = any(r.clue == "NAME_SIMILARITY" for r in reasons)
@@ -317,6 +374,22 @@ def apply_hard_rules(
         if not can_auto:
             # Demote to REVIEW
             score = min(score, auto_threshold - 0.01)
+
+    # ── Hard rule: conflicting names on shared identifier never AUTO ─────
+    # Protects against shared family phone, roommate/hostel landline, or burner handoffs.
+    if has_strong_id:
+        name_sim = jaro_winkler_sim(a.name_norm, b.name_norm) if (a.name_norm and b.name_norm) else 0.0
+        if not has_name_match and name_sim < 0.80:
+            if score >= auto_threshold:
+                score = min(score, auto_threshold - 0.01)
+            reasons = reasons + [
+                Reason(
+                    clue="NAME_CONFLICT_ON_SHARED_ID",
+                    direction="AGAINST",
+                    weight=0.0,
+                    detail=f"names conflict ({a.name_norm} vs {b.name_norm}, sim={name_sim:.2f}) despite shared identifier",
+                )
+            ]
 
     # ── Hard rule: common name guard ─────────────────────────────────────
     if is_common and not has_strong_id:

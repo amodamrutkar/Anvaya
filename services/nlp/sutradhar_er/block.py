@@ -119,6 +119,13 @@ def generate_candidate_pairs(
             ab = _age_band(m.age, age_tolerance)
             blocks[f"DSA:{m.district}:{surname_ph}:{ab}"].add(m.mention_id)
 
+        # Strategy 5: First two tokens & sorted tokens (handles word order, variant spellings)
+        name_tokens = m.name_norm.strip().split()
+        if len(name_tokens) >= 2:
+            blocks[f"F2T:{name_tokens[0]}:{name_tokens[1]}"].add(m.mention_id)
+            s2 = sorted(name_tokens[:2])
+            blocks[f"S2T:{s2[0]}:{s2[1]}"].add(m.mention_id)
+
     # Generate pairs from blocks
     pairs: set[tuple[str, str]] = set()
     skipped_blocks = 0

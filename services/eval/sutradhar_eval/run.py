@@ -13,6 +13,7 @@ python -m sutradhar_eval.run \
 """
 
 import json
+import re
 from collections import defaultdict
 from pathlib import Path
 from typing import Any
@@ -55,6 +56,8 @@ def _compute_er_metrics(
     pred_clusters: dict[str, set] = defaultdict(set)
 
     for entity in pred_entities:
+        if entity.get("entity_type") and entity.get("entity_type") != "PERSON":
+            continue
         for mention_id in entity.get("mention_ids", []):
             pred_clusters[entity["entity_id"]].add(mention_id)
 
@@ -376,6 +379,7 @@ def run_evaluation(
     truth_dir: str,
     artifacts_dir: str,
     out_path: str,
+    version: str | None = None,
 ) -> dict:
     """
     Run the full evaluation harness.
@@ -398,43 +402,63 @@ def run_evaluation(
     networks_truth = _read_json(truth / "networks_truth.json")
 
     # Read predictions (may not exist yet)
-    pred_entities = _read_jsonl(arts / "er" / "entities.jsonl")
-    pred_links = _read_jsonl(arts / "er" / "links.jsonl")
+    er_dir = arts / "er" if (arts / "er" / "entities.jsonl").exists() else arts
+    pred_entities = _read_jsonl(er_dir / "entities.jsonl")
+    pred_links = _read_jsonl(er_dir / "links.jsonl")
+    pred_mentions = _read_jsonl(er_dir / "mentions.jsonl")
 
     pred_communities = _read_json(arts / "graph" / "communities.json")
-
     if isinstance(pred_communities, dict):
-        pred_communities = pred_communities.get(
-            "communities",
-            [],
-        )
+        pred_communities = pred_communities.get("communities", [])
 
     pred_roles = _read_json(arts / "graph" / "roles.json")
-
     if isinstance(pred_roles, dict):
-        pred_roles = pred_roles.get(
-            "roles",
-            [],
-        )
+        pred_roles = pred_roles.get("roles", [])
 
     pred_bridges = _read_json(arts / "graph" / "bridges.json")
-
     if isinstance(pred_bridges, dict):
-        pred_bridges = pred_bridges.get(
-            "bridges",
-            [],
-        )
+        pred_bridges = pred_bridges.get("bridges", [])
 
     pred_chains = _read_json(arts / "graph" / "mule_chains.json")
-
     if isinstance(pred_chains, dict):
-        pred_chains = pred_chains.get(
-            "chains",
-            [],
-        )
+        pred_chains = pred_chains.get("chains", [])
 
-    # Detect dataset version from path
-    version = data.name if data.name.startswith("v") else "v0"
+    # Detect dataset version from path or explicit parameter
+    if version:
+        detected_version = version
+    else:
+        m = re.search(r"(v\d+)", str(data))
+        detected_version = m.group(1) if m else (data.name if data.name.startswith("v") else "v0")
+
+    # Align extracted mention IDs with truth mentions if pipeline IDs use local counter
+    pred_mids = {mid for e in pred_entities for mid in e.get("mention_ids", [])}
+    truth_mids = {m.get("mention_id") for m in mention_truth}
+    if pred_mids and truth_mids and not (pred_mids & truth_mids) and pred_mentions:
+        pred_by_rec = defaultdict(list)
+        for pm in pred_mentions:
+            pred_by_rec[pm.get("record_id")].append(pm)
+        truth_by_rec = defaultdict(list)
+        for tm in mention_truth:
+            if tm.get("role") != "WITNESS":
+                truth_by_rec[tm.get("record_id")].append(tm)
+        mid_map = {}
+        for rid, m_list in pred_by_rec.items():
+            t_list = truth_by_rec.get(rid, [])
+            for pm, tm in zip(m_list, t_list):
+                mid_map[pm.get("mention_id")] = tm.get("mention_id")
+
+        mapped_entities = []
+        for e in pred_entities:
+            mapped_mids = [mid_map[mid] for mid in e.get("mention_ids", []) if mid in mid_map]
+            mapped_entities.append({**e, "mention_ids": mapped_mids})
+        pred_entities = mapped_entities
+
+        mapped_links = []
+        for lnk in pred_links:
+            a_mid = mid_map.get(lnk.get("a_mention_id"), lnk.get("a_mention_id"))
+            b_mid = mid_map.get(lnk.get("b_mention_id"), lnk.get("b_mention_id"))
+            mapped_links.append({**lnk, "a_mention_id": a_mid, "b_mention_id": b_mid})
+        pred_links = mapped_links
 
     # Compute metrics
     er_metrics = _compute_er_metrics(
@@ -458,7 +482,7 @@ def run_evaluation(
     fairness = _compute_fairness(person_truth)
 
     metrics = {
-        "dataset_version": version,
+        "dataset_version": detected_version,
         "er": er_metrics,
         "network": network_metrics,
         "mule": mule_metrics,
@@ -519,6 +543,13 @@ def main() -> None:
         help="Output path for metrics JSON",
     )
 
+    parser.add_argument(
+        "--version",
+        type=str,
+        default=None,
+        help="Explicit dataset version (e.g. v1, v2). Overrides path inference.",
+    )
+
     args = parser.parse_args()
 
     metrics = run_evaluation(
@@ -526,6 +557,7 @@ def main() -> None:
         truth_dir=args.truth,
         artifacts_dir=args.artifacts,
         out_path=args.out,
+        version=args.version,
     )
 
     print(json.dumps(metrics, indent=2, ensure_ascii=False))

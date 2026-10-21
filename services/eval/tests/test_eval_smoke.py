@@ -122,3 +122,46 @@ def test_eval_with_mock_predictions(tmp_path: Path) -> None:
     assert metrics["er"]["overall_precision"] == 1.0
     assert metrics["er"]["overall_recall"] == 1.0
     assert metrics["er"]["wrong_merge_rate"] == 0.0
+
+
+def test_eval_version_detection(tmp_path: Path) -> None:
+    """Evaluator should accurately infer version from nested paths and respect explicit version override."""
+    data_dir = tmp_path / "data"
+    truth_dir = tmp_path / "data" / "truth" / "v0"
+    artifacts_dir = tmp_path / "artifacts"
+    out_metrics = artifacts_dir / "metrics.json"
+
+    generate_dataset(version="v0", seed=42, out_dir=str(data_dir))
+
+    # 1. Nested V2-style path e.g. data/v2/dev/seed-42
+    nested_path = tmp_path / "data" / "v2" / "dev" / "seed-42"
+    nested_path.mkdir(parents=True, exist_ok=True)
+    metrics_v2 = run_evaluation(
+        data_dir=str(nested_path),
+        truth_dir=str(truth_dir),
+        artifacts_dir=str(artifacts_dir),
+        out_path=str(out_metrics),
+    )
+    assert metrics_v2["dataset_version"] == "v2"
+
+    # 2. Explicit version parameter override
+    metrics_override = run_evaluation(
+        data_dir=str(nested_path),
+        truth_dir=str(truth_dir),
+        artifacts_dir=str(artifacts_dir),
+        out_path=str(out_metrics),
+        version="v2-custom",
+    )
+    assert metrics_override["dataset_version"] == "v2-custom"
+
+    # 3. Standard V1 path preservation
+    v1_path = tmp_path / "data" / "v1"
+    v1_path.mkdir(parents=True, exist_ok=True)
+    metrics_v1 = run_evaluation(
+        data_dir=str(v1_path),
+        truth_dir=str(truth_dir),
+        artifacts_dir=str(artifacts_dir),
+        out_path=str(out_metrics),
+    )
+    assert metrics_v1["dataset_version"] == "v1"
+
