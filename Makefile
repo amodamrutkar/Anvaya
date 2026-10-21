@@ -15,6 +15,8 @@ help:
 	@echo ""
 	@echo "Sutradhar Makefile"
 	@echo "─────────────────────────────────────────"
+	@echo "  make all                       Run test -> data -> er -> graph -> eval (fail fast)"
+	@echo "  make test                      Run all tests (unit + golden)"
 	@echo "  make data VERSION=v1 SEED=42  Generate synthetic dataset"
 	@echo "  make er                        Run entity resolution"
 	@echo "  make graph                     Run graph analytics"
@@ -22,7 +24,6 @@ help:
 	@echo "  make pipeline                  data → er → graph → eval"
 	@echo "  make api                       Start API dev server"
 	@echo "  make web                       Start frontend dev server"
-	@echo "  make test                      Run all tests + gates"
 	@echo "  make lint                      Run ruff linter"
 	@echo "  make format                    Run ruff formatter"
 	@echo "  make demo                      docker compose up (offline demo)"
@@ -30,6 +31,7 @@ help:
 	@echo "  make fixtures                  Validate contracts/fixtures/"
 	@echo "  make setup-check               Verify dev environment"
 	@echo ""
+
 
 # ─────────────────────────────────────────────────────────────
 # Data generation (M1 — calls sutradhar_data)
@@ -84,10 +86,29 @@ web:
 	cd apps/web && npm run dev
 
 # ─────────────────────────────────────────────────────────────
+# All (runs test, data, er, graph, eval — fails fast)
+# ─────────────────────────────────────────────────────────────
+.PHONY: all
+all:
+	@echo "=== [1/5] Running Tests ==="
+	pytest -v --tb=short
+	@echo "=== [2/5] Generating Synthetic Data ==="
+	python -m sutradhar_data.generate --version $(VERSION) --seed $(SEED) --out data/
+	@echo "=== [3/5] Running Entity Resolution ==="
+	python -m sutradhar_er.run --data data/$(VERSION) --out artifacts/er
+	@echo "=== [4/5] Running Graph Analytics ==="
+	python -m sutradhar_graph.run --data data/$(VERSION) --er artifacts/er --out artifacts/graph
+	@echo "=== [5/5] Running Evaluation ==="
+	python -m sutradhar_eval.run --data data/$(VERSION) --truth data/truth/$(VERSION) --artifacts artifacts --out artifacts/metrics.json
+	@echo "=== All steps completed successfully! ==="
+
+# ─────────────────────────────────────────────────────────────
 # Tests
 # ─────────────────────────────────────────────────────────────
 .PHONY: test
-test: test-truth-leak test-fixtures test-api-unit
+test:
+	pytest -v --tb=short
+
 
 .PHONY: test-truth-leak
 test-truth-leak:
