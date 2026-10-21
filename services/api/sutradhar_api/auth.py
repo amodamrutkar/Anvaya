@@ -82,6 +82,7 @@ _ROLE_PERMISSIONS: dict[Role, set[str]] = {
         "REVIEW_QUEUE_VIEW",
         "REVIEW_DECISION",
         "UNLINK",
+        "FEDERATED_QUERY",
         "KUMBH_SIMULATE",
         "KUMBH_ALERT_CONFIRM",
     },

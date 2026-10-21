@@ -16,13 +16,16 @@ CONTRACTS_FIXTURES_DIR = _REPO_ROOT / "contracts" / "fixtures"
 DATA_DIR = _REPO_ROOT / "data"
 KUMBH_EVENTS_PATH = DATA_DIR / "kumbh" / "events.jsonl"
 
-# Demo tamper mode — only for live demo tamper-detection demonstration
-DEMO_TAMPER = os.getenv("DEMO_TAMPER", "0") == "1"
+# Demo tamper mode — defaults to 1 for live demo tamper-detection demonstration
+DEMO_TAMPER = os.getenv("DEMO_TAMPER", "1") == "1"
 
 # CORS
 CORS_ORIGINS: list[str] = [
     o.strip()
-    for o in os.getenv("CORS_ORIGINS", "http://localhost:5173,http://localhost:8080").split(",")
+    for o in os.getenv(
+        "CORS_ORIGINS",
+        "http://localhost:5173,http://127.0.0.1:5173,http://localhost:5174,http://127.0.0.1:5174,http://localhost:3000,http://127.0.0.1:3000,http://localhost:8080",
+    ).split(",")
     if o.strip()
 ]
 

@@ -176,8 +176,14 @@ export default function App() {
       loadGraphData();
     } else if (activeTab === 'mule') {
       loadMuleData();
+    } else if (activeTab === 'federated') {
+      loadAgencyInbox();
     } else if (activeTab === 'review') {
       loadReviewQueue();
+    } else if (activeTab === 'dossier') {
+      if (!generatedDossier) {
+        handleGenerateDossier();
+      }
     } else if (activeTab === 'kumbh') {
       loadKumbh();
     } else if (activeTab === 'audit') {
@@ -301,6 +307,9 @@ export default function App() {
     setLoading(true);
     setFedResponse(null);
     try {
+      const fedUserId = (currentUser.role === 'INSPECTOR' || currentUser.role === 'LIAISON' || currentUser.role === 'ANALYST')
+        ? currentUser.userId
+        : 'inspector1';
       const res = await api.queryFederated(
         {
           querying_agency: fedAgency,
@@ -309,10 +318,12 @@ export default function App() {
           purpose: fedPurpose,
           case_ref: fedCaseRef.trim(),
         },
-        currentUser.userId
+        fedUserId
       );
       setFedResponse(res);
       showNotification(`Federated Query ${res.query_id} resolved: ${res.result}`, res.result === 'MATCH' ? 'success' : 'info');
+      // Automatically refresh inbox to show newly audited query
+      await loadAgencyInbox();
     } catch (err: any) {
       showNotification(err.message, 'error');
     } finally {
@@ -2139,14 +2150,14 @@ export default function App() {
                       </div>
 
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                        Inflow: <strong>₹{(acc.inflow).toLocaleString('en-IN')}</strong> • Outflow: <strong>₹{(acc.outflow).toLocaleString('en-IN')}</strong> • Pass-Through Velocity: <strong>{acc.median_pass_through_minutes} mins</strong> • Complaints: <strong>{acc.complaint_count}</strong>
+                        Inflow: <strong>₹{(acc.inflow ?? 0).toLocaleString('en-IN')}</strong> • Outflow: <strong>₹{(acc.outflow ?? 0).toLocaleString('en-IN')}</strong> • Pass-Through Velocity: <strong>{acc.median_pass_through_minutes ?? 0} mins</strong> • Complaints: <strong>{acc.complaint_count ?? 0}</strong>
                       </div>
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
                       <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>Confidence</span>
                       <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)' }}>
-                        {(acc.score).toFixed(2)}
+                        {(acc.score ?? 0).toFixed(2)}
                       </div>
                     </div>
                   </div>
@@ -2559,6 +2570,28 @@ export default function App() {
                   <FileCheck size={14} />
                   <span>Sign & Export (Court Copy)</span>
                 </button>
+
+                {currentUser.role !== 'APPROVING_OFFICER' && (
+                  <button
+                    onClick={() => {
+                      const officer = DEMO_USERS.find(u => u.role === 'APPROVING_OFFICER');
+                      if (officer) setCurrentUser(officer);
+                    }}
+                    style={{
+                      background: 'var(--bg-subtle)',
+                      color: 'var(--accent-gold)',
+                      border: '1px solid var(--accent-gold)',
+                      padding: '8px 12px',
+                      borderRadius: 'var(--radius-xs)',
+                      fontSize: '0.75rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                    title="Switch to Approving Officer to enable signing and legal export"
+                  >
+                    Switch to Officer (officer1)
+                  </button>
+                )}
               </div>
             </div>
 
@@ -2915,9 +2948,27 @@ export default function App() {
                 <div style={{ padding: '30px', textAlign: 'center', background: 'var(--bg-danger)', borderRadius: 'var(--radius-xs)', border: '1px solid rgba(220, 38, 38, 0.3)' }}>
                   <Lock size={24} color="var(--status-danger-text)" style={{ margin: '0 auto 8px auto' }} />
                   <h4 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)' }}>Audit Log Access Restricted by RBAC</h4>
-                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', maxWidth: '520px', margin: '4px auto 0 auto' }}>
-                    Role <strong>{currentUser.role}</strong> does not possess <code>AUDIT_LOG_VIEW</code> authorization. To inspect full ledger entries, switch demo identity to <strong>Auditor (Central Agency)</strong> in the header.
+                  <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', maxWidth: '520px', margin: '4px auto 14px auto' }}>
+                    Role <strong>{currentUser.role}</strong> does not possess <code>AUDIT_LOG_VIEW</code> authorization. To inspect full ledger entries, switch demo identity to <strong>Auditor (Central Agency)</strong> in the top header or click below.
                   </p>
+                  <button
+                    onClick={() => {
+                      const auditor = DEMO_USERS.find(u => u.role === 'AUDITOR');
+                      if (auditor) setCurrentUser(auditor);
+                    }}
+                    style={{
+                      background: 'var(--accent-navy)',
+                      color: '#ffffff',
+                      border: '1px solid var(--border-medium)',
+                      padding: '8px 18px',
+                      borderRadius: 'var(--radius-xs)',
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Switch to Auditor Identity (auditor1)
+                  </button>
                 </div>
               ) : (
                 <table className="gov-table">
