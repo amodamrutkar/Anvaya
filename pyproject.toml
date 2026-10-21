@@ -51,6 +51,7 @@ files = ["services/api/sutradhar_api"]
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = [
+  "tests",
   "services/api/tests",
   "services/data_gen/tests",
   "services/eval/tests",
