@@ -1,0 +1,42 @@
+# services/data_gen/sutradhar_data/config/v2_tiers.yaml
+# Specification for dataset v2 generation tiers
+
+tiers:
+  dev:
+    description: "Development tier for quick local iteration and golden scenarios"
+    num_persons: 2000
+    num_records: 2400
+    num_accounts: 1500
+    num_transactions: 15000
+    num_kumbh_events: 300
+    num_syndicates: 8
+    target_difficulty:
+      easy: 0.50
+      medium: 0.30
+      hard: 0.20
+
+  full:
+    description: "Full benchmark tier for production accuracy evaluation"
+    num_persons: 10000
+    num_records: 12000
+    num_accounts: 8000
+    num_transactions: 80000
+    num_kumbh_events: 1500
+    num_syndicates: 25
+    target_difficulty:
+      easy: 0.50
+      medium: 0.30
+      hard: 0.20
+
+  stress:
+    description: "Stress test tier for throughput and large graph analytics"
+    num_persons: 40000
+    num_records: 50000
+    num_accounts: 30000
+    num_transactions: 300000
+    num_kumbh_events: 5000
+    num_syndicates: 60
+    target_difficulty:
+      easy: 0.45
+      medium: 0.35
+      hard: 0.20

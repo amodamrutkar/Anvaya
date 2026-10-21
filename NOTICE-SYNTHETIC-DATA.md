@@ -29,6 +29,11 @@ associated with Kumbh 2027 is represented.
 Any resemblance to real persons, living or deceased, real cases, real organisations,
 or real events is coincidental.
 
+CRITICAL SAFETY & ETHICAL NOTICES:
+- Phone Numbers: Phone numbers are generated randomly from 10-digit formats starting with 6-9. Because they are random, they may coincide with real active subscriber numbers. THEY MUST NEVER BE DIALED, MESSAGED, OR CONTACTED UNDER ANY CIRCUMSTANCES.
+- Synthetic Identifiers (Pseudo-Aadhaar): All pseudo-Aadhaar identifiers are mathematically generated to strictly FAIL the Verhoeff checksum algorithm employed by UIDAI, ensuring they can never be valid national identity numbers.
+- Denylist Screening: A strict denylist of prominent political, judicial, and criminal figures is enforced during generation to prevent inadvertent name collisions.
+
 Legal parameters (e.g. MCOCA prerequisites) are included as configurable placeholders
 and are marked `verified: false` until confirmed by a qualified legal source. They
 must not be stated as legal fact.

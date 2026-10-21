@@ -32,14 +32,25 @@ def _write_json(path: Path, data: Any) -> None:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
 
-def generate_dataset(version: str = "v0", seed: int = 42, out_dir: str = "data") -> dict[str, Any]:
+def generate_dataset(
+    version: str = "v0",
+    seed: int = 42,
+    out_dir: str = "data",
+    tier: str = "dev",
+) -> dict[str, Any]:
     """
     Generate a complete synthetic dataset.
 
     Returns a summary dict with counts and paths.
     """
+    if version == "v2":
+        from .v2_generator import V2DatasetGenerator
+        v2_gen = V2DatasetGenerator(tier=tier, seed=seed, out_dir=out_dir)
+        return v2_gen.generate()
+
     rng = random.Random(seed)
     out = Path(out_dir)
+
 
     # --- Step 1: Generate entities ---
     entity_gen = EntityGenerator(rng, version)
@@ -341,6 +352,13 @@ def main() -> None:
         help="Random seed for deterministic generation",
     )
     parser.add_argument(
+        "--tier",
+        type=str,
+        default="dev",
+        choices=["dev", "full", "stress"],
+        help="Tier scale for v2 generation (dev, full, stress)",
+    )
+    parser.add_argument(
         "--out",
         type=str,
         default="data",
@@ -352,7 +370,9 @@ def main() -> None:
         version=args.version,
         seed=args.seed,
         out_dir=args.out,
+        tier=args.tier,
     )
+
 
     print(json.dumps(summary, indent=2, ensure_ascii=False))
     print(

@@ -1,0 +1,55 @@
+# services/data_gen/sutradhar_data/config/noise_profiles.yaml
+# Per-agency noise calibration profiles for dataset v2
+# Calibrated to achieve ~50% Easy, ~30% Medium, ~20% Hard mention distribution overall
+
+profiles:
+  STATE_POLICE:
+    agency_code: "SPO"
+    description: "Maharashtra State Police FIRs and Chargesheets (mixed Marathi/Hindi handwritten OCR patterns)"
+    script_mix: 0.35
+    transliteration: 0.25
+    surname_first: 0.30
+    honorifics: 0.22
+    initials: 0.15
+    alias: 0.18
+    typos: 0.08
+    phone_digit_swap: 0.04
+    devanagari_numerals: 0.12
+    ocr_substitution: 0.10
+    age_drift: 0.18
+    address_abbreviation: 0.25
+    missing_fields: 0.12
+
+  MAHA_CYBER:
+    agency_code: "CYB"
+    description: "Maharashtra Cyber Crime portal NCRP/1930 digital complaints (fast digital entry, English/Latin typos)"
+    script_mix: 0.15
+    transliteration: 0.32
+    surname_first: 0.10
+    honorifics: 0.05
+    initials: 0.22
+    alias: 0.25
+    typos: 0.16
+    phone_digit_swap: 0.08
+    devanagari_numerals: 0.02
+    ocr_substitution: 0.03
+    age_drift: 0.10
+    address_abbreviation: 0.15
+    missing_fields: 0.20
+
+  CENTRAL_AGENCY:
+    agency_code: "CEN"
+    description: "Central Narcotics & Investigation Seizure Reports (formal documentation, inter-state jurisdictions)"
+    script_mix: 0.20
+    transliteration: 0.22
+    surname_first: 0.15
+    honorifics: 0.18
+    initials: 0.18
+    alias: 0.22
+    typos: 0.06
+    phone_digit_swap: 0.03
+    devanagari_numerals: 0.05
+    ocr_substitution: 0.05
+    age_drift: 0.08
+    address_abbreviation: 0.20
+    missing_fields: 0.08
