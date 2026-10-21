@@ -80,16 +80,19 @@ def test_golden_s01_entity_resolution(tmp_path: Path):
     assert len(agencies) >= 2, f"Hero entity must span multiple agency records, got {agencies}"
     assert "STATE_POLICE" in agencies or "MAHA_CYBER" in agencies
 
-    # Verify resolution confidence threshold
+    # Verify resolution confidence threshold (AUTO band >= 0.85)
     confidence = hero_entity.get("min_link_confidence", 0.0)
-    assert confidence >= 0.85, f"Expected resolution confidence >= 0.85, got {confidence}"
+    assert confidence == pytest.approx(1.0, abs=0.05), f"Expected fresh hero confidence approx 1.0 (AUTO band), got {confidence}"
 
-    # Also verify pinned baseline contract fixture holds the canonical P-000045 and PH-000007
+    # Also verify pinned baseline contract fixture holds canonical P-000045, PH-000007 and 0.88 confidence
     fixture_path = Path("contracts/fixtures/api/GET_entities_id.json")
     if fixture_path.exists():
         fixture = json.loads(fixture_path.read_text(encoding="utf-8"))
         assert fixture.get("entity_id") == PINNED_PERSON_ID
         assert PINNED_PHONE_ID in fixture.get("identifiers", {}).get("phones", [])
+        # Baseline fixture confidence is 0.88 (in AUTO band >= 0.85, below 0.90)
+        fixture_conf = fixture.get("min_link_confidence", 0.0)
+        assert fixture_conf == pytest.approx(0.88, abs=0.02)
 
 
 
@@ -128,12 +131,19 @@ def test_golden_s02_cross_crime_bridge(tmp_path: Path):
         bridges_data = json.load(f).get("bridges", [])
     assert len(bridges_data) > 0, "Graph pipeline must identify cross-crime bridge entities"
 
-    # Verify role assignment detects brokers or kingpins with threshold >= 0.70
+    # Verify role assignment detects brokers or kingpins with tightened score
     with open(roles_file, encoding="utf-8") as f:
         roles_data = json.load(f).get("roles", [])
     detected_roles = {r.get("role") for r in roles_data}
     assert "KINGPIN_CANDIDATE" in detected_roles or "BROKER" in detected_roles
-    assert any(r.get("score", 0) >= 0.70 for r in roles_data)
+    # Pinned to actual kingpin scores in fresh graph (0.76 for ENT-0188 / 0.73 for ENT-0038)
+    assert any(r.get("score") == pytest.approx(0.76, abs=0.05) for r in roles_data)
+
+    # Check baseline fixture roles preserve broker score 0.82
+    fixture_roles_path = Path("contracts/fixtures/api/GET_roles.json")
+    if fixture_roles_path.exists():
+        froles = json.loads(fixture_roles_path.read_text(encoding="utf-8"))
+        assert any(r.get("score") == pytest.approx(0.82, abs=0.02) for r in froles)
 
 
 # ─────────────────────────────────────────────────────────────
@@ -159,26 +169,29 @@ def test_golden_s03_mule_chain(tmp_path: Path):
     assert len(chains) > 0, "Must reconstruct at least 1 mule chain"
 
     chain = chains[0]
-    # Verify depth extends beyond direct entry (layer > 1)
-    assert chain.get("max_depth", 1) >= 2
-    # Verify volume threshold
-    assert chain.get("total_amount", 0) > 1_000_000
+    # Verify depth in fresh run: layer 2 depth
+    assert chain.get("max_depth") == 2
+    # Verify volume in fresh run: approx 56.15 lakh INR
+    assert chain.get("total_amount") == pytest.approx(5_615_330.0, rel=0.05)
 
     # Also verify baseline contract fixtures preserve pinned chain CH-001 & account AC-000310
     store = get_store()
     fixture_chains = [c for c in store.mule_chains if c.get("chain_id") == PINNED_MULE_CHAIN_ID]
     if fixture_chains:
         fc = fixture_chains[0]
-        assert fc["max_depth"] >= 4
-        assert fc["total_amount"] >= 10_000_000
-        # Check deceived account classification
+        # Exactly 4 layers in baseline contract
+        assert fc["max_depth"] == 4
+        # Exactly 1.88 crore INR (18,800,000)
+        assert fc["total_amount"] == pytest.approx(18_800_000, rel=0.01)
+        # Check deceived account classification and fast pass-through (9 minutes)
         deceived = [
             a for a in fc.get("accounts", [])
             if a.get("account_id") == PINNED_DECEIVED_ACCOUNT_ID
         ]
         assert len(deceived) > 0
         assert deceived[0]["classification"] == "LIKELY_DECEIVED"
-        assert deceived[0]["median_pass_through_minutes"] < 60
+        assert deceived[0]["median_pass_through_minutes"] == pytest.approx(9, abs=2)
+
 
 
 # ─────────────────────────────────────────────────────────────
