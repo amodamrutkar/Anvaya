@@ -10,6 +10,7 @@ data/*/truth/
 # ---- Pipeline artifacts (generated output; never committed) ----
 artifacts/*
 !artifacts/.gitkeep
+scratch/
 
 # ---- Python ----
 __pycache__/

@@ -17,7 +17,7 @@ from pydantic import BaseModel, Field
 # --------------------------------------------------------------------------- #
 # 1. Graph Model (graph.json)
 # --------------------------------------------------------------------------- #
-NodeType = Literal["PERSON", "PHONE", "ACCOUNT", "VEHICLE", "ADDRESS", "CASE", "PLACE"]
+NodeType = Literal["PERSON", "PHONE", "ACCOUNT", "VEHICLE", "ADDRESS", "CASE", "PLACE", "ORGANIZATION", "LOCATION", "EVENT"]
 EdgeType = Literal[
     "USES",
     "OWNS",
@@ -28,8 +28,13 @@ EdgeType = Literal[
     "CO_ACCUSED_WITH",
     "SEEN_AT",
     "LIVES_AT",
+    "POSSIBLE_DUPLICATE_ENTITY",
+    "POSSIBLE_IDENTITY_LINK",
+    "ASSOCIATED_WITH",
+    "LOCATED_AT",
+    "ATTENDED",
 ]
-EdgeStrength = Literal["STRONG", "WEAK"]
+EdgeStrength = Literal["STRONG", "MEDIUM", "WEAK"]
 
 
 class NodeModel(BaseModel):
@@ -47,6 +52,7 @@ class EdgeModel(BaseModel):
     strength: EdgeStrength = "STRONG"
     evidence: list[str] = Field(default_factory=list)
     confidence: float = 1.0
+    provenance: dict[str, Any] = Field(default_factory=dict)
     attributes: dict[str, Any] = Field(default_factory=dict)
 
 
@@ -77,6 +83,10 @@ class CommunityModel(BaseModel):
     last_activity: str
     continuing_activity: bool
     timeline: list[TimelineActivity] = Field(default_factory=list)
+    phones: list[str] = Field(default_factory=list)
+    accounts: list[str] = Field(default_factory=list)
+    bridge_candidates: list[str] = Field(default_factory=list)
+    is_network_of_interest: bool = False
 
 
 # --------------------------------------------------------------------------- #
@@ -84,6 +94,7 @@ class CommunityModel(BaseModel):
 # --------------------------------------------------------------------------- #
 RoleName = Literal[
     "BROKER",
+    "CROSS_CRIME_BROKER",
     "KINGPIN_CANDIDATE",
     "RECRUITER",
     "CONTROLLER",
@@ -100,6 +111,9 @@ class RoleAssignment(BaseModel):
     reasons: list[str]
     evidence_record_ids: list[str]
     community_id: str | None = None
+    confidence: float = 0.85
+    network_indicators: list[str] = Field(default_factory=list)
+    action: str = "Requires investigator review"
 
 
 # --------------------------------------------------------------------------- #
@@ -114,12 +128,34 @@ class BridgeModel(BaseModel):
     linked_person_ids: list[str]
     evidence_record_ids: list[str]
     reasons: list[str]
+    score: float = 0.80
+    indicator: str = "BRIDGE_CANDIDATE"
+    supporting_edges: list[dict[str, Any]] = Field(default_factory=list)
+    action: str = "Requires investigator review"
 
 
 # --------------------------------------------------------------------------- #
-# 5. Mule Chains Model (mule_chains.json)
+# 5. Mule Chains & Financial Flows Model (mule_chains.json)
 # --------------------------------------------------------------------------- #
 AccountClass = Literal["LIKELY_ORGANISER", "LIKELY_DECEIVED", "UNCERTAIN"]
+
+
+class FinancialFlowPath(BaseModel):
+    path: list[str]
+    transaction_count: int
+    total_amount: float
+    time_span_minutes: float = 0.0
+    source_records: list[str] = Field(default_factory=list)
+    intermediaries: list[str] = Field(default_factory=list)
+    is_pass_through: bool = False
+
+
+class FinancialFlowResult(BaseModel):
+    target: str
+    paths: list[FinancialFlowPath] = Field(default_factory=list)
+    connected_accounts: list[str] = Field(default_factory=list)
+    total_volume: float = 0.0
+    layers_detected: int = 0
 
 
 class MuleAccountModel(BaseModel):

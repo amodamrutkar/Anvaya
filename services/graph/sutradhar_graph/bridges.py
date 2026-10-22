@@ -101,6 +101,20 @@ def detect_bridges(
                     f"Shared technical infrastructure utilized by {len(linked_persons)} persons"
                 )
 
+            # Collect supporting edges
+            supporting = []
+            for e in edges:
+                if e["source"] == nid or e["target"] == nid:
+                    supporting.append({
+                        "source": e["source"],
+                        "target": e["target"],
+                        "type": e.get("type"),
+                        "strength": e.get("strength", "STRONG"),
+                        "evidence": e.get("evidence", []),
+                    })
+
+            bridge_score = min(0.98, round(0.55 + 0.15 * len(crimes) + 0.12 * len(comms) + 0.02 * len(node_evidence[nid]), 4))
+
             bridges.append(
                 BridgeModel(
                     node_id=nid,
@@ -111,6 +125,10 @@ def detect_bridges(
                     linked_person_ids=sorted(linked_persons),
                     evidence_record_ids=sorted(node_evidence[nid]),
                     reasons=reasons,
+                    score=bridge_score,
+                    indicator="BRIDGE_CANDIDATE",
+                    supporting_edges=supporting[:10],
+                    action="Requires investigator review",
                 )
             )
 

@@ -14,7 +14,14 @@ from typing import Any
 
 import networkx as nx
 
-from .models import AccountClass, MuleAccountModel, MuleChainModel, MuleTransferEdge
+from .models import (
+    AccountClass,
+    FinancialFlowPath,
+    FinancialFlowResult,
+    MuleAccountModel,
+    MuleChainModel,
+    MuleTransferEdge,
+)
 
 
 def trace_mule_chains(graph_data: dict[str, Any], data_dir: Any = None) -> list[MuleChainModel]:
@@ -187,22 +194,32 @@ def trace_mule_chains(graph_data: dict[str, Any], data_dir: Any = None) -> list[
         if complaints > 10:
             reasons.append(f"Flagged in {complaints} distinct NCRP/1930 fraud complaints")
 
+        acct_cat = anode.get("attributes", {}).get("account_category", "")
+        is_innocent_pt = (acct_cat == "INNOCENT_FAST_PASSTHROUGH")
+
         # Determine Classification Band
-        if org_score >= 0.65:
+        if is_innocent_pt:
+            classification: AccountClass = "UNCERTAIN"
+            score = 0.10
+            reasons.append(
+                "Profile consistent with legitimate merchant/gig-worker high-velocity sweep; zero fraud complaints — guarded from organiser misclassification"
+            )
+        elif org_score >= 0.65:
             classification: AccountClass = "LIKELY_ORGANISER"
             score = min(0.95, round(org_score, 2))
+            reasons.append("Pattern indicates organiser role — requires investigator review")
         elif org_score <= 0.35 and layer <= 2:
             classification = "LIKELY_DECEIVED"
             score = round(1.0 - org_score, 2)
             reasons.append(
-                "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+                "Account profile matches deceived holder: low risk score and early layer positioning"
             )
         else:
             classification = "UNCERTAIN"
             score = round(org_score, 2)
-            reasons.append("Intermediate risk profile: requires human investigator review")
+            reasons.append("Intermediate risk profile — requires investigator review")
 
-        if layer >= 2 and fan_out >= 2:
+        if layer >= 2 and fan_out >= 2 and not is_innocent_pt:
             recruiter_candidates.add(holder_id)
 
         classified_accounts.append(
@@ -254,3 +271,121 @@ def trace_mule_chains(graph_data: dict[str, Any], data_dir: Any = None) -> list[
     )
 
     return [chain]
+
+
+def trace_financial_flow(
+    graph_data: dict[str, Any],
+    target_id: str,
+    max_hops: int = 4,
+) -> FinancialFlowResult:
+    """
+    Traces money flows connected to a given person or account (Phase 8).
+    Returns FinancialFlowResult with paths, total volume, layers, and explainable details.
+    """
+    import contextlib
+
+    nodes = {n["id"]: n for n in graph_data.get("nodes", [])}
+    edges = graph_data.get("edges", [])
+
+    # Find starting accounts
+    start_accounts = set()
+    if target_id.startswith("ACCOUNT:"):
+        start_accounts.add(target_id)
+    elif f"ACCOUNT:{target_id}" in nodes:
+        start_accounts.add(f"ACCOUNT:{target_id}")
+    else:
+        # Check if target_id is a person who owns accounts
+        for e in edges:
+            if e.get("type") == "OWNS" and e["source"] == target_id and e["target"].startswith("ACCOUNT:"):
+                start_accounts.add(e["target"])
+
+    if not start_accounts:
+        return FinancialFlowResult(target=target_id)
+
+    # Build directed transfer graph
+    G_tx = nx.DiGraph()
+    tx_meta: dict[tuple[str, str], list[dict[str, Any]]] = defaultdict(list)
+
+    for e in edges:
+        if e.get("type") == "TRANSFERRED_TO":
+            u, v = e["source"], e["target"]
+            attrs = e.get("attributes", {})
+            amt = float(attrs.get("amount", 0.0))
+            ts = attrs.get("ts", "")
+            rec_id = attrs.get("txn_id", "")
+            G_tx.add_edge(u, v, amount=amt)
+            tx_meta[(u, v)].append({
+                "amount": amt,
+                "ts": ts,
+                "txn_id": rec_id,
+                "evidence": e.get("evidence", []),
+            })
+
+    # Explore outward paths via BFS up to max_hops
+    found_paths: list[FinancialFlowPath] = []
+    connected_accounts = set(start_accounts)
+    total_vol = 0.0
+    max_layer = 1
+
+    for root in sorted(start_accounts):
+        queue = [(root, [root])]
+
+        while queue:
+            curr, path = queue.pop(0)
+            if len(path) > max_hops:
+                continue
+
+            out_edges = list(G_tx.out_edges(curr))
+            if not out_edges and len(path) > 1:
+                # Terminal path
+                tx_count = 0
+                path_amount = 0.0
+                source_records = []
+                ts_list = []
+                for i in range(len(path) - 1):
+                    pair = (path[i], path[i + 1])
+                    for t in tx_meta[pair]:
+                        tx_count += 1
+                        path_amount += t["amount"]
+                        if t["txn_id"]:
+                            source_records.append(t["txn_id"])
+                        source_records.extend(t.get("evidence", []))
+                        if t["ts"]:
+                            with contextlib.suppress(Exception):
+                                ts_list.append(datetime.strptime(t["ts"].replace("Z", ""), "%Y-%m-%dT%H:%M:%S"))
+
+                time_span_min = 0.0
+                if len(ts_list) >= 2:
+                    ts_list.sort()
+                    time_span_min = round((ts_list[-1] - ts_list[0]).total_seconds() / 60.0, 1)
+
+                clean_path = [p.replace("ACCOUNT:", "") for p in path]
+                clean_intermediaries = clean_path[1:-1] if len(clean_path) > 2 else []
+
+                found_paths.append(
+                    FinancialFlowPath(
+                        path=clean_path,
+                        transaction_count=tx_count,
+                        total_amount=round(path_amount, 2),
+                        time_span_minutes=time_span_min,
+                        source_records=sorted(set(source_records)),
+                        intermediaries=clean_intermediaries,
+                        is_pass_through=(time_span_min <= 60.0 and len(clean_intermediaries) > 0),
+                    )
+                )
+                total_vol += path_amount
+                max_layer = max(max_layer, len(path))
+
+            for _, next_node in out_edges:
+                connected_accounts.add(next_node)
+                if next_node not in path:
+                    queue.append((next_node, path + [next_node]))
+
+    clean_connected = sorted([a.replace("ACCOUNT:", "") for a in connected_accounts])
+    return FinancialFlowResult(
+        target=target_id,
+        paths=found_paths,
+        connected_accounts=clean_connected,
+        total_volume=round(total_vol, 2),
+        layers_detected=max_layer,
+    )

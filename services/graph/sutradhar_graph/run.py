@@ -44,14 +44,22 @@ def run_pipeline(
     out_path = Path(out_dir)
     out_path.mkdir(parents=True, exist_ok=True)
 
+    import time
+    from .paths import compute_centrality_metrics
+
+    t_start = time.time()
+
     # 1. Build Graph
+    t_build_start = time.time()
     builder = GraphBuilder(data_dir=data_dir, er_dir=er_dir)
     builder.build_graph()
     graph_dict = builder.to_dict()
+    build_seconds = round(time.time() - t_build_start, 3)
 
     _write_json(out_path / "graph.json", graph_dict)
 
     # 2. Detect Communities
+    t_analytics_start = time.time()
     communities_models = detect_communities(graph_dict, seed=seed)
     communities_list = [c.model_dump() for c in communities_models]
     _write_json(out_path / "communities.json", {"communities": communities_list})
@@ -71,7 +79,12 @@ def run_pipeline(
     mule_chains_list = [m.model_dump() for m in mule_chains_models]
     _write_json(out_path / "mule_chains.json", {"chains": mule_chains_list})
 
-    # 6. Generate Dossiers
+    # 6. Centrality Metrics
+    centrality_metrics = compute_centrality_metrics(graph_dict)
+    _write_json(out_path / "centrality.json", centrality_metrics)
+    analytics_seconds = round(time.time() - t_analytics_start, 3)
+
+    # 7. Generate Dossiers
     dossiers_dir = out_path / "dossiers"
     dossiers_dir.mkdir(parents=True, exist_ok=True)
     dossiers_generated = []
@@ -90,13 +103,34 @@ def run_pipeline(
         _write_json(dossiers_dir / f"{dos.dossier_id}.json", dos_dict)
         dossiers_generated.append(dos.dossier_id)
 
+    total_seconds = round(time.time() - t_start, 3)
+
+    # Node & Edge statistics
+    node_types: dict[str, int] = {}
+    for n in graph_dict["nodes"]:
+        node_types[n["type"]] = node_types.get(n["type"], 0) + 1
+
+    edges_by_tier: dict[str, int] = {"STRONG": 0, "MEDIUM": 0, "WEAK": 0}
+    edges_by_type: dict[str, int] = {}
+    for e in graph_dict["edges"]:
+        tier = e.get("strength", "STRONG")
+        edges_by_tier[tier] = edges_by_tier.get(tier, 0) + 1
+        etype = e.get("type", "UNKNOWN")
+        edges_by_type[etype] = edges_by_type.get(etype, 0) + 1
+
     summary = {
         "status": "SUCCESS",
         "data_dir": str(data_dir),
         "er_dir": str(er_dir) if er_dir else None,
         "out_dir": str(out_dir),
+        "build_runtime_seconds": build_seconds,
+        "analytics_runtime_seconds": analytics_seconds,
+        "total_runtime_seconds": total_seconds,
         "total_nodes": len(graph_dict["nodes"]),
+        "nodes_by_type": node_types,
         "total_edges": len(graph_dict["edges"]),
+        "edges_by_tier": edges_by_tier,
+        "edges_by_type": edges_by_type,
         "total_communities": len(communities_list),
         "total_roles": len(roles_list),
         "total_bridges": len(bridges_list),
@@ -104,6 +138,7 @@ def run_pipeline(
         "dossiers": dossiers_generated,
     }
 
+    _write_json(out_path / "summary.json", summary)
     return summary
 
 

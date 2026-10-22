@@ -160,6 +160,9 @@ def detect_roles(
                 reasons=reasons,
                 evidence_record_ids=sorted(person_evidence[kp_id]),
                 community_id=comm.community_id,
+                confidence=0.88,
+                network_indicators=["COMMAND_FLOW_PAGERANK", "HIGH_INSULATION_RATIO"],
+                action="Requires investigator review",
             )
         )
         assigned_entities.add(kp_id)
@@ -186,20 +189,24 @@ def detect_roles(
         if is_cross_crime or is_cross_comm or b_score > 0.05:
             score = 0.75
             reasons = []
+            indicators = []
             if is_cross_crime:
                 score += 0.15
                 crimes_str = ", ".join(sorted(crimes))
                 reasons.append(
-                    f"Cross-crime operational bridge across {len(crimes)} domains: {crimes_str}"
+                    f"Cross-crime operational bridge indicator across {len(crimes)} domains: {crimes_str}"
                 )
+                indicators.append("CROSS_CRIME_SPAN")
             if is_cross_comm:
                 score += 0.10
                 comms_str = ", ".join(sorted(adjacent_comms))
-                reasons.append(f"Connects multiple distinct syndicates: {comms_str}")
+                reasons.append(f"Network bridge connecting multiple distinct communities: {comms_str}")
+                indicators.append("CROSS_COMMUNITY_BRIDGE")
             if b_score > 0.05:
                 reasons.append(
-                    f"High betweenness centrality ({b_score:.4f}) as vital network intermediary"
+                    f"High betweenness centrality indicator ({b_score:.4f}) as network intermediary"
                 )
+                indicators.append("HIGH_BETWEENNESS")
 
             role_assignments.append(
                 RoleAssignment(
@@ -209,6 +216,9 @@ def detect_roles(
                     reasons=reasons,
                     evidence_record_ids=sorted(person_evidence[p]),
                     community_id=entity_to_comm.get(p),
+                    confidence=0.85,
+                    network_indicators=indicators,
+                    action="Requires investigator review",
                 )
             )
             assigned_entities.add(p)
@@ -230,11 +240,14 @@ def detect_roles(
                     role="RECRUITER",
                     score=0.82,
                     reasons=[
-                        f"High fan-out to {len(accts)} financial accounts across banking nodes",
-                        "Primary introducer / recruiter signature in cyber fraud complains",
+                        f"Fan-out candidate to {len(accts)} financial accounts across banking nodes",
+                        "Introducer / recruiter signature pattern in cyber complaints",
                     ],
                     evidence_record_ids=sorted(person_evidence[p]),
                     community_id=entity_to_comm.get(p),
+                    confidence=0.82,
+                    network_indicators=["ACCOUNT_FAN_OUT", "FINANCIAL_GATEWAY"],
+                    action="Requires investigator review",
                 )
             )
             assigned_entities.add(p)
@@ -245,11 +258,14 @@ def detect_roles(
                     role="CONTROLLER",
                     score=0.78,
                     reasons=[
-                        f"Operates multiple communication devices ({len(phones)} phones) across {len(cases)} cases",
-                        "Coordinating node for transaction sweeps",
+                        f"Potential controller operating multiple communication devices ({len(phones)} phones) across {len(cases)} cases",
+                        "Coordinating node indicator for transaction sweeps",
                     ],
                     evidence_record_ids=sorted(person_evidence[p]),
                     community_id=entity_to_comm.get(p),
+                    confidence=0.80,
+                    network_indicators=["DEVICE_CONCENTRATION", "MULTI_CASE_COORDINATION"],
+                    action="Requires investigator review",
                 )
             )
             assigned_entities.add(p)
@@ -264,10 +280,13 @@ def detect_roles(
                         role="MEMBER",
                         score=0.65,
                         reasons=[
-                            f"Active participant in {comm.community_id} cases ({len(person_cases[m])} case filings)"
+                            f"Participant in {comm.community_id} records ({len(person_cases[m])} case filings)"
                         ],
                         evidence_record_ids=sorted(person_evidence[m]),
                         community_id=comm.community_id,
+                        confidence=0.70,
+                        network_indicators=["COMMUNITY_MEMBER"],
+                        action="Requires investigator review",
                     )
                 )
                 assigned_entities.add(m)

@@ -239,6 +239,10 @@ def detect_communities(
             f"{primary_crime.title()} Group",
         )
         comm_label = f"{label_prefix} ({dominant_dist})"
+        comm_phones = sorted({x.replace("PHONE:", "") for m in members for x in person_strong_ids.get(m, set()) if x.startswith("PHONE:")})
+        comm_accounts = sorted({x.replace("ACCOUNT:", "") for m in members for x in person_strong_ids.get(m, set()) if x.startswith("ACCOUNT:")})
+        # Phase 9: Network-of-interest safety - case linkage is strictly required
+        is_net_of_interest = len(sorted_cases) > 0
 
         communities.append(
             CommunityModel(
@@ -255,6 +259,9 @@ def detect_communities(
                 last_activity=last_act,
                 continuing_activity=continuing,
                 timeline=timeline,
+                phones=comm_phones,
+                accounts=comm_accounts,
+                is_network_of_interest=is_net_of_interest,
             )
         )
 
