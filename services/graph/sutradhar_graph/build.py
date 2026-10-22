@@ -495,7 +495,6 @@ class GraphBuilder:
                     "ifsc": acct.get("ifsc"),
                     "holder_name": holder_raw,
                     "complaint_count": acct.get("complaint_count", 0),
-                    "account_category": acct.get("account_category", "ORDINARY"),
                 },
             )
 

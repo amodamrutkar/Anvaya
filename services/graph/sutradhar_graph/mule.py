@@ -43,17 +43,33 @@ def trace_mule_chains(graph_data: dict[str, Any], data_dir: Any = None) -> list[
     # Map Account Node -> Account Key and Holder
     account_holders: dict[str, tuple[str, str]] = {}  # acct_node -> (holder_id, holder_name)
     person_nodes = {nid: n for nid, n in nodes.items() if n.get("type") == "PERSON"}
+    case_nodes = {nid: n for nid, n in nodes.items() if n.get("type") == "CASE"}
+    person_accounts: dict[str, set[str]] = defaultdict(set)
 
     for e in edges:
         if e.get("type") == "OWNS" and e["source"] in person_nodes and e["target"] in account_nodes:
             p_node = person_nodes[e["source"]]
             account_holders[e["target"]] = (e["source"], p_node.get("label", "Unknown"))
+            person_accounts[e["source"]].add(e["target"])
 
-    # Map Account -> Cases / Complaints
+    # Map Person -> Cases, Crimes, Co-Accused, Evidence (Observable Graph Intelligence)
+    person_cases: dict[str, set[str]] = defaultdict(set)
+    person_crimes: dict[str, set[str]] = defaultdict(set)
+    person_coacc: dict[str, set[str]] = defaultdict(set)
+    person_evidence: dict[str, set[str]] = defaultdict(set)
 
     for e in edges:
-        if e.get("type") in ("ACCUSED_IN", "VICTIM_IN"):
-            pass
+        src, tgt, etype = e["source"], e["target"], e.get("type")
+        ev = e.get("evidence", [])
+        if etype == "ACCUSED_IN" and src in person_nodes and tgt in case_nodes:
+            person_cases[src].add(tgt)
+            person_evidence[src].update(ev)
+            ct = nodes.get(tgt, {}).get("attributes", {}).get("crime_type")
+            if ct:
+                person_crimes[src].add(ct)
+        elif etype == "CO_ACCUSED_WITH" and src in person_nodes:
+            person_coacc[src].add(tgt)
+            person_evidence[src].update(ev)
 
     # Build Directed Transfer Graph
     G_tx = nx.DiGraph()
@@ -165,62 +181,131 @@ def trace_mule_chains(graph_data: dict[str, Any], data_dir: Any = None) -> list[
                 deltas.sort()
                 passthrough_min = round(deltas[len(deltas) // 2], 1)
 
-        # Weighted signals for Organiser vs Deceived
-        # Organiser signals: deeper layers, high fan-out, rapid automated sweep, multiple accounts
-        # Deceived signals: Layer 1 or 2, single account, small amount, high complaints against account but no outbound dispersion
-        org_score = 0.0
+        # Observable Indicators (Strictly No Ground-Truth Leakage)
+        raw_holder = anode.get("attributes", {}).get("holder_name", "")
+        clean_holder_lower = raw_holder.lower()
+        COMMERCIAL_KEYWORDS = (
+            "store", "stall", "vendor", "driver", "partner", "kirana", "chai", "tea",
+            "auto", "shop", "trader", "merchant", "enterprise", "commercial", "upi",
+            "delivery", "services", "agency", "dairy", "bakery", "traders", "bazaar",
+        )
+        has_commercial_marker = (
+            any(k in clean_holder_lower for k in COMMERCIAL_KEYWORDS)
+            or "(" in raw_holder
+        )
+        turnover_ratio = (outflow / inflow) if inflow > 0 else 0.0
+        is_balanced_turnover = (0.75 <= turnover_ratio <= 1.25) if (inflow > 0 and outflow > 0) else False
+
+        # Holder criminal connections
+        holder_cases = person_cases.get(holder_id, set())
+        holder_crimes = person_crimes.get(holder_id, set())
+        holder_accts = person_accounts.get(holder_id, set())
+        holder_coacc = person_coacc.get(holder_id, set())
+
+        # Observable Commercial Sweep Profile (Zero fraud complaints, commercial marker or balanced turnover with 0 criminal cases)
+        is_commercial_pt = (
+            complaints == 0
+            and (has_commercial_marker or (is_balanced_turnover and len(holder_cases) == 0))
+        )
+
+        coord_indicators: list[str] = []
         reasons: list[str] = []
+        coord_evidence: list[str] = list(person_evidence.get(holder_id, set())) + [ak]
 
         if layer >= 3:
-            org_score += 0.40
             reasons.append(f"Positioned in consolidation Layer {layer} (deep mule funnel)")
         elif layer == 2:
-            org_score += 0.20
             reasons.append("Layer 2 intermediary distribution account")
         else:
             reasons.append("Layer 1 initial victim-intake account")
 
         if fan_out >= 2:
-            org_score += 0.30
-            reasons.append(f"High fund dispersion fan-out to {fan_out} downstream accounts")
-            controller_candidates.add(holder_id)
+            reasons.append(f"Fund dispersion fan-out to {fan_out} downstream accounts")
         elif fan_out == 0 and inflow > 0:
             reasons.append("Terminal cash-out or digital wallet conversion point")
 
-        if passthrough_min <= 30.0 and outflow > 0:
-            org_score += 0.25
-            reasons.append(f"Rapid automated pass-through latency ({passthrough_min} min)")
-
-        if complaints > 10:
+        if len(holder_cases) >= 2:
+            coord_indicators.append(f"CROSS_CASE_COORDINATION({len(holder_cases)} cases)")
+            reasons.append(f"Account holder linked to {len(holder_cases)} distinct criminal cases across agencies")
+        if len(holder_crimes) >= 2:
+            coord_indicators.append(f"CROSS_CRIME_OPERATIONS({len(holder_crimes)} crime domains)")
+            crimes_str = ", ".join(sorted(holder_crimes))
+            reasons.append(f"Operations span multiple crime domains: {crimes_str}")
+        if len(holder_accts) >= 2:
+            coord_indicators.append(f"MULTI_ACCOUNT_CONTROL({len(holder_accts)} accounts)")
+            reasons.append(f"Account holder controls {len(holder_accts)} distinct accounts in financial flow")
+        if len(holder_coacc) >= 2:
+            coord_indicators.append(f"CO_ACCUSED_SYNDICATE_TIES({len(holder_coacc)} co-accused)")
+            reasons.append(f"Direct operational ties with {len(holder_coacc)} co-accused syndicate members")
+        if complaints >= 5:
+            coord_indicators.append(f"HIGH_FRAUD_COMPLAINTS({complaints})")
             reasons.append(f"Flagged in {complaints} distinct NCRP/1930 fraud complaints")
 
-        acct_cat = anode.get("attributes", {}).get("account_category", "")
-        is_innocent_pt = (acct_cat == "INNOCENT_FAST_PASSTHROUGH")
+        # Determine Classification
+        fin_dispersion = (layer >= 2 and fan_out >= 2)
 
-        # Determine Classification Band
-        if is_innocent_pt:
+        if is_commercial_pt:
             classification: AccountClass = "UNCERTAIN"
             score = 0.10
+            confidence = 0.80
+            indicators = [
+                "COMMERCIAL_SWEEP_PROFILE",
+                "ZERO_FRAUD_COMPLAINTS",
+                f"TURNOVER_RATIO_{turnover_ratio:.2f}",
+            ]
+            if has_commercial_marker:
+                indicators.append("COMMERCIAL_ENTITY_MARKER")
+            if passthrough_min <= 30.0:
+                indicators.append(f"RAPID_PASSTHROUGH_{passthrough_min}M")
             reasons.append(
-                "Profile consistent with legitimate merchant/gig-worker high-velocity sweep; zero fraud complaints — guarded from organiser misclassification"
+                f"Observable profile matches legitimate merchant/commercial high-velocity sweep: balanced turnover ratio ({turnover_ratio:.2f}), "
+                f"pass-through latency ({passthrough_min} min), and zero fraud complaints — guarded from organiser misclassification"
             )
-        elif org_score >= 0.65:
-            classification: AccountClass = "LIKELY_ORGANISER"
-            score = min(0.95, round(org_score, 2))
-            reasons.append("Pattern indicates organiser role — requires investigator review")
-        elif org_score <= 0.35 and layer <= 2:
-            classification = "LIKELY_DECEIVED"
-            score = round(1.0 - org_score, 2)
+            action = "Requires investigator review"
+            evidence = [ak]
+        elif fin_dispersion and len(coord_indicators) >= 2 and (len(holder_cases) > 0 or complaints > 0):
+            classification = "LIKELY_ORGANISER"
+            score = min(0.95, round(0.70 + 0.05 * len(coord_indicators), 2))
+            confidence = 0.85
+            indicators = coord_indicators + ["FINANCIAL_DISPERSION_HUB"]
             reasons.append(
-                "Account profile matches deceived holder: low risk score and early layer positioning"
+                f"Positioned in consolidation Layer {layer} with dispersion fan-out to {fan_out} accounts. "
+                "Multi-indicator coordination evidence across network suggests organiser role — requires investigator review"
             )
+            action = "Requires investigator review"
+            evidence = sorted(set(coord_evidence))
+            recruiter_candidates.add(holder_id)
+            controller_candidates.add(holder_id)
+        elif layer <= 2 and (complaints > 0 or (len(holder_cases) <= 1 and len(coord_indicators) == 0)):
+            if complaints > 0 or (layer == 1 and fan_out <= 2):
+                classification = "LIKELY_DECEIVED"
+                score = round(max(0.65, 1.0 - (0.10 * fan_out)), 2)
+                confidence = 0.85
+                indicators = ["INTAKE_LAYER_POSITION", "ABSENCE_OF_COORDINATION_EVIDENCE"]
+                if complaints > 0:
+                    indicators.append(f"FRAUD_COMPLAINTS_PRESENT({complaints})")
+                    reasons.append(f"Initial victim intake account flagged in {complaints} fraud complaints with low outbound dispersion")
+                else:
+                    reasons.append("Early layer account receiving inbound funds with low outbound dispersion")
+                reasons.append("Account profile matches deceived holder: absence of cross-case coordination evidence")
+                action = "Requires investigator review"
+                evidence = [ak]
+            else:
+                classification = "UNCERTAIN"
+                score = 0.25
+                confidence = 0.75
+                indicators = ["ORDINARY_ACCOUNT_PROFILE", "ZERO_FRAUD_COMPLAINTS", "INSUFFICIENT_COORDINATION_EVIDENCE"]
+                reasons.append("Intermediate risk profile with ordinary account activity — requires investigator review")
+                action = "Requires investigator review"
+                evidence = [ak]
         else:
             classification = "UNCERTAIN"
-            score = round(org_score, 2)
-            reasons.append("Intermediate risk profile — requires investigator review")
-
-        if layer >= 2 and fan_out >= 2 and not is_innocent_pt:
-            recruiter_candidates.add(holder_id)
+            score = 0.30
+            confidence = 0.75
+            indicators = ["ORDINARY_ACCOUNT_PROFILE", "ZERO_FRAUD_COMPLAINTS", "INSUFFICIENT_COORDINATION_EVIDENCE"]
+            reasons.append("Intermediate risk profile with ordinary account activity — requires investigator review")
+            action = "Requires investigator review"
+            evidence = [ak]
 
         classified_accounts.append(
             MuleAccountModel(
@@ -237,6 +322,10 @@ def trace_mule_chains(graph_data: dict[str, Any], data_dir: Any = None) -> list[
                 fan_out=fan_out,
                 median_passthrough_minutes=passthrough_min,
                 complaint_count=complaints,
+                confidence=confidence,
+                indicators=indicators,
+                evidence=evidence,
+                action=action,
             )
         )
 

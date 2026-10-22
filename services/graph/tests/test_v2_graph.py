@@ -245,12 +245,12 @@ def test_v2_likely_organiser_classification(v2_seed42_graph: dict):
 
 # 16. Innocent pass-through hard negative
 def test_v2_innocent_passthrough_guard(v2_seed42_graph: dict):
-    # Find accounts categorized as INNOCENT_FAST_PASSTHROUGH in node attributes
-    nodes_map = {n["id"]: n for n in v2_seed42_graph["nodes"]}
-    innocent_nodes = {
-        nid for nid, n in nodes_map.items()
-        if n.get("attributes", {}).get("account_category") == "INNOCENT_FAST_PASSTHROUGH"
-    }
+    # Verify via test oracle truth that innocent pass-through accounts are guarded
+    truth_file = Path("data/truth/v2/dev/seed-42/account_truth.jsonl")
+    assert truth_file.exists(), "Truth file must exist for evaluation test"
+    account_truth = [json.loads(line) for line in truth_file.read_text(encoding="utf-8").splitlines() if line.strip()]
+    innocent_keys = {a["account_key"] for a in account_truth if a.get("category") == "INNOCENT_FAST_PASSTHROUGH"}
+    assert len(innocent_keys) == 100
 
     chains = trace_mule_chains(v2_seed42_graph)
     assert len(chains) > 0
@@ -259,7 +259,7 @@ def test_v2_innocent_passthrough_guard(v2_seed42_graph: dict):
     # Check how many innocent nodes received LIKELY_ORGANISER
     wrongly_flagged = [
         a for a in accounts
-        if f"ACCOUNT:{a.account_key}" in innocent_nodes and a.classification == "LIKELY_ORGANISER"
+        if a.account_key in innocent_keys and a.classification == "LIKELY_ORGANISER"
     ]
     assert len(wrongly_flagged) == 0, f"Found {len(wrongly_flagged)} innocent accounts wrongly marked LIKELY_ORGANISER"
 

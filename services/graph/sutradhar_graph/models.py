@@ -172,6 +172,10 @@ class MuleAccountModel(BaseModel):
     fan_out: int = 0
     median_passthrough_minutes: float = 0.0
     complaint_count: int = 0
+    confidence: float = 0.80
+    indicators: list[str] = Field(default_factory=list)
+    evidence: list[str] = Field(default_factory=list)
+    action: str = "Requires investigator review"
 
 
 class MuleTransferEdge(BaseModel):
