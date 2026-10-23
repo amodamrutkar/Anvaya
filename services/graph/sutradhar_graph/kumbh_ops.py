@@ -119,6 +119,113 @@ def haversine_distance_km(coord1: tuple[float, float], coord2: tuple[float, floa
     return r * c
 
 
+def correlate_spatial(
+    event1: KumbhEventModel,
+    event2: KumbhEventModel,
+    config: SpatialConfig | None = None,
+) -> dict[str, Any]:
+    """
+    Evaluate spatial correlation between two Kumbh events.
+
+    Rules:
+    - If precise GPS coordinates are available on both events, calculates Haversine distance.
+      Matches if distance_km <= config.max_distance_km.
+    - If GPS coordinates are absent and require_coordinates is True: returns no match.
+    - If GPS coordinates are absent and require_coordinates is False:
+      Matches if and only if both events share the exact same zone (e.g. 'Ramkund').
+      Explicitly labeled as 'ZONE_ASSOCIATION' with distance_km = None.
+      Does NOT invent coordinates, estimate distances, or claim false physical proximity.
+    """
+    cfg = config or SpatialConfig()
+
+    # Case 1: Both events have precise coordinates
+    if event1.coordinates and event2.coordinates:
+        dist_km = haversine_distance_km(event1.coordinates, event2.coordinates)
+        is_match = dist_km <= cfg.max_distance_km
+        return {
+            "is_match": is_match,
+            "correlation_type": "COORDINATE_PROXIMITY" if is_match else "NONE",
+            "distance_km": round(dist_km, 4),
+            "evidence_tier": "WEAK",
+            "explanation": f"Calculated haversine distance {dist_km:.3f} km (threshold {cfg.max_distance_km} km).",
+        }
+
+    # If coordinates are strictly required but absent
+    if cfg.require_coordinates:
+        return {
+            "is_match": False,
+            "correlation_type": "NONE",
+            "distance_km": None,
+            "evidence_tier": "WEAK",
+            "explanation": "Precise coordinates required but not available in event feed.",
+        }
+
+    # Case 2: Zone fallback (No coordinates invented)
+    if event1.zone and event2.zone and event1.zone == event2.zone:
+        return {
+            "is_match": True,
+            "correlation_type": "ZONE_ASSOCIATION",
+            "distance_km": None,  # NEVER invent or estimate distance
+            "evidence_tier": "WEAK",
+            "explanation": f"Zone-level association in {event1.zone}. No GPS coordinates available; spatial proximity not claimed.",
+        }
+
+    return {
+        "is_match": False,
+        "correlation_type": "NONE",
+        "distance_km": None,
+        "evidence_tier": "WEAK",
+        "explanation": f"Events in different zones ({event1.zone} vs {event2.zone}) without coordinate linkage.",
+    }
+
+
+def correlate_temporal(
+    event1: KumbhEventModel,
+    event2: KumbhEventModel,
+    config: TemporalConfig | None = None,
+) -> dict[str, Any]:
+    """
+    Evaluate temporal correlation between two Kumbh events.
+
+    Windows:
+    - immediate: diff <= immediate_seconds (default 3600s / 1h)
+    - short: diff <= short_seconds (default 21600s / 6h)
+    - extended: diff <= extended_seconds (default 86400s / 24h)
+
+    Boundary behavior:
+    - diff == threshold is considered inside the window (boundary inclusive).
+    - diff > threshold is strictly outside the window.
+    """
+    cfg = config or TemporalConfig()
+    dt1 = parse_iso_timestamp(event1.ts)
+    dt2 = parse_iso_timestamp(event2.ts)
+    diff_seconds = abs((dt2 - dt1).total_seconds())
+
+    within_immediate = diff_seconds <= cfg.immediate_seconds
+    within_short = diff_seconds <= cfg.short_seconds
+    within_extended = diff_seconds <= cfg.extended_seconds
+
+    active_window = "NONE"
+    if within_immediate:
+        active_window = "IMMEDIATE"
+    elif within_short:
+        active_window = "SHORT"
+    elif within_extended:
+        active_window = "EXTENDED"
+
+    return {
+        "is_match": within_extended,
+        "active_window": active_window,
+        "diff_seconds": diff_seconds,
+        "within_immediate": within_immediate,
+        "within_short": within_short,
+        "within_extended": within_extended,
+        "evidence_tier": "WEAK",
+        "explanation": f"Time difference of {diff_seconds:.1f}s between events ({active_window} window).",
+    }
+
+
+
 def parse_kumbh_event(raw: dict[str, Any]) -> KumbhEventModel:
     """
     Convert a raw event dictionary into a validated KumbhEventModel.
@@ -862,9 +969,27 @@ class KumbhOperationsEngine:
 
         total_runtime = round(t_cluster - t0, 4)
 
+        # Separate operational observations from meaningful signals
+        operational_obs = sum(1 for it in all_review_items if it.type == "CIVILIAN_OPERATIONAL_OBSERVATION")
+        meaningful_corrs = sum(1 for it in all_review_items if it.type != "CIVILIAN_OPERATIONAL_OBSERVATION")
+        total_signals = sum(len(it.signals) for it in all_review_items)
+        network_matches = sum(
+            1 for it in all_review_items
+            if it.network_context and (it.network_context.cases or it.network_context.communities)
+        )
+        zero_corr_events = sum(
+            1 for it in all_review_items
+            if it.type == "CIVILIAN_OPERATIONAL_OBSERVATION" and not it.signals
+        )
+
         return {
             "total_events": len(parsed_events),
             "total_intelligence_items": len(all_review_items),
+            "operational_observations_count": operational_obs,
+            "meaningful_correlations_count": meaningful_corrs,
+            "total_intelligence_signals": total_signals,
+            "network_context_matches": network_matches,
+            "zero_correlation_events": zero_corr_events,
             "total_clusters": len(clusters),
             "intelligence_items": [item.model_dump() for item in all_review_items],
             "clusters": [c.model_dump() for c in clusters],
@@ -873,5 +998,10 @@ class KumbhOperationsEngine:
                 "correlation_runtime_seconds": round(t_correlate - t_ingest, 4),
                 "clustering_runtime_seconds": round(t_cluster - t_correlate, 4),
                 "total_runtime_seconds": total_runtime,
+                "operational_observations_count": operational_obs,
+                "meaningful_correlations_count": meaningful_corrs,
+                "total_signals": total_signals,
+                "network_matches": network_matches,
+                "zero_correlation_events": zero_corr_events,
             },
         }

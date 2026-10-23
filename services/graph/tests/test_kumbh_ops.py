@@ -643,3 +643,215 @@ def test_v2_multiseed_kumbh_regression(seed_dir):
     assert feed_result["total_intelligence_items"] >= len(events)
     assert feed_result["metrics"]["total_runtime_seconds"] < 5.0, f"Feed processing for {seed_dir} must be under 5s"
 
+
+# ─────────────────────────────────────────────────────────────
+# 16. Audit Check 2: Civilian / Zero-Correlation Test
+# ─────────────────────────────────────────────────────────────
+def test_civilian_zero_correlation_audit(base_test_graph):
+    """
+    Construct an event with ZERO correlation to any graph entity, case, or network:
+    - Emits legitimate operational observation
+    - ZERO criminal signals
+    - ZERO network context
+    - NO accused status
+    - NO elevated confidence
+    - Evidence tier = WEAK
+    - Investigator review retained
+    """
+    engine = KumbhOperationsEngine(
+        graph_data=base_test_graph["graph_data"],
+        communities=base_test_graph["communities"],
+        roles=base_test_graph["roles"],
+    )
+
+    zero_corr_event = KumbhEventModel(
+        event_id="KUMBH-EVT-ZERO-001",
+        event_type="LOST_AND_FOUND",
+        ts="2027-01-25T15:00:00Z",
+        zone="Tapovan",
+        subject_token="TOK-PILGRIM-UNKNOWN",
+        related_ids=[],
+        confidence=0.70,
+        details={"description": "Pilgrim reported lost umbrella near water station."},
+    )
+
+    items = engine.correlate_event(zero_corr_event)
+    assert len(items) == 1
+    item = items[0]
+
+    assert item.type == "CIVILIAN_OPERATIONAL_OBSERVATION"
+    assert len(item.signals) == 0, "Zero-correlation event must NOT produce any intelligence signals"
+    assert item.network_context is None
+    assert item.evidence_tier == "WEAK"
+    assert item.confidence == 0.70
+    assert item.action == "Requires investigator review"
+
+    forbidden_labels = ["CRIMINAL_AT_KUMBH", "TERRORIST_AT_KUMBH", "GUILTY", "THREAT_PERSON", "ACCUSED_AT_KUMBH"]
+    for lbl in forbidden_labels:
+        assert lbl not in item.explanation.upper()
+        for s in item.signals:
+            assert lbl not in s.description.upper()
+
+
+# ─────────────────────────────────────────────────────────────
+# 17. Audit Check 3: Spatial Correlation Cases A, B, C
+# ─────────────────────────────────────────────────────────────
+def test_spatial_correlation_audit_cases():
+    """
+    Test exact spatial correlation semantics:
+    Case A: Same zone, no coordinates -> Zone association only, distance_km = None (no false precision).
+    Case B: Different zones, no coordinates -> No spatial match.
+    Case C: Precise coordinates available -> Configured spatial threshold is applied.
+    """
+    from sutradhar_graph.kumbh_ops import correlate_spatial
+
+    # Case A: Same zone, no coordinates
+    ev1 = KumbhEventModel(event_id="EVT-A1", event_type="LOST_AND_FOUND", ts="2027-01-15T10:00:00Z", zone="Ramkund")
+    ev2 = KumbhEventModel(event_id="EVT-A2", event_type="CROWD_SURGE", ts="2027-01-15T10:30:00Z", zone="Ramkund")
+
+    res_a = correlate_spatial(ev1, ev2)
+    assert res_a["is_match"] is True
+    assert res_a["correlation_type"] == "ZONE_ASSOCIATION"
+    assert res_a["distance_km"] is None, "Must NOT invent or estimate distance when coordinates are absent"
+    assert res_a["evidence_tier"] == "WEAK"
+
+    # Case B: Different zones, no coordinates
+    ev3 = KumbhEventModel(event_id="EVT-B1", event_type="LOST_AND_FOUND", ts="2027-01-15T10:00:00Z", zone="Ramkund")
+    ev4 = KumbhEventModel(event_id="EVT-B2", event_type="LOST_AND_FOUND", ts="2027-01-15T10:00:00Z", zone="Trimbakeshwar")
+
+    res_b = correlate_spatial(ev3, ev4)
+    assert res_b["is_match"] is False
+    assert res_b["correlation_type"] == "NONE"
+    assert res_b["distance_km"] is None
+
+    # Case C: Precise coordinates available
+    # Point 1: Ramkund Ghat (19.9975, 73.7915)
+    # Point 2: Panchavati Temple (20.0030, 73.7950) ~ 0.72 km apart
+    # Point 3: Trimbakeshwar (19.9325, 73.5300) ~ 28 km apart
+    ev_c1 = KumbhEventModel(event_id="EVT-C1", event_type="INCIDENT", ts="2027-01-15T10:00:00Z", zone="Ramkund", coordinates=(19.9975, 73.7915))
+    ev_c2 = KumbhEventModel(event_id="EVT-C2", event_type="INCIDENT", ts="2027-01-15T10:15:00Z", zone="Panchavati", coordinates=(20.0030, 73.7950))
+    ev_c3 = KumbhEventModel(event_id="EVT-C3", event_type="INCIDENT", ts="2027-01-15T10:30:00Z", zone="Trimbakeshwar", coordinates=(19.9325, 73.5300))
+
+    cfg = SpatialConfig(max_distance_km=2.0)
+    # Close points within 2km
+    res_c_close = correlate_spatial(ev_c1, ev_c2, config=cfg)
+    assert res_c_close["is_match"] is True
+    assert res_c_close["correlation_type"] == "COORDINATE_PROXIMITY"
+    assert res_c_close["distance_km"] == pytest.approx(0.72, abs=0.1)
+
+    # Far points exceeding 2km
+    res_c_far = correlate_spatial(ev_c1, ev_c3, config=cfg)
+    assert res_c_far["is_match"] is False
+    assert res_c_far["correlation_type"] == "NONE"
+    assert res_c_far["distance_km"] > 25.0
+
+
+# ─────────────────────────────────────────────────────────────
+# 18. Audit Check 4: Temporal Correlation Boundaries
+# ─────────────────────────────────────────────────────────────
+def test_temporal_correlation_audit_boundaries():
+    """
+    Test exact temporal boundary behavior against configurable windows:
+    - Before window / outside: diff > window -> is_match = False
+    - Inside window: diff < window -> is_match = True
+    - Exactly on boundary: diff == window -> is_match = True (inclusive)
+    """
+    from sutradhar_graph.kumbh_ops import correlate_temporal
+
+    cfg = TemporalConfig(immediate_seconds=3600, short_seconds=21600, extended_seconds=86400)
+    base_evt = KumbhEventModel(event_id="EVT-T0", event_type="SIGHTING", ts="2027-01-15T12:00:00Z", zone="Ramkund")
+
+    # Inside immediate window (30 mins = 1800s)
+    evt_inside = KumbhEventModel(event_id="EVT-T1", event_type="SIGHTING", ts="2027-01-15T12:30:00Z", zone="Ramkund")
+    res_inside = correlate_temporal(base_evt, evt_inside, config=cfg)
+    assert res_inside["within_immediate"] is True
+    assert res_inside["active_window"] == "IMMEDIATE"
+
+    # Exactly on boundary (1 hour = 3600s)
+    evt_boundary = KumbhEventModel(event_id="EVT-T2", event_type="SIGHTING", ts="2027-01-15T13:00:00Z", zone="Ramkund")
+    res_boundary = correlate_temporal(base_evt, evt_boundary, config=cfg)
+    assert res_boundary["within_immediate"] is True
+    assert res_boundary["active_window"] == "IMMEDIATE"
+
+    # Just outside immediate window (3601s)
+    evt_outside_imm = KumbhEventModel(event_id="EVT-T3", event_type="SIGHTING", ts="2027-01-15T13:00:01Z", zone="Ramkund")
+    res_outside_imm = correlate_temporal(base_evt, evt_outside_imm, config=cfg)
+    assert res_outside_imm["within_immediate"] is False
+    assert res_outside_imm["within_short"] is True
+    assert res_outside_imm["active_window"] == "SHORT"
+
+    # Far outside extended window (48 hours)
+    evt_far = KumbhEventModel(event_id="EVT-T4", event_type="SIGHTING", ts="2027-01-17T12:00:00Z", zone="Ramkund")
+    res_far = correlate_temporal(base_evt, evt_far, config=cfg)
+    assert res_far["is_match"] is False
+    assert res_far["active_window"] == "NONE"
+
+
+# ─────────────────────────────────────────────────────────────
+# 19. Audit Check 6: Unrelated Civilians at Same Event
+# ─────────────────────────────────────────────────────────────
+def test_unrelated_civilians_no_criminal_cluster(base_test_graph):
+    """
+    Two unrelated civilians at the same Kumbh event must NOT generate
+    a criminal or syndicate cluster.
+    """
+    engine = KumbhOperationsEngine(graph_data=base_test_graph["graph_data"])
+
+    ev1 = KumbhEventModel(
+        event_id="EVT-CIV-1",
+        event_type="LOST_AND_FOUND",
+        ts="2027-01-15T10:00:00Z",
+        zone="Ramkund",
+        related_ids=["P-CIVILIAN"],
+    )
+    ev2 = KumbhEventModel(
+        event_id="EVT-CIV-2",
+        event_type="LOST_AND_FOUND",
+        ts="2027-01-15T10:00:00Z",
+        zone="Ramkund",
+        related_ids=["P-CIVILIAN-2"],
+    )
+
+    clusters = engine.cluster_events([ev1, ev2])
+    # No shared infrastructure and no shared entity -> 0 clusters
+    assert len(clusters) == 0
+
+
+# ─────────────────────────────────────────────────────────────
+# 20. Audit Check 6: Vehicle Operational Cluster Not Criminal Syndicate
+# ─────────────────────────────────────────────────────────────
+def test_vehicle_operational_cluster_not_criminal_syndicate(base_test_graph):
+    """
+    Multiple events sharing the same vehicle form an operational infrastructure cluster,
+    but it must NEVER be labeled as a criminal syndicate.
+    """
+    engine = KumbhOperationsEngine(graph_data=base_test_graph["graph_data"])
+
+    ev1 = KumbhEventModel(
+        event_id="EVT-VEH-1",
+        event_type="TRAFFIC_DIVERSION",
+        ts="2027-01-15T10:00:00Z",
+        zone="Ramkund",
+        related_ids=["VEH-MH15-AB1234"],
+    )
+    ev2 = KumbhEventModel(
+        event_id="EVT-VEH-2",
+        event_type="TRAFFIC_DIVERSION",
+        ts="2027-01-16T14:00:00Z",
+        zone="Tapovan",
+        related_ids=["VEH-MH15-AB1234"],
+    )
+
+    clusters = engine.cluster_events([ev1, ev2])
+    assert len(clusters) == 1
+    c = clusters[0]
+
+    assert c.cluster_type == "SHARED_INFRASTRUCTURE_CLUSTER"
+    assert "VEH-MH15-AB1234" in c.shared_evidence[0]
+    assert c.action == "Requires investigator review"
+
+    forbidden_labels = ["CRIMINAL_SYNDICATE", "GANG", "MAFIA", "TERRORIST"]
+    for lbl in forbidden_labels:
+        assert lbl not in c.explanation.upper()
+        assert lbl not in c.cluster_type.upper()
+
