@@ -21,8 +21,10 @@ from .bridges import detect_bridges
 from .build import GraphBuilder
 from .communities import detect_communities
 from .dossier import generate_dossier, load_dossier_rules
+from .kumbh_ops import KumbhOperationsEngine
 from .mule import trace_mule_chains
 from .roles import detect_roles
+
 
 
 def _write_json(path: Path, data: Any) -> None:
@@ -103,6 +105,26 @@ def run_pipeline(
         _write_json(dossiers_dir / f"{dos.dossier_id}.json", dos_dict)
         dossiers_generated.append(dos.dossier_id)
 
+    # 8. Kumbh Operations Intelligence (Step 4)
+    kumbh_summary = None
+    if builder.kumbh_events:
+        t_kumbh_start = time.time()
+        kumbh_engine = KumbhOperationsEngine(
+            graph_data=graph_dict,
+            communities=communities_models,
+            roles=roles_models,
+            bridges=bridges_models,
+            mule_chains=mule_chains_models,
+        )
+        kumbh_result = kumbh_engine.process_feed(builder.kumbh_events)
+        _write_json(out_path / "kumbh_intelligence.json", kumbh_result)
+        kumbh_summary = {
+            "total_events": kumbh_result["total_events"],
+            "total_intelligence_items": kumbh_result["total_intelligence_items"],
+            "total_clusters": kumbh_result["total_clusters"],
+            "runtime_seconds": round(time.time() - t_kumbh_start, 3),
+        }
+
     total_seconds = round(time.time() - t_start, 3)
 
     # Node & Edge statistics
@@ -136,6 +158,7 @@ def run_pipeline(
         "total_bridges": len(bridges_list),
         "total_mule_chains": len(mule_chains_list),
         "dossiers": dossiers_generated,
+        "kumbh_operations": kumbh_summary,
     }
 
     _write_json(out_path / "summary.json", summary)

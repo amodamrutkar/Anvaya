@@ -597,9 +597,13 @@ class GraphBuilder:
                 label=evt.get("title") or evt_id,
                 attributes={
                     "event_type": evt.get("event_type"),
-                    "zone_id": evt.get("zone_id"),
-                    "timestamp": evt.get("timestamp"),
+                    "zone": evt.get("zone") or evt.get("zone_id"),
+                    "zone_id": evt.get("zone_id") or evt.get("zone"),
+                    "ts": evt.get("ts") or evt.get("timestamp"),
+                    "timestamp": evt.get("timestamp") or evt.get("ts"),
                     "severity": evt.get("severity"),
+                    "related_ids": evt.get("related_ids", []),
+                    "subject_token": evt.get("subject_token"),
                 },
             )
 

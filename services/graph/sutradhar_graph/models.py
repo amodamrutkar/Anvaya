@@ -272,3 +272,94 @@ class DossierModel(BaseModel):
     financial_links: list[FinancialLinkItem]
     timeline: list[TimelineItem]
     evidence_gaps: list[EvidenceGapItem]
+
+
+# --------------------------------------------------------------------------- #
+# 7. Kumbh Operations Intelligence Model (Step 4)
+# --------------------------------------------------------------------------- #
+SignalType = Literal[
+    "KNOWN_ENTITY_MATCH",
+    "KNOWN_CASE_ASSOCIATION",
+    "KNOWN_NETWORK_ASSOCIATION",
+    "CROSS_CASE_ACTIVITY",
+    "TEMPORAL_CLUSTER",
+    "SPATIAL_CLUSTER",
+    "REPEATED_EVENT_ASSOCIATION",
+    "VEHICLE_ASSOCIATION",
+    "PHONE_ASSOCIATION",
+    "ACCOUNT_ASSOCIATION",
+]
+
+
+class KumbhEventModel(BaseModel):
+    """Production-safe event intelligence model."""
+    event_id: str
+    event_type: str
+    ts: str
+    zone: str
+    subject_token: str | None = None
+    related_ids: list[str] = Field(default_factory=list)
+    source_agency: str = "KUMBH_SURVEILLANCE"
+    confidence: float = 1.0
+    details: dict[str, Any] = Field(default_factory=dict)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    coordinates: tuple[float, float] | None = None
+
+
+class IntelligenceSignalModel(BaseModel):
+    """Explainable intelligence signal with provenance and action."""
+    signal_type: SignalType
+    description: str
+    evidence: list[str] = Field(default_factory=list)
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    confidence: float = 0.85
+    action: str = "Requires investigator review"
+
+
+class NetworkContextModel(BaseModel):
+    """Surfaced contextual intelligence from the existing graph."""
+    entity_id: str
+    entity_type: NodeType = "PERSON"
+    canonical_name: str | None = None
+    cases: list[str] = Field(default_factory=list)
+    crime_types: list[str] = Field(default_factory=list)
+    communities: list[str] = Field(default_factory=list)
+    is_network_of_interest: bool = False
+    roles: list[str] = Field(default_factory=list)
+    is_bridge_candidate: bool = False
+    bridge_score: float | None = None
+    financial_chains: list[str] = Field(default_factory=list)
+    associated_phones: list[str] = Field(default_factory=list)
+    associated_accounts: list[str] = Field(default_factory=list)
+    associated_vehicles: list[str] = Field(default_factory=list)
+    evidence_tier: EdgeStrength = "MEDIUM"
+    provenance: list[dict[str, Any]] = Field(default_factory=list)
+    action: str = "Requires investigator review"
+
+
+class KumbhClusterModel(BaseModel):
+    """Explainable incident cluster."""
+    cluster_id: str
+    cluster_type: str
+    member_events: list[str]
+    shared_evidence: list[str]
+    confidence: float
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    explanation: str
+    action: str = "Requires investigator review"
+
+
+class InvestigatorReviewObject(BaseModel):
+    """Core explainable intelligence item generated for human investigator review."""
+    intelligence_id: str
+    type: str
+    subject: str
+    related_event: str
+    confidence: float
+    signals: list[IntelligenceSignalModel] = Field(default_factory=list)
+    evidence: list[str] = Field(default_factory=list)
+    provenance: list[dict[str, Any]] = Field(default_factory=list)
+    evidence_tier: EdgeStrength = "MEDIUM"
+    network_context: NetworkContextModel | None = None
+    explanation: str
+    action: str = "Requires investigator review"

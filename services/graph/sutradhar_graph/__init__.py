@@ -6,6 +6,7 @@ from .bridges import detect_bridges
 from .build import GraphBuilder
 from .communities import detect_communities
 from .dossier import generate_dossier, load_dossier_rules
+from .kumbh_ops import KumbhOperationsEngine, SpatialConfig, TemporalConfig, parse_kumbh_event
 from .mule import trace_mule_chains
 from .paths import neighborhood, shortest_path
 from .roles import detect_roles
@@ -30,4 +31,8 @@ __all__ = [
     "neighborhood",
     "shortest_path",
     "run_pipeline",
+    "KumbhOperationsEngine",
+    "parse_kumbh_event",
+    "TemporalConfig",
+    "SpatialConfig",
 ]
