@@ -53,6 +53,7 @@ class DataStore:
     def __init__(self) -> None:
         self._entities: dict[str, dict] = {}
         self._links: dict[str, dict] = {}
+        self._graph_data: dict[str, Any] = {"nodes": [], "edges": []}
         self._communities: dict[str, dict] = {}
         self._roles: list[dict] = []
         self._bridges: list[dict] = []
@@ -63,6 +64,10 @@ class DataStore:
         self._kumbh_event_cursor: int = 0
         self._kumbh_alerts: list[dict] = []
         self._kumbh_alert_counter: int = 0
+        self._kumbh_observations: list[dict] = []
+        self._kumbh_signals: list[dict] = []
+        self._kumbh_clusters: list[dict] = []
+        self._kumbh_event_intelligence: dict[str, dict] = {}
         self._federated_queries: list[dict] = []
         self._query_counter: int = 0
         self._metrics: dict = {}
@@ -78,16 +83,21 @@ class DataStore:
         """Load all data at startup."""
         self._load_entities()
         self._load_links()
+        self._load_graph_data()
         self._load_communities()
         self._load_kumbh_events()
+        self._load_kumbh_intelligence()
         self._load_metrics()
         self._init_audit_chain()
         log.info(
-            "DataStore loaded: %d entities, %d links, %d communities, %d kumbh events",
+            "DataStore loaded: %d entities, %d links, %d communities, %d kumbh events, %d observations, %d signals, %d clusters",
             len(self._entities),
             len(self._links),
             len(self._communities),
             len(self._kumbh_events),
+            len(self._kumbh_observations),
+            len(self._kumbh_signals),
+            len(self._kumbh_clusters),
         )
 
     def _load_entities(self) -> None:
@@ -112,22 +122,66 @@ class DataStore:
         for lnk in raw:
             self._links[lnk["link_id"]] = lnk
 
+    def _load_graph_data(self) -> None:
+        path = artifacts_path("graph/graph.json")
+        data = _load_json(path)
+        if isinstance(data, dict) and "nodes" in data and "edges" in data:
+            self._graph_data = data
+        else:
+            self._graph_data = {"nodes": [], "edges": []}
+
     def _load_communities(self) -> None:
         path = artifacts_path("graph/communities.jsonl")
         raw = _load_jsonl(path)
         if not raw:
-            fb = CONTRACTS_FIXTURES_DIR / "api" / "GET_graph_communities.json"
-            data = _load_json(fb) or []
-            raw = data if isinstance(data, list) else [data]
+            json_path = artifacts_path("graph/communities.json")
+            c_data = _load_json(json_path)
+            if isinstance(c_data, dict) and "communities" in c_data:
+                raw = c_data["communities"]
+            elif isinstance(c_data, list):
+                raw = c_data
+            else:
+                fb = CONTRACTS_FIXTURES_DIR / "api" / "GET_graph_communities.json"
+                data = _load_json(fb) or []
+                raw = data if isinstance(data, list) else [data]
         for c in raw:
             self._communities[c["community_id"]] = c
-        # Load roles / bridges / mule chains from fixtures
-        roles_path = CONTRACTS_FIXTURES_DIR / "api" / "GET_roles.json"
-        self._roles = _load_json(roles_path) or []
-        bridges_path = CONTRACTS_FIXTURES_DIR / "api" / "GET_bridges.json"
-        self._bridges = _load_json(bridges_path) or []
-        mule_path = CONTRACTS_FIXTURES_DIR / "api" / "GET_mule_chains.json"
-        self._mule_chains = _load_json(mule_path) or []
+
+        # Load roles / bridges / mule chains from artifacts or fixtures
+        roles_path = artifacts_path("graph/roles.json")
+        r_data = _load_json(roles_path)
+        if isinstance(r_data, dict) and "roles" in r_data:
+            self._roles = r_data["roles"]
+        elif isinstance(r_data, list):
+            self._roles = r_data
+        else:
+            self._roles = _load_json(CONTRACTS_FIXTURES_DIR / "api" / "GET_roles.json") or []
+
+        bridges_path = artifacts_path("graph/bridges.json")
+        b_data = _load_json(bridges_path)
+        if isinstance(b_data, dict) and "bridges" in b_data:
+            self._bridges = b_data["bridges"]
+        elif isinstance(b_data, list):
+            self._bridges = b_data
+        else:
+            self._bridges = _load_json(CONTRACTS_FIXTURES_DIR / "api" / "GET_bridges.json") or []
+
+        mule_path = artifacts_path("graph/mule_chains.json")
+        m_data = _load_json(mule_path)
+        if isinstance(m_data, dict) and "chains" in m_data:
+            self._mule_chains = m_data["chains"]
+        elif isinstance(m_data, dict) and "mule_chains" in m_data:
+            self._mule_chains = m_data["mule_chains"]
+        elif isinstance(m_data, list):
+            self._mule_chains = m_data
+        else:
+            self._mule_chains = _load_json(CONTRACTS_FIXTURES_DIR / "api" / "GET_mule_chains.json") or []
+
+        # Ensure accounts in mule chains have account_id populated for compatibility
+        for chain in self._mule_chains:
+            for acc in chain.get("accounts", []):
+                if "account_key" in acc and "account_id" not in acc:
+                    acc["account_id"] = acc["account_key"]
 
     def _load_kumbh_events(self) -> None:
         events = _load_jsonl(KUMBH_EVENTS_PATH)
@@ -136,6 +190,132 @@ class DataStore:
             events = _load_jsonl(fb)
         self._kumbh_events = events
         self._kumbh_event_cursor = 0
+
+    def _load_kumbh_intelligence(self) -> None:
+        """
+        Step 5A: Initialize KumbhOperationsEngine using loaded graph & analytics,
+        process the feed once deterministically, and cache clean, indexed results.
+        Never exposes ground truth labels, planted markers, or answer keys.
+        """
+        from sutradhar_graph.kumbh_ops import KumbhOperationsEngine
+
+        engine = KumbhOperationsEngine(
+            graph_data=self._graph_data,
+            communities=list(self._communities.values()),
+            roles=self._roles,
+            bridges=self._bridges,
+            mule_chains=self._mule_chains,
+        )
+        results = engine.process_feed(self._kumbh_events)
+
+        # 1. Clean operational observations (strictly strip planted/truth fields)
+        observations: list[dict[str, Any]] = []
+        for ev in self._kumbh_events:
+            raw_details = dict(ev.get("details") or {})
+            clean_details = {
+                k: v
+                for k, v in raw_details.items()
+                if not k.startswith("planted")
+                and not k.startswith("truth")
+                and not k.startswith("oracle")
+                and not k.startswith("expected")
+            }
+            obs = {
+                "event_id": ev.get("event_id"),
+                "event_type": ev.get("event_type"),
+                "ts": ev.get("ts"),
+                "zone": ev.get("zone"),
+                "location_info": clean_details,
+                "related_ids": list(ev.get("related_ids") or []),
+                "source_agency": ev.get("source_agency", "KUMBH_SURVEILLANCE"),
+                "status": "OBSERVED",
+                "provenance": dict(
+                    ev.get("provenance")
+                    or {
+                        "source": "Kumbh Operations Feed",
+                        "event_id": ev.get("event_id"),
+                        "zone": ev.get("zone"),
+                    }
+                ),
+            }
+            observations.append(obs)
+        self._kumbh_observations = observations
+        obs_by_id = {obs["event_id"]: obs for obs in observations}
+
+        # 2. Intelligence signals extracted from Step 4 review items
+        intel_items = results.get("intelligence_items", [])
+        signals: list[dict[str, Any]] = []
+        signals_by_event: dict[str, list[dict[str, Any]]] = {}
+        review_by_event: dict[str, dict[str, Any]] = {}
+
+        for item in intel_items:
+            ev_id = item.get("related_event")
+            review_by_event[ev_id] = item
+            item_signals = item.get("signals") or []
+            for idx, sig in enumerate(item_signals):
+                sig_id = f"SIG-{ev_id}-{idx+1:02d}"
+                s_obj = {
+                    "signal_id": sig_id,
+                    "event_id": ev_id,
+                    "signal_type": sig.get("signal_type"),
+                    "confidence": sig.get("confidence", item.get("confidence", 0.85)),
+                    "evidence_tier": item.get("evidence_tier", "MEDIUM"),
+                    "description": sig.get("description", ""),
+                    "reasons": [sig.get("description")] if sig.get("description") else [],
+                    "evidence": list(sig.get("evidence") or item.get("evidence") or []),
+                    "provenance": sig.get("provenance") or item.get("provenance") or {},
+                    "network_context": item.get("network_context"),
+                    "requires_investigator_review": True,
+                    "action": "Requires investigator review",
+                }
+                signals.append(s_obj)
+                signals_by_event.setdefault(ev_id, []).append(s_obj)
+
+        self._kumbh_signals = signals
+
+        # 3. Incident clusters (strictly operational clusters, never criminal syndicates)
+        raw_clusters = results.get("clusters", [])
+        clusters: list[dict[str, Any]] = []
+        clusters_by_event: dict[str, list[dict[str, Any]]] = {}
+        for c in raw_clusters:
+            clust_obj = {
+                "cluster_id": c.get("cluster_id"),
+                "cluster_type": c.get("cluster_type"),
+                "member_events": list(c.get("member_events") or []),
+                "shared_evidence": list(c.get("shared_evidence") or []),
+                "confidence": c.get("confidence", 0.80),
+                "provenance": dict(c.get("provenance") or {}),
+                "explanation": c.get("explanation", ""),
+                "requires_investigator_review": True,
+                "action": "Requires investigator review",
+            }
+            clusters.append(clust_obj)
+            for m_id in clust_obj["member_events"]:
+                clusters_by_event.setdefault(m_id, []).append(clust_obj)
+
+        self._kumbh_clusters = clusters
+
+        # 4. Per-event intelligence lookup table
+        event_intelligence: dict[str, dict[str, Any]] = {}
+        for ev in self._kumbh_events:
+            ev_id = ev.get("event_id")
+            obs = obs_by_id.get(ev_id, {})
+            ev_signals = signals_by_event.get(ev_id, [])
+            rev = review_by_event.get(ev_id)
+            ev_clusters = clusters_by_event.get(ev_id, [])
+            cluster_val = ev_clusters[0] if len(ev_clusters) == 1 else (ev_clusters if ev_clusters else None)
+
+            event_intelligence[ev_id] = {
+                "event_id": ev_id,
+                "event": obs,
+                "observation": obs,
+                "signals": ev_signals,
+                "network_context": rev.get("network_context") if (rev and ev_signals) else None,
+                "cluster": cluster_val,
+                "requires_investigator_review": True,
+            }
+
+        self._kumbh_event_intelligence = event_intelligence
 
     def _load_metrics(self) -> None:
         path = artifacts_path("metrics.json")
@@ -212,6 +392,25 @@ class DataStore:
     @property
     def federated_queries(self) -> list[dict]:
         return list(self._federated_queries)
+
+    @property
+    def graph_data(self) -> dict[str, Any]:
+        return self._graph_data
+
+    @property
+    def kumbh_observations(self) -> list[dict]:
+        return list(self._kumbh_observations)
+
+    @property
+    def kumbh_signals(self) -> list[dict]:
+        return list(self._kumbh_signals)
+
+    @property
+    def kumbh_clusters(self) -> list[dict]:
+        return list(self._kumbh_clusters)
+
+    def get_kumbh_event_intelligence(self, event_id: str) -> dict | None:
+        return self._kumbh_event_intelligence.get(event_id)
 
     # ── Mutation helpers ───────────────────────────────────────
 

@@ -162,6 +162,77 @@ class KumbhAlertActionRequest(BaseModel):
 
 
 # ─────────────────────────────────────────────────────────────
+# Graph path & query models
+# ─────────────────────────────────────────────────────────────
+
+
+class GraphPathResponse(BaseModel):
+    from_id: str | None
+    to_id: str | None
+    found: bool
+    hops: int
+    path: list[str] = Field(default_factory=list)
+    nodes: list[dict[str, Any]] = Field(default_factory=list)
+    edges: list[dict[str, Any]] = Field(default_factory=list)
+    evidence: list[str] = Field(default_factory=list)
+    requires_investigator_review: bool = True
+
+
+# ─────────────────────────────────────────────────────────────
+# Kumbh Intelligence models
+# ─────────────────────────────────────────────────────────────
+
+
+class KumbhObservation(BaseModel):
+    event_id: str
+    event_type: str
+    ts: str
+    zone: str
+    location_info: dict[str, Any] = Field(default_factory=dict)
+    related_ids: list[str] = Field(default_factory=list)
+    source_agency: str = "KUMBH_SURVEILLANCE"
+    status: str = "OBSERVED"
+    provenance: dict[str, Any] = Field(default_factory=dict)
+
+
+class KumbhSignal(BaseModel):
+    signal_id: str
+    event_id: str
+    signal_type: str
+    confidence: float
+    evidence_tier: str = "MEDIUM"
+    description: str
+    reasons: list[str] = Field(default_factory=list)
+    evidence: list[str] = Field(default_factory=list)
+    provenance: dict[str, Any] | list[dict[str, Any]] = Field(default_factory=dict)
+    network_context: dict[str, Any] | None = None
+    requires_investigator_review: bool = True
+    action: str = "Requires investigator review"
+
+
+class KumbhCluster(BaseModel):
+    cluster_id: str
+    cluster_type: str
+    member_events: list[str]
+    shared_evidence: list[str] = Field(default_factory=list)
+    confidence: float
+    provenance: dict[str, Any] = Field(default_factory=dict)
+    explanation: str
+    requires_investigator_review: bool = True
+    action: str = "Requires investigator review"
+
+
+class KumbhEventIntelligence(BaseModel):
+    event_id: str
+    event: dict[str, Any]
+    observation: dict[str, Any]
+    signals: list[dict[str, Any]] = Field(default_factory=list)
+    network_context: dict[str, Any] | None = None
+    cluster: dict[str, Any] | list[dict[str, Any]] | None = None
+    requires_investigator_review: bool = True
+
+
+# ─────────────────────────────────────────────────────────────
 # Generic passthrough (for fixture-mode responses)
 # ─────────────────────────────────────────────────────────────
 

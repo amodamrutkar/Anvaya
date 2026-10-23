@@ -320,3 +320,29 @@ The Step 4 test suite comprises **17 targeted tests** in `services/graph/tests/t
 - `test_v2_multiseed_kumbh_regression[seed-42]`
 - `test_v2_multiseed_kumbh_regression[seed-43]`
 - `test_v2_multiseed_kumbh_regression[seed-44]`
+
+---
+
+## 14. Step 5A: API Integration Layer
+
+The FastAPI backend exposes the validated Step 4 Kumbh Operations Intelligence through deterministic, paginated, RBAC-gated endpoints with SHA-256 hash-chained audit logging.
+
+### Endpoint Matrix
+
+| Method | Path | Permission | Audit Action | Description |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/graph/path?from={id}&to={id}&max_hops={n}` | `GRAPH_VIEW` | `GRAPH_PATH_VIEW` | Deterministic shortest path lookup preferring STRONG edges. Returns traversed nodes, edges, hops, evidence, and `requires_investigator_review`. |
+| `GET` | `/graph/entity/{id}/neighborhood?hops={n}&limit={m}` | `GRAPH_VIEW` | `NEIGHBORHOOD_VIEW` | Bounded ego network subgraph. |
+| `GET` | `/graph/communities?limit={n}&offset={m}` | `GRAPH_VIEW` | `COMMUNITIES_VIEW` | Bounded paginated communities. |
+| `GET` | `/roles?limit={n}&offset={m}` | `GRAPH_VIEW` | `GRAPH_ROLES_VIEW` | Bounded paginated roles. |
+| `GET` | `/bridges?limit={n}&offset={m}` | `GRAPH_VIEW` | `GRAPH_BRIDGES_VIEW` | Bounded paginated bridge candidates. |
+| `GET` | `/kumbh/observations?limit={n}&offset={m}&zone={z}&event_type={t}` | `KUMBH_VIEW` | `KUMBH_OBSERVATIONS_VIEW` | Objective operational surveillance observations. Exposes no generator truth or oracle fields. |
+| `GET` | `/kumbh/signals?limit={n}&offset={m}&signal_type={t}&evidence_tier={e}` | `KUMBH_VIEW` | `KUMBH_SIGNALS_VIEW` | Explainable Step 4 intelligence signals. Preserves evidence tiers and `requires_investigator_review`. |
+| `GET` | `/kumbh/clusters?limit={n}&offset={m}&cluster_type={t}` | `KUMBH_VIEW` | `KUMBH_CLUSTERS_VIEW` | Operational incident clusters (infrastructure, entity, spatio-temporal). Strictly not criminal syndicates. |
+| `GET` | `/kumbh/events/{event_id}/intelligence` | `KUMBH_VIEW` | `KUMBH_EVENT_INTELLIGENCE_VIEW` | Full per-event portfolio distinguishing event, observation, signals, network context, and cluster. |
+
+### Critical Behavioral Guarantees
+- **Separation of Concerns:** Observations, intelligence signals, and clusters are distinct entities. Proximity or incident clustering is never converted into an autonomous criminal accusation.
+- **Zero-Correlation Safety:** Benign or civilian events (e.g. power outages, lost-and-found reports) retain their observation but return `signals: []` and `network_context: null`.
+- **Truth-Leak Isolation:** Ground-truth files, answer keys, planted scenario markers, and generator metadata are never read or exposed by API endpoints.
+- **Investigator Mandate:** Every signal and portfolio explicitly flags `requires_investigator_review: true`.

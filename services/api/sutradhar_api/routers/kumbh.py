@@ -11,7 +11,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, Query
 
 from sutradhar_api.auth import require_action
 from sutradhar_api.models import KumbhAlertActionRequest, UserInfo
@@ -197,3 +197,134 @@ def post_kumbh_alert_confirm(
         "ts": datetime.now(UTC).isoformat(),
         "audit_seq": seq,
     }
+
+
+# ─────────────────────────────────────────────────────────────
+# Step 4 Kumbh Intelligence Endpoints
+# ─────────────────────────────────────────────────────────────
+
+
+@router.get("/observations")
+def get_kumbh_observations(
+    user: Annotated[UserInfo, Depends(require_action("KUMBH_VIEW"))],
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    zone: str | None = None,
+    event_type: str | None = None,
+):
+    """
+    Return operational observations from the Kumbh surveillance feed.
+    Contains objective operational data only. Does not expose ground-truth or answers.
+    """
+    store = get_store()
+    observations = store.kumbh_observations
+
+    if zone:
+        observations = [obs for obs in observations if obs.get("zone") == zone]
+    if event_type:
+        observations = [obs for obs in observations if obs.get("event_type") == event_type]
+
+    store.record_audit(
+        actor=user.user_id,
+        role=user.role.value,
+        action="KUMBH_OBSERVATIONS_VIEW",
+        summary=f"Viewed Kumbh observations (offset={offset}, limit={limit}, zone={zone}, type={event_type}).",
+        purpose="INVESTIGATION",
+    )
+
+    return observations[offset : offset + limit]
+
+
+@router.get("/signals")
+def get_kumbh_signals(
+    user: Annotated[UserInfo, Depends(require_action("KUMBH_VIEW"))],
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    signal_type: str | None = None,
+    evidence_tier: str | None = None,
+):
+    """
+    Return explainable Kumbh intelligence signals correlated from Step 4.
+    Every signal preserves explainability, evidence, and requires investigator review.
+    Never declares guilt or autonomous criminal accusation.
+    """
+    store = get_store()
+    signals = store.kumbh_signals
+
+    if signal_type:
+        signals = [s for s in signals if s.get("signal_type") == signal_type]
+    if evidence_tier:
+        signals = [s for s in signals if s.get("evidence_tier") == evidence_tier]
+
+    store.record_audit(
+        actor=user.user_id,
+        role=user.role.value,
+        action="KUMBH_SIGNALS_VIEW",
+        summary=f"Viewed Kumbh intelligence signals (offset={offset}, limit={limit}, type={signal_type}, tier={evidence_tier}).",
+        purpose="INVESTIGATION",
+    )
+
+    return signals[offset : offset + limit]
+
+
+@router.get("/clusters")
+def get_kumbh_clusters(
+    user: Annotated[UserInfo, Depends(require_action("KUMBH_VIEW"))],
+    limit: int = Query(50, ge=1, le=200),
+    offset: int = Query(0, ge=0),
+    cluster_type: str | None = None,
+):
+    """
+    Return operational Kumbh incident clusters (shared infrastructure, repeated entity, spatio-temporal).
+    Strictly distinguished from criminal syndicates. Requires human investigator review.
+    """
+    store = get_store()
+    clusters = store.kumbh_clusters
+
+    if cluster_type:
+        clusters = [c for c in clusters if c.get("cluster_type") == cluster_type]
+
+    store.record_audit(
+        actor=user.user_id,
+        role=user.role.value,
+        action="KUMBH_CLUSTERS_VIEW",
+        summary=f"Viewed Kumbh clusters (offset={offset}, limit={limit}, type={cluster_type}).",
+        purpose="INVESTIGATION",
+    )
+
+    return clusters[offset : offset + limit]
+
+
+@router.get("/events/{event_id}/intelligence")
+def get_kumbh_event_intelligence(
+    event_id: str,
+    user: Annotated[UserInfo, Depends(require_action("KUMBH_VIEW"))],
+):
+    """
+    Return the full Step 4 intelligence portfolio for a specific event.
+    Clearly distinguishes operational observation, intelligence signals, network context, and cluster.
+    Zero-correlation events safely return observation with empty signals and null network context.
+    """
+    store = get_store()
+    intel = store.get_kumbh_event_intelligence(event_id)
+
+    if not intel:
+        raise HTTPException(
+            status_code=404,
+            detail={
+                "error": {
+                    "code": "NOT_FOUND",
+                    "message": f"Kumbh event {event_id!r} not found.",
+                }
+            },
+        )
+
+    store.record_audit(
+        actor=user.user_id,
+        role=user.role.value,
+        action="KUMBH_EVENT_INTELLIGENCE_VIEW",
+        summary=f"Viewed intelligence portfolio for Kumbh event {event_id}.",
+        purpose="INVESTIGATION",
+    )
+
+    return intel
