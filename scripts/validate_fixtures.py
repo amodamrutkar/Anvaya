@@ -105,9 +105,7 @@ def validate_manifest(manifest: dict) -> tuple[int, int]:
                             for d in [json.loads(p.read_text(encoding="utf-8"))]
                         ]
                         reg = Registry().with_resources(res)
-                        validator = jsonschema.Draft202012Validator(
-                            schema, registry=reg
-                        )
+                        validator = jsonschema.Draft202012Validator(schema, registry=reg)
                     except Exception:
                         validator = None
 

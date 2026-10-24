@@ -28,7 +28,7 @@ class CctnsFirAdapter(BaseAdapter):
     def adapt(self, raw_payload: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
         """
         Transform simulated CCTNS payload to canonical SourceRecord.
-        
+
         Expected raw fields:
         - fir_num or fir_number (str)
         - district_name (str)
@@ -68,7 +68,9 @@ class CctnsFirAdapter(BaseAdapter):
             case_ref = f"CASE-STP-{num_val:06d}"
 
         # Crime type normalization
-        crime_raw = str(raw_payload.get("major_head") or raw_payload.get("crime_type") or "CYBER_FRAUD").upper()
+        crime_raw = str(
+            raw_payload.get("major_head") or raw_payload.get("crime_type") or "CYBER_FRAUD"
+        ).upper()
         if "CYBER" in crime_raw or "FRAUD" in crime_raw or "IT" in crime_raw:
             crime_type = "CYBER_FRAUD"
         elif "EXTORT" in crime_raw:
@@ -91,14 +93,16 @@ class CctnsFirAdapter(BaseAdapter):
             phone = acc.get("contact_number") or acc.get("phone") or ""
             address = acc.get("permanent_address") or acc.get("address") or ""
             alias = acc.get("alias_name") or acc.get("alias") or ""
-            accused_list.append({
-                "name": name,
-                "father_name": father,
-                "age": int(age) if age is not None else None,
-                "address": address,
-                "phone": phone,
-                "alias": alias,
-            })
+            accused_list.append(
+                {
+                    "name": name,
+                    "father_name": father,
+                    "age": int(age) if age is not None else None,
+                    "address": address,
+                    "phone": phone,
+                    "alias": alias,
+                }
+            )
             if phone:
                 phones.append(phone)
 
@@ -108,7 +112,9 @@ class CctnsFirAdapter(BaseAdapter):
         if isinstance(comp_raw, dict) and (comp_raw.get("full_name") or comp_raw.get("name")):
             complainant = {
                 "name": comp_raw.get("full_name") or comp_raw.get("name"),
-                "phone": comp_raw.get("mobile") or comp_raw.get("contact_number") or comp_raw.get("phone", ""),
+                "phone": comp_raw.get("mobile")
+                or comp_raw.get("contact_number")
+                or comp_raw.get("phone", ""),
             }
 
         # Accounts

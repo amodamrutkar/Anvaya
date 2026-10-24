@@ -171,9 +171,7 @@ def create_dev_token(user_id: str, ttl_seconds: int | None = None) -> str:
     iat = int(time.time())
     exp = iat + ttl
     payload = f"{user_id}.{iat}.{exp}"
-    sig = hmac.new(
-        DEV_AUTH_SECRET.encode(), payload.encode(), hashlib.sha256
-    ).hexdigest()[:16]
+    sig = hmac.new(DEV_AUTH_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[:16]
     return f"dev-token-{user_id}.{iat}.{exp}.{sig}"
 
 
@@ -237,7 +235,7 @@ def _parse_token(token: str) -> UserInfo:
     try:
         iat = int(iat_str)
         exp = int(exp_str)
-    except ValueError:
+    except ValueError as err:
         raise HTTPException(
             status_code=401,
             detail={
@@ -246,13 +244,13 @@ def _parse_token(token: str) -> UserInfo:
                     "message": "Malformed token timestamp claims. iat and exp must be valid integer timestamps.",
                 }
             },
-        )
+        ) from err
 
     # Verify signature covers user_id, iat, and exp
     payload = f"{candidate_uid}.{iat}.{exp}"
-    expected_sig = hmac.new(
-        DEV_AUTH_SECRET.encode(), payload.encode(), hashlib.sha256
-    ).hexdigest()[:16]
+    expected_sig = hmac.new(DEV_AUTH_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()[
+        :16
+    ]
     if not hmac.compare_digest(sig, expected_sig):
         raise HTTPException(
             status_code=401,
@@ -301,7 +299,7 @@ def _get_user(
         if auth_str.lower().startswith("bearer "):
             token = auth_str[7:].strip()
             return _parse_token(token)
-        elif auth_str.startswith("dev-token-") or auth_str.startswith("sutradhar_dev."):
+        elif auth_str.startswith(("dev-token-", "sutradhar_dev.")):
             return _parse_token(auth_str)
         else:
             raise HTTPException(
@@ -461,7 +459,6 @@ class SecurityPolicy:
             target_agency=list(agencies)[0],
             purpose=purpose,
         )
-
 
 
 policy = SecurityPolicy()

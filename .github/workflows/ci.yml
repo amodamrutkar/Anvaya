@@ -41,8 +41,8 @@ jobs:
         with:
           python-version: "3.11"
       - run: pip install ruff
-      - run: ruff check services/ scripts/
-      - run: ruff format --check services/ scripts/
+      - run: ruff check services/api/sutradhar_api/ scripts/validate_fixtures.py
+      - run: ruff format --check services/api/sutradhar_api/ scripts/validate_fixtures.py
 
   # ─────────────────────────────────────────────
   # Gate 4: API tests

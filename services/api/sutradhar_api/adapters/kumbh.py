@@ -48,11 +48,15 @@ class KumbhOperationsAdapter(BaseAdapter):
 
         zone = raw_payload.get("operational_sector") or raw_payload.get("zone")
         if not zone or zone not in _VALID_ZONES:
-            raise AdapterMappingError(f"Invalid or missing Kumbh zone '{zone}'. Must be one of {_VALID_ZONES}")
+            raise AdapterMappingError(
+                f"Invalid or missing Kumbh zone '{zone}'. Must be one of {_VALID_ZONES}"
+            )
 
         ev_type = raw_payload.get("category") or raw_payload.get("event_type")
         if not ev_type or ev_type not in _VALID_EVENT_TYPES:
-            raise AdapterMappingError(f"Invalid or missing Kumbh event_type '{ev_type}'. Must be one of {_VALID_EVENT_TYPES}")
+            raise AdapterMappingError(
+                f"Invalid or missing Kumbh event_type '{ev_type}'. Must be one of {_VALID_EVENT_TYPES}"
+            )
 
         subject = raw_payload.get("detected_token") or raw_payload.get("subject_token")
         if not subject:

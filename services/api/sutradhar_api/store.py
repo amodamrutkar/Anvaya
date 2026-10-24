@@ -112,7 +112,6 @@ class DataStore:
             if e["entity_id"] not in self._entities:
                 self._entities[e["entity_id"]] = e
 
-
     def _load_links(self) -> None:
         path = artifacts_path("er/links.jsonl")
         raw = _load_jsonl(path)
@@ -176,7 +175,9 @@ class DataStore:
         elif isinstance(m_data, list):
             self._mule_chains = m_data
         else:
-            self._mule_chains = _load_json(CONTRACTS_FIXTURES_DIR / "api" / "GET_mule_chains.json") or []
+            self._mule_chains = (
+                _load_json(CONTRACTS_FIXTURES_DIR / "api" / "GET_mule_chains.json") or []
+            )
 
         # Ensure accounts in mule chains have account_id populated for compatibility
         for chain in self._mule_chains:
@@ -254,7 +255,7 @@ class DataStore:
             review_by_event[ev_id] = item
             item_signals = item.get("signals") or []
             for idx, sig in enumerate(item_signals):
-                sig_id = f"SIG-{ev_id}-{idx+1:02d}"
+                sig_id = f"SIG-{ev_id}-{idx + 1:02d}"
                 s_obj = {
                     "signal_id": sig_id,
                     "event_id": ev_id,
@@ -304,7 +305,9 @@ class DataStore:
             ev_signals = signals_by_event.get(ev_id, [])
             rev = review_by_event.get(ev_id)
             ev_clusters = clusters_by_event.get(ev_id, [])
-            cluster_val = ev_clusters[0] if len(ev_clusters) == 1 else (ev_clusters if ev_clusters else None)
+            cluster_val = (
+                ev_clusters[0] if len(ev_clusters) == 1 else (ev_clusters if ev_clusters else None)
+            )
 
             event_intelligence[ev_id] = {
                 "event_id": ev_id,

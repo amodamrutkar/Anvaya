@@ -29,40 +29,58 @@ class BankingFiuAdapter(BaseAdapter):
 
     def adapt(self, raw_payload: dict[str, Any], **kwargs: Any) -> dict[str, Any]:
         """Transform raw CBS transaction payload to CanonicalTransaction contract."""
-        raw_ref = raw_payload.get("cbs_reference") or raw_payload.get("txn_ref") or raw_payload.get("source_txn_id")
+        raw_ref = (
+            raw_payload.get("cbs_reference")
+            or raw_payload.get("txn_ref")
+            or raw_payload.get("source_txn_id")
+        )
         if not raw_ref:
             raise AdapterMappingError("Missing required transaction reference: 'cbs_reference'")
 
         # Remitter / From Account
         from_acc = raw_payload.get("from_account")
         if not from_acc:
-            remitter_bank = raw_payload.get("remitter_bank_code") or raw_payload.get("remitter_bank")
+            remitter_bank = raw_payload.get("remitter_bank_code") or raw_payload.get(
+                "remitter_bank"
+            )
             remitter_num = raw_payload.get("remitter_acc") or raw_payload.get("remitter_account")
             if remitter_bank and remitter_num:
                 from_acc = f"{remitter_bank}:{remitter_num}"
         if not from_acc:
-            raise AdapterMappingError("Missing required remitter account information: 'from_account' or remitter bank/acc")
+            raise AdapterMappingError(
+                "Missing required remitter account information: 'from_account' or remitter bank/acc"
+            )
 
         # Beneficiary / To Account
         to_acc = raw_payload.get("to_account")
         if not to_acc:
-            bene_bank = raw_payload.get("beneficiary_bank_code") or raw_payload.get("beneficiary_bank")
+            bene_bank = raw_payload.get("beneficiary_bank_code") or raw_payload.get(
+                "beneficiary_bank"
+            )
             bene_num = raw_payload.get("beneficiary_acc") or raw_payload.get("beneficiary_account")
             if bene_bank and bene_num:
                 to_acc = f"{bene_bank}:{bene_num}"
         if not to_acc:
-            raise AdapterMappingError("Missing required beneficiary account information: 'to_account' or beneficiary bank/acc")
+            raise AdapterMappingError(
+                "Missing required beneficiary account information: 'to_account' or beneficiary bank/acc"
+            )
 
         # Amount
-        raw_amount = raw_payload.get("amount") or raw_payload.get("txn_amount_inr") or raw_payload.get("txn_amount")
+        raw_amount = (
+            raw_payload.get("amount")
+            or raw_payload.get("txn_amount_inr")
+            or raw_payload.get("txn_amount")
+        )
         if raw_amount is None:
-            raise AdapterMappingError("Missing required transaction amount: 'amount' or 'txn_amount_inr'")
+            raise AdapterMappingError(
+                "Missing required transaction amount: 'amount' or 'txn_amount_inr'"
+            )
         try:
             amount = float(raw_amount)
             if amount < 0:
                 raise ValueError("Negative amount")
         except (ValueError, TypeError) as err:
-            raise AdapterMappingError(f"Invalid transaction amount '{raw_amount}': {err}")
+            raise AdapterMappingError(f"Invalid transaction amount '{raw_amount}': {err}") from err
 
         # Canonical Txn ID
         override_tid = kwargs.get("txn_id") or raw_payload.get("txn_id")
@@ -74,12 +92,23 @@ class BankingFiuAdapter(BaseAdapter):
             canonical_tid = f"TXN-BNK-{num_val:07d}"
 
         # Timestamp
-        ts = raw_payload.get("settlement_time_utc") or raw_payload.get("timestamp") or raw_payload.get("ts")
+        ts = (
+            raw_payload.get("settlement_time_utc")
+            or raw_payload.get("timestamp")
+            or raw_payload.get("ts")
+        )
         if not ts:
-            raise AdapterMappingError("Missing required transaction timestamp: 'settlement_time_utc' or 'timestamp'")
+            raise AdapterMappingError(
+                "Missing required transaction timestamp: 'settlement_time_utc' or 'timestamp'"
+            )
 
         # Type / Channel
-        txn_type = raw_payload.get("payment_mode") or raw_payload.get("type") or raw_payload.get("channel") or "IMPS"
+        txn_type = (
+            raw_payload.get("payment_mode")
+            or raw_payload.get("type")
+            or raw_payload.get("channel")
+            or "IMPS"
+        )
 
         ingestion_metadata = self.build_ingestion_metadata(
             source_record_id=str(raw_ref),
@@ -104,7 +133,9 @@ class BankingFiuAdapter(BaseAdapter):
             "type": txn_type,
             "utr_number": raw_payload.get("utr") or raw_payload.get("rrn"),
             "source_system": self.source_system,
-            "status": "SUCCESS" if str(raw_payload.get("core_status", "PROCESSED")).upper() in ["PROCESSED", "SUCCESS"] else "PENDING",
+            "status": "SUCCESS"
+            if str(raw_payload.get("core_status", "PROCESSED")).upper() in ["PROCESSED", "SUCCESS"]
+            else "PENDING",
             "ingestion_metadata": ingestion_metadata,
         }
 
@@ -115,7 +146,9 @@ class BankingFiuAdapter(BaseAdapter):
         holder = raw_account.get("customer_name") or raw_account.get("holder_name_raw")
 
         if not bank or not num or not holder:
-            raise AdapterMappingError("Missing required CBS account fields (bank, account_number, customer_name)")
+            raise AdapterMappingError(
+                "Missing required CBS account fields (bank, account_number, customer_name)"
+            )
 
         ak = f"{bank}:{num}"
         ingestion_metadata = self.build_ingestion_metadata(
@@ -132,7 +165,9 @@ class BankingFiuAdapter(BaseAdapter):
             "bank": str(bank),
             "ifsc": raw_account.get("ifsc"),
             "holder_name_raw": str(holder),
-            "opened_date": str(raw_account.get("account_open_date"))[:10] if raw_account.get("account_open_date") else None,
+            "opened_date": str(raw_account.get("account_open_date"))[:10]
+            if raw_account.get("account_open_date")
+            else None,
             "complaint_count": int(raw_account.get("reported_complaint_count", 0)),
             "account_type": raw_account.get("account_type", "SAVINGS"),
             "masked_account": f"XXXX-XXXX-{str(num)[-4:]}" if len(str(num)) >= 4 else None,

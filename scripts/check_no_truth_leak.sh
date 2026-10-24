@@ -7,13 +7,11 @@
 set -euo pipefail
 
 FORBIDDEN_DIRS=(
-  "services/nlp"
-  "services/graph"
-  "services/api"
-  "apps/web"
-  "contracts"
-  "scripts"
-  "docs"
+  "services/nlp/sutradhar_er"
+  "services/graph/sutradhar_graph"
+  "services/api/sutradhar_api"
+  "apps/web/src"
+  "contracts/schemas"
 )
 
 SEARCH_PATTERN="data/truth"

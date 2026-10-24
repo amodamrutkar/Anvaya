@@ -15,8 +15,7 @@ import hashlib
 import json
 import logging
 from abc import ABC, abstractmethod
-from datetime import datetime, timezone
-from pathlib import Path
+from datetime import UTC, datetime
 from typing import Any
 
 from sutradhar_api.config import CONTRACTS_SCHEMAS_DIR
@@ -99,7 +98,7 @@ class BaseAdapter(ABC):
         """Build standard IngestionMetadata contract for provenance tracking."""
         payload_bytes = json.dumps(raw_payload, sort_keys=True).encode("utf-8")
         payload_sha256 = hashlib.sha256(payload_bytes).hexdigest()
-        now_utc = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+        now_utc = datetime.now(UTC).isoformat().replace("+00:00", "Z")
 
         meta: dict[str, Any] = {
             "schema_version": "2.0.0",

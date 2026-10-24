@@ -31,7 +31,9 @@ class MahaCyberPortalAdapter(BaseAdapter):
         """Transform simulated NCRP cyber complaint payload into canonical SourceRecord."""
         ack_no = raw_payload.get("ncrp_acknowledgement_no") or raw_payload.get("incident_id")
         if not ack_no:
-            raise AdapterMappingError("Missing required field: 'ncrp_acknowledgement_no' or 'incident_id'")
+            raise AdapterMappingError(
+                "Missing required field: 'ncrp_acknowledgement_no' or 'incident_id'"
+            )
 
         district = raw_payload.get("reporting_district") or raw_payload.get("district")
         if not district:
@@ -62,14 +64,16 @@ class MahaCyberPortalAdapter(BaseAdapter):
         for susp in raw_payload.get("suspect_identifiers", []):
             name = susp.get("name") or susp.get("suspect_name") or "Unknown Suspect"
             phone = susp.get("phone") or susp.get("mobile") or ""
-            accused_list.append({
-                "name": name,
-                "father_name": susp.get("father_name", ""),
-                "age": susp.get("age"),
-                "address": susp.get("address", ""),
-                "phone": phone,
-                "alias": susp.get("alias", ""),
-            })
+            accused_list.append(
+                {
+                    "name": name,
+                    "father_name": susp.get("father_name", ""),
+                    "age": susp.get("age"),
+                    "address": susp.get("address", ""),
+                    "phone": phone,
+                    "alias": susp.get("alias", ""),
+                }
+            )
             if phone:
                 phones.append(phone)
 
@@ -156,8 +160,12 @@ class MahaCyberPortalAdapter(BaseAdapter):
             "bank": bank,
             "ifsc": raw_account.get("ifsc"),
             "holder_name_raw": str(holder),
-            "opened_date": str(raw_account.get("opened_date"))[:10] if raw_account.get("opened_date") else None,
-            "complaint_count": int(raw_account.get("complaints_linked") or raw_account.get("complaint_count", 0)),
+            "opened_date": str(raw_account.get("opened_date"))[:10]
+            if raw_account.get("opened_date")
+            else None,
+            "complaint_count": int(
+                raw_account.get("complaints_linked") or raw_account.get("complaint_count", 0)
+            ),
             "account_category": raw_account.get("account_category"),
             "account_type": raw_account.get("account_type", "SAVINGS"),
             "masked_account": f"XXXX-XXXX-{str(num)[-4:]}" if len(str(num)) >= 4 else None,

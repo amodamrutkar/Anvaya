@@ -48,7 +48,6 @@ def get_audit_verify(
     return result
 
 
-
 @router.post("/dev/tamper")
 def post_audit_tamper(
     user: Annotated[UserInfo, Depends(require_auth)],

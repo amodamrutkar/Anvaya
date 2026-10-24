@@ -115,25 +115,28 @@ def post_federated_query(
     store = get_store()
 
     # Caller agency authorization: must be same agency or have federated grant
-    if user.role != Role.SYSTEM and user.agency.value != body.querying_agency.value:
-        if not check_federated_grant(user.agency.value, body.querying_agency.value):
-            store.record_audit(
-                actor=user.user_id,
-                role=user.role.value,
-                action="FEDERATED_QUERY_DENIED",
-                summary=f"No data-sharing grant between {user.agency.value} and {body.querying_agency.value}",
-                agency=user.agency.value,
-                purpose=body.purpose.value,
-            )
-            raise HTTPException(
-                status_code=403,
-                detail={
-                    "error": {
-                        "code": "NO_GRANT",
-                        "message": f"User from {user.agency.value} cannot issue queries on behalf of {body.querying_agency.value} without an active data-sharing agreement.",
-                    }
-                },
-            )
+    if (
+        user.role != Role.SYSTEM
+        and user.agency.value != body.querying_agency.value
+        and not check_federated_grant(user.agency.value, body.querying_agency.value)
+    ):
+        store.record_audit(
+            actor=user.user_id,
+            role=user.role.value,
+            action="FEDERATED_QUERY_DENIED",
+            summary=f"No data-sharing grant between {user.agency.value} and {body.querying_agency.value}",
+            agency=user.agency.value,
+            purpose=body.purpose.value,
+        )
+        raise HTTPException(
+            status_code=403,
+            detail={
+                "error": {
+                    "code": "NO_GRANT",
+                    "message": f"User from {user.agency.value} cannot issue queries on behalf of {body.querying_agency.value} without an active data-sharing agreement.",
+                }
+            },
+        )
 
     # Check grant
     for target_agency in Agency:
