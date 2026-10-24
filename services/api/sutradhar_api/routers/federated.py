@@ -12,15 +12,16 @@ import hmac
 import os
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, Header, HTTPException
 
-from sutradhar_api.auth import require_action
+from sutradhar_api.auth import check_federated_grant, policy, require_action
 from sutradhar_api.models import (
     Agency,
     FederatedQueryRequest,
     FederatedQueryResponse,
     FederatedReasonCode,
     FederatedResult,
+    Role,
     UserInfo,
 )
 from sutradhar_api.store import get_store
@@ -113,6 +114,27 @@ def post_federated_query(
 ):
     store = get_store()
 
+    # Caller agency authorization: must be same agency or have federated grant
+    if user.role != Role.SYSTEM and user.agency.value != body.querying_agency.value:
+        if not check_federated_grant(user.agency.value, body.querying_agency.value):
+            store.record_audit(
+                actor=user.user_id,
+                role=user.role.value,
+                action="FEDERATED_QUERY_DENIED",
+                summary=f"No data-sharing grant between {user.agency.value} and {body.querying_agency.value}",
+                agency=user.agency.value,
+                purpose=body.purpose.value,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail={
+                    "error": {
+                        "code": "NO_GRANT",
+                        "message": f"User from {user.agency.value} cannot issue queries on behalf of {body.querying_agency.value} without an active data-sharing agreement.",
+                    }
+                },
+            )
+
     # Check grant
     for target_agency in Agency:
         if target_agency.value != body.querying_agency.value and not _AGENCY_GRANTS.get(
@@ -171,8 +193,35 @@ def post_federated_query(
 def get_agency_inbox(
     agency: str,
     user: Annotated[UserInfo, Depends(require_action("AGENCY_INBOX_VIEW"))],
+    x_access_purpose: Annotated[str | None, Header()] = None,
 ):
     store = get_store()
+
+    # Agency isolation check
+    if user.agency.value != agency:
+        decision = policy.check_agency_access(user, agency, purpose=x_access_purpose)
+        if not decision.allowed:
+            store.record_audit(
+                actor=user.user_id,
+                role=user.role.value,
+                action="AGENCY_INBOX_VIEW_DENIED",
+                summary=f"Cross-agency inbox view denied for agency {agency}: {decision.reason}",
+                agency=user.agency.value,
+                purpose=x_access_purpose,
+            )
+            raise HTTPException(
+                status_code=403,
+                detail={"error": {"code": decision.code, "message": decision.reason}},
+            )
+        store.record_audit(
+            actor=user.user_id,
+            role=user.role.value,
+            action="CROSS_AGENCY_INBOX_VIEW",
+            summary=f"Cross-agency inbox viewed for {agency}. Purpose={x_access_purpose}",
+            agency=user.agency.value,
+            purpose=x_access_purpose,
+        )
+
     # Return all queries that targeted the given agency (simulated: return all for demo)
     queries = [
         {

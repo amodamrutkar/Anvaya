@@ -12,7 +12,7 @@
         "querying_agency": {"type": "string", "enum": ["STATE_POLICE", "MAHA_CYBER", "CENTRAL_AGENCY"]},
         "identifier_type": {"type": "string", "enum": ["PHONE", "ACCOUNT", "VEHICLE", "PERSON_NAME_FATHER"]},
         "identifier_value": {"type": "string"},
-        "purpose": {"type": "string", "enum": ["INVESTIGATION", "ALERT_VERIFICATION", "AUDIT"]},
+        "purpose": {"type": "string", "enum": ["INVESTIGATION", "ALERT_VERIFICATION", "AUDIT", "CASE_INVESTIGATION", "CYBER_FRAUD_INVESTIGATION", "KUMBH_OPERATIONS", "COURT_DOSSIER_PREPARATION", "INCIDENT_RESPONSE"]},
         "case_ref": {"type": "string"}
       }
     },

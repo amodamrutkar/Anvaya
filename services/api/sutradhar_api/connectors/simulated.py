@@ -15,6 +15,13 @@ from __future__ import annotations
 from typing import Any
 
 
+from sutradhar_api.adapters import (
+    BankingFiuAdapter,
+    CctnsFirAdapter,
+    MahaCyberPortalAdapter,
+)
+
+
 class BaseSimulatedConnector:
     connector_id: str
     agency: str
@@ -38,6 +45,14 @@ class SimulatedCCTNS(BaseSimulatedConnector):
     connector_id = "SimulatedCCTNS"
     agency = "CENTRAL_AGENCY"
     description = "Simulated CCTNS connector (Crime and Criminal Tracking Network & Systems)"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.adapter = CctnsFirAdapter()
+
+    def ingest_raw_fir(self, raw_payload: dict[str, Any]) -> dict[str, Any]:
+        """Normalize a simulated raw CCTNS FIR into a canonical SourceRecord."""
+        return self.adapter.process(raw_payload)
 
     def fetch_fir(self, fir_number: str) -> dict[str, Any]:
         return {
@@ -64,6 +79,14 @@ class SimulatedMahaCrimeOS(BaseSimulatedConnector):
     agency = "STATE_POLICE"
     description = "Simulated MahaCrimeOS connector (Maharashtra Police Case Management System)"
 
+    def __init__(self) -> None:
+        super().__init__()
+        self.adapter = CctnsFirAdapter()
+
+    def ingest_raw_record(self, raw_payload: dict[str, Any]) -> dict[str, Any]:
+        """Normalize a simulated MahaCrimeOS record into a canonical SourceRecord."""
+        return self.adapter.process(raw_payload)
+
     def fetch_record(self, record_id: str) -> dict[str, Any]:
         return {
             "connector": self.connector_id,
@@ -79,6 +102,23 @@ class SimulatedMahaCyber(BaseSimulatedConnector):
     connector_id = "SimulatedMahaCyber"
     agency = "MAHA_CYBER"
     description = "Simulated Maharashtra Cyber connector (Cyber Crime Incident & Mule Tracking)"
+
+    def __init__(self) -> None:
+        super().__init__()
+        self.adapter = MahaCyberPortalAdapter()
+        self.banking_adapter = BankingFiuAdapter()
+
+    def ingest_raw_complaint(self, raw_payload: dict[str, Any]) -> dict[str, Any]:
+        """Normalize a simulated NCRP cyber incident into a canonical SourceRecord."""
+        return self.adapter.process(raw_payload)
+
+    def ingest_raw_account(self, raw_payload: dict[str, Any]) -> dict[str, Any]:
+        """Normalize a simulated raw account into a canonical CanonicalAccount."""
+        return self.adapter.adapt_account(raw_payload)
+
+    def ingest_raw_transaction(self, raw_payload: dict[str, Any]) -> dict[str, Any]:
+        """Normalize a simulated raw transaction into a canonical CanonicalTransaction."""
+        return self.banking_adapter.process(raw_payload)
 
     def fetch_complaint(self, complaint_id: str) -> dict[str, Any]:
         return {

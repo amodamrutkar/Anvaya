@@ -92,11 +92,36 @@ def validate_manifest(manifest: dict) -> tuple[int, int]:
                         if not path_str.endswith(".jsonl")
                         else load_jsonl(fpath)
                     )
+                    validator = None
+                    try:
+                        from referencing import Registry, Resource
+
+                        res = [
+                            (
+                                d.get("$id", p.name),
+                                Resource.from_contents(d),
+                            )
+                            for p in SCHEMAS_DIR.glob("*.schema.json")
+                            for d in [json.loads(p.read_text(encoding="utf-8"))]
+                        ]
+                        reg = Registry().with_resources(res)
+                        validator = jsonschema.Draft202012Validator(
+                            schema, registry=reg
+                        )
+                    except Exception:
+                        validator = None
+
                     if isinstance(data, list):
                         for item in data:
-                            jsonschema.validate(item, schema)
+                            if validator:
+                                validator.validate(item)
+                            else:
+                                jsonschema.validate(item, schema)
                     else:
-                        jsonschema.validate(data, schema)
+                        if validator:
+                            validator.validate(data)
+                        else:
+                            jsonschema.validate(data, schema)
                     print(f"  PASS [schema OK]  {path_str}")
                 except ImportError:
                     print(

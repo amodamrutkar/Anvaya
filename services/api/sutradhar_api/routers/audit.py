@@ -33,7 +33,7 @@ def get_audit_log(
 
 @router.get("/verify")
 def get_audit_verify(
-    user: Annotated[UserInfo, Depends(require_auth)],
+    user: Annotated[UserInfo, Depends(require_action("AUDIT_VERIFY"))],
 ):
     store = get_store()
     result = store.verify_audit_chain()
@@ -43,8 +43,10 @@ def get_audit_verify(
         action="AUDIT_VERIFY",
         summary=f"Verified audit chain: valid={result['valid']}.",
         purpose="AUDIT",
+        agency=user.agency.value,
     )
     return result
+
 
 
 @router.post("/dev/tamper")

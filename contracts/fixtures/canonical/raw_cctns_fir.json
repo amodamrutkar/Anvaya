@@ -1,0 +1,30 @@
+{
+  "cctns_state_code": "MH",
+  "fir_num": "0042/2026",
+  "police_station": "Bundgarden",
+  "district_name": "Pune City",
+  "date_of_registration": "2026-02-14",
+  "acts_sections": ["IPC 420", "IT Act 66D"],
+  "major_head": "CYBER_FRAUD",
+  "complainant_info": {
+    "full_name": "Suresh Deshmukh",
+    "mobile": "9822011223"
+  },
+  "accused_persons": [
+    {
+      "full_name": "Rakesh Powar",
+      "relative_name": "Balwant Powar",
+      "approx_age": 34,
+      "contact_number": "9890123456",
+      "alias_name": "Rocky",
+      "permanent_address": "Camp Area, Pune"
+    }
+  ],
+  "alleged_bank_accounts": [
+    {
+      "bank_name": "HDFC",
+      "account_no": "50100012345678"
+    }
+  ],
+  "brief_facts": "Complainant reported unauthorized digital fund withdrawal through phishing link."
+}

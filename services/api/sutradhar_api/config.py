@@ -13,11 +13,17 @@ _REPO_ROOT = Path(__file__).parent.parent.parent.parent
 # Where pipeline artifacts live. Falls back to contracts/fixtures/ if absent.
 ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", str(_REPO_ROOT / "artifacts")))
 CONTRACTS_FIXTURES_DIR = _REPO_ROOT / "contracts" / "fixtures"
+CONTRACTS_SCHEMAS_DIR = _REPO_ROOT / "contracts" / "schemas"
 DATA_DIR = _REPO_ROOT / "data"
 KUMBH_EVENTS_PATH = DATA_DIR / "kumbh" / "events.jsonl"
 
 # Demo tamper mode — defaults to 1 for live demo tamper-detection demonstration
 DEMO_TAMPER = os.getenv("DEMO_TAMPER", "1") == "1"
+
+# Development authentication and token verification
+DEV_AUTH_ENABLED = os.getenv("DEV_AUTH_ENABLED", "1") == "1"
+DEV_AUTH_SECRET = os.getenv("DEV_AUTH_SECRET", "sutradhar-dev-secret-change-in-prod")
+DEV_AUTH_TOKEN_TTL_SECONDS = int(os.getenv("DEV_AUTH_TOKEN_TTL_SECONDS", "3600"))
 
 # CORS
 CORS_ORIGINS: list[str] = [

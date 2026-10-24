@@ -4,6 +4,30 @@ All contract changes are recorded here. Breaking changes require a 24-hour notic
 
 Format: `## [version] — date — author — summary`
 
+## [0.2.0] — 2026-10-24 — M4 — Step 7A Canonical Government Data Contracts & Adapter Boundary
+
+### Added
+
+- `schemas/ingestion_metadata.schema.json` — Shared integration & provenance metadata contract.
+- `schemas/canonical_account.schema.json` — Formal bank account contract for financial analysis and mule tracking.
+- `schemas/canonical_transaction.schema.json` — Formal transaction contract for fund flow analysis.
+- `fixtures/canonical/` — Integration reference fixtures for canonical contracts and simulated adapter payloads:
+  - `source_record.json`, `canonical_account.json`, `canonical_transaction.json`, `ingestion_metadata.json`
+  - `raw_cctns_fir.json`, `raw_mahacyber_incident.json`, `raw_banking_transaction.json`, `raw_kumbh_observation.json`
+- `sutradhar_api/adapters/` — Simulated normalization adapter layer (`BaseAdapter`, `CctnsFirAdapter`, `MahaCyberPortalAdapter`, `BankingFiuAdapter`, `KumbhOperationsAdapter`).
+
+### Changed
+
+- `schemas/source_record.schema.json` — Evolved with optional `ingestion_metadata` reference; affirmed as the single authoritative canonical SourceRecord contract.
+- `schemas/kumbh_event.schema.json` — Evolved with optional `ingestion_metadata` reference.
+- `fixtures/MANIFEST.json` — Linked `canonical_account.schema.json` to accounts fixtures and `canonical_transaction.schema.json` to transactions fixtures; indexed all new canonical fixtures.
+
+### Notes
+
+- All data remains entirely synthetic and all connectors/adapters are simulated (`simulated: true`).
+- No live external network requests or production credentials exist or are claimed.
+- 100% backward-compatible with frozen Step 6B datasets (V1 and V2).
+
 ---
 
 ## [0.1.0] — 2026-10-17 — M4 — Initial scaffold

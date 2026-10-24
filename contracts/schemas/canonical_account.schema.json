@@ -1,0 +1,66 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canonical_account.schema.json",
+  "title": "CanonicalAccount",
+  "description": "Canonical bank account contract for financial analysis, mule tracing, and cross-agency intelligence.",
+  "type": "object",
+  "required": [
+    "account_key",
+    "bank",
+    "holder_name_raw"
+  ],
+  "properties": {
+    "account_key": {
+      "type": "string",
+      "pattern": "^[A-Z0-9]+:[A-Za-z0-9_-]+$"
+    },
+    "source_account_id": {
+      "type": ["string", "null"]
+    },
+    "bank": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ifsc": {
+      "type": ["string", "null"]
+    },
+    "holder_name_raw": {
+      "type": "string"
+    },
+    "opened_date": {
+      "type": ["string", "null"],
+      "format": "date"
+    },
+    "complaint_count": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "account_category": {
+      "type": ["string", "null"]
+    },
+    "account_type": {
+      "type": ["string", "null"],
+      "enum": ["SAVINGS", "CURRENT", "SALARY", "OVERDRAFT", "WALLET", null]
+    },
+    "masked_account": {
+      "type": ["string", "null"]
+    },
+    "currency": {
+      "type": "string",
+      "default": "INR"
+    },
+    "status": {
+      "type": ["string", "null"],
+      "enum": ["ACTIVE", "DORMANT", "FROZEN", "UNDER_REVIEW", null]
+    },
+    "record_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "ingestion_metadata": {
+      "$ref": "ingestion_metadata.schema.json"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "schema_version": "2.0.0",
+  "source_system": "CCTNS_MH",
+  "source_record_id": "MH-PUN-0042/2026",
+  "agency": "STATE_POLICE",
+  "adapter_id": "CctnsFirAdapter",
+  "ingestion_timestamp": "2026-10-24T12:00:00Z",
+  "batch_id": "BATCH-20261024-001",
+  "trace_id": "TRACE-INT-MH-0091",
+  "payload_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+  "simulated": true,
+  "provenance": {
+    "source_jurisdiction": "Pune City",
+    "origin_gateway": "SimulatedCCTNS"
+  }
+}

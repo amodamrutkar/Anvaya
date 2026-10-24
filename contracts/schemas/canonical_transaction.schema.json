@@ -1,0 +1,67 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "canonical_transaction.schema.json",
+  "title": "CanonicalTransaction",
+  "description": "Canonical financial transaction contract for fund flow and money mule tracing.",
+  "type": "object",
+  "required": [
+    "txn_id",
+    "from_account",
+    "to_account",
+    "amount"
+  ],
+  "properties": {
+    "txn_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_txn_id": {
+      "type": ["string", "null"]
+    },
+    "from_account": {
+      "type": "string",
+      "minLength": 1
+    },
+    "to_account": {
+      "type": "string",
+      "minLength": 1
+    },
+    "amount": {
+      "type": "number",
+      "minimum": 0
+    },
+    "currency": {
+      "type": "string",
+      "default": "INR"
+    },
+    "timestamp": {
+      "type": ["string", "null"],
+      "format": "date-time"
+    },
+    "ts": {
+      "type": ["string", "null"]
+    },
+    "type": {
+      "type": ["string", "null"]
+    },
+    "channel": {
+      "type": ["string", "null"]
+    },
+    "utr_number": {
+      "type": ["string", "null"]
+    },
+    "source_system": {
+      "type": ["string", "null"]
+    },
+    "status": {
+      "type": ["string", "null"],
+      "enum": ["SUCCESS", "FAILED", "PENDING", "REVERSED", null]
+    },
+    "provenance": {
+      "type": "object"
+    },
+    "ingestion_metadata": {
+      "$ref": "ingestion_metadata.schema.json"
+    }
+  }
+}

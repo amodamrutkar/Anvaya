@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "ingestion_metadata.schema.json",
+  "title": "IngestionMetadata",
+  "description": "Integration and provenance metadata attached to normalized canonical records at the adapter boundary.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "source_system",
+    "source_record_id",
+    "agency",
+    "adapter_id",
+    "ingestion_timestamp",
+    "simulated"
+  ],
+  "properties": {
+    "schema_version": {
+      "type": "string",
+      "pattern": "^\\d+\\.\\d+\\.\\d+$"
+    },
+    "source_system": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agency": {
+      "type": "string",
+      "minLength": 1
+    },
+    "adapter_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "ingestion_timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "batch_id": {
+      "type": ["string", "null"]
+    },
+    "trace_id": {
+      "type": ["string", "null"]
+    },
+    "payload_sha256": {
+      "type": ["string", "null"],
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "simulated": {
+      "type": "boolean"
+    },
+    "provenance": {
+      "type": "object"
+    }
+  }
+}

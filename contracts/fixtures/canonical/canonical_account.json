@@ -1,0 +1,31 @@
+{
+  "account_key": "HDFC:50100012345678",
+  "source_account_id": "50100012345678",
+  "bank": "HDFC",
+  "ifsc": "HDFC0001234",
+  "holder_name_raw": "Rakesh Powar",
+  "opened_date": "2023-06-01",
+  "complaint_count": 210,
+  "account_category": "MULE_LAYER1",
+  "account_type": "CURRENT",
+  "masked_account": "XXXX-XXXX-5678",
+  "currency": "INR",
+  "status": "ACTIVE",
+  "record_ids": ["R-CYB-000456"],
+  "ingestion_metadata": {
+    "schema_version": "2.0.0",
+    "source_system": "CORE_BANKING_CBS",
+    "source_record_id": "HDFC:50100012345678",
+    "agency": "MAHA_CYBER",
+    "adapter_id": "BankingFiuAdapter",
+    "ingestion_timestamp": "2026-10-24T12:00:00Z",
+    "batch_id": "BATCH-20261024-002",
+    "trace_id": "TRACE-BNK-HDFC-0012",
+    "payload_sha256": "f3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "simulated": true,
+    "provenance": {
+      "branch_code": "0001234",
+      "kyc_source": "DIGITAL_EKYC"
+    }
+  }
+}

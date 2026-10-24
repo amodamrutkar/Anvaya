@@ -1,0 +1,54 @@
+{
+  "record_id": "R-STP-000042",
+  "agency": "STATE_POLICE",
+  "record_type": "FIR",
+  "crime_type": "CYBER_FRAUD",
+  "case_ref": "CASE-STP-000042",
+  "district": "Pune City",
+  "station": "Bundgarden",
+  "filed_date": "2026-02-14",
+  "language": "en",
+  "sections": ["IPC 420", "IT Act 66D"],
+  "form_fields": {
+    "accused": [
+      {
+        "name": "Rakesh Powar",
+        "father_name": "Balwant Powar",
+        "age": 34,
+        "address": "Camp Area, Pune",
+        "phone": "9890123456",
+        "alias": "Rocky"
+      }
+    ],
+    "complainant": {
+      "name": "Suresh Deshmukh",
+      "phone": "9822011223"
+    },
+    "victims": [],
+    "accounts": [
+      {
+        "bank": "HDFC",
+        "account_no": "50100012345678"
+      }
+    ],
+    "phones": ["9890123456"],
+    "vehicles": []
+  },
+  "narrative": "Complainant reported unauthorized digital fund withdrawal through phishing link.",
+  "ingestion_metadata": {
+    "schema_version": "2.0.0",
+    "source_system": "CCTNS_MH",
+    "source_record_id": "MH-PUN-0042/2026",
+    "agency": "STATE_POLICE",
+    "adapter_id": "CctnsFirAdapter",
+    "ingestion_timestamp": "2026-10-24T12:00:00Z",
+    "batch_id": "BATCH-20261024-001",
+    "trace_id": "TRACE-INT-MH-0091",
+    "payload_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "simulated": true,
+    "provenance": {
+      "source_fir_number": "0042/2026",
+      "police_station": "Bundgarden"
+    }
+  }
+}

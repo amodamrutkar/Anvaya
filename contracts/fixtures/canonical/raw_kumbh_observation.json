@@ -1,0 +1,14 @@
+{
+  "sensor_event_id": "IOT-RK-20261027-0104",
+  "feed_source": "CAM-ZONE-RAMKUND-NORTH",
+  "timestamp_local": "2026-10-27T08:15:00Z",
+  "operational_sector": "Ramkund",
+  "category": "WATCHLIST_SIGHTING",
+  "detected_token": "ENT-0004",
+  "associated_tokens": ["PH-9890123456", "VEH-MH15AB1234"],
+  "sensor_telemetry": {
+    "camera_fps": 30,
+    "gate": "Gate-4B",
+    "sensor_status": "ONLINE"
+  }
+}

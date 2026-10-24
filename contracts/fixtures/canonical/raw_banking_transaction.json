@@ -1,0 +1,13 @@
+{
+  "cbs_reference": "CBS-FT-883192",
+  "remitter_bank_code": "SBIN",
+  "remitter_acc": "68166060251503",
+  "beneficiary_bank_code": "KKBK",
+  "beneficiary_acc": "96100167283599",
+  "txn_amount_inr": 1204.07,
+  "settlement_time_utc": "2025-02-28T10:08:00Z",
+  "payment_mode": "UPI_P2P",
+  "core_status": "PROCESSED",
+  "utr": "SBI00918237192",
+  "currency": "INR"
+}

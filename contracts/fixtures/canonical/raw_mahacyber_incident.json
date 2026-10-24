@@ -1,0 +1,29 @@
+{
+  "ncrp_acknowledgement_no": "NCRP-2026-9912",
+  "state_nodal": "Maharashtra Cyber",
+  "incident_category": "ONLINE_FINANCIAL_FRAUD",
+  "incident_date": "2026-03-01",
+  "reporting_district": "Mumbai Cyber",
+  "police_station": "BKC Cyber PS",
+  "victim_details": {
+    "name": "Ananya Sharma",
+    "contact": "9820098200"
+  },
+  "suspect_identifiers": [
+    {
+      "name": "Amit Kadam",
+      "phone": "9819998199",
+      "role": "SUSPECT"
+    }
+  ],
+  "suspect_accounts": [
+    {
+      "bank_code": "AXIS",
+      "account_number": "73306261209770",
+      "ifsc": "AXIS05TGAXM",
+      "holder_name": "Daksha Bhavin Shah",
+      "complaints_linked": 1
+    }
+  ],
+  "incident_summary": "Victim reported being induced to transfer funds to a fraudulent investment account."
+}

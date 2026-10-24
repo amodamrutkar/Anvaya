@@ -53,6 +53,8 @@ def post_review_decision(
         role=user.role.value,
         action=f"REVIEW_{body.decision.value}",
         summary=f"Link {link_id}: {body.decision.value}. Reason: {body.reason!r}",
+        agency=user.agency.value,
+        purpose="CASE_INVESTIGATION",
     )
     return {
         "link_id": link_id,
@@ -85,6 +87,8 @@ def post_unlink(
         role=user.role.value,
         action="UNLINK",
         summary=f"Unlinked {link_id}. Reason: {body.reason!r}",
+        agency=user.agency.value,
+        purpose="CASE_INVESTIGATION",
     )
     return {
         "link_id": link_id,

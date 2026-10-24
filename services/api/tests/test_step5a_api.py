@@ -254,8 +254,8 @@ async def test_audit_entries_and_chain_validity(client):
     assert "KUMBH_CLUSTERS_VIEW" in recent_actions
     assert "KUMBH_EVENT_INTELLIGENCE_VIEW" in recent_actions
 
-    # 2. Verify hash chain integrity
-    r_ver = await client.get("/audit/verify", headers={"X-Demo-User": "analyst1"})
+    # 2. Verify hash chain integrity (restricted to AUDITOR)
+    r_ver = await client.get("/audit/verify", headers={"X-Demo-User": "auditor1"})
     assert r_ver.status_code == 200
     assert r_ver.json()["valid"] is True
 

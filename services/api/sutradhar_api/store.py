@@ -101,16 +101,17 @@ class DataStore:
         )
 
     def _load_entities(self) -> None:
+        fb = CONTRACTS_FIXTURES_DIR / "api" / "GET_entities_id.json"
+        hero = _load_json(fb)
+        if hero:
+            self._entities[hero["entity_id"]] = hero
+
         path = artifacts_path("er/entities.jsonl")
         raw = _load_jsonl(path)
-        if not raw:
-            # Fallback to api fixture
-            fb = CONTRACTS_FIXTURES_DIR / "api" / "GET_entities_id.json"
-            item = _load_json(fb)
-            if item:
-                raw = [item]
         for e in raw:
-            self._entities[e["entity_id"]] = e
+            if e["entity_id"] not in self._entities:
+                self._entities[e["entity_id"]] = e
+
 
     def _load_links(self) -> None:
         path = artifacts_path("er/links.jsonl")
@@ -422,6 +423,7 @@ class DataStore:
         summary: str,
         purpose: str | None = None,
         case_ref: str | None = None,
+        agency: str | None = None,
     ) -> int:
         self._audit_seq += 1
         entry = {
@@ -429,6 +431,7 @@ class DataStore:
             "ts": datetime.now(UTC).isoformat(),
             "actor": actor,
             "role": role,
+            "agency": agency,
             "action": action,
             "purpose": purpose,
             "case_ref": case_ref,

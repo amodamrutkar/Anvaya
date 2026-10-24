@@ -39,9 +39,17 @@
     {"path": "artifacts/metrics.json", "purpose": "Evaluation metrics artifact fixture", "schema": "metrics.schema.json", "owner": "M1"},
     {"path": "data/STATE_POLICE/records.jsonl", "purpose": "STATE_POLICE source records fixture", "schema": "source_record.schema.json", "owner": "M1"},
     {"path": "data/MAHA_CYBER/records.jsonl", "purpose": "MAHA_CYBER source records fixture", "schema": "source_record.schema.json", "owner": "M1"},
-    {"path": "data/MAHA_CYBER/accounts.jsonl", "purpose": "MAHA_CYBER accounts fixture", "schema": null, "owner": "M1"},
-    {"path": "data/MAHA_CYBER/transactions.jsonl", "purpose": "MAHA_CYBER transactions fixture", "schema": null, "owner": "M1"},
+    {"path": "data/MAHA_CYBER/accounts.jsonl", "purpose": "MAHA_CYBER accounts fixture", "schema": "canonical_account.schema.json", "owner": "M1"},
+    {"path": "data/MAHA_CYBER/transactions.jsonl", "purpose": "MAHA_CYBER transactions fixture", "schema": "canonical_transaction.schema.json", "owner": "M1"},
     {"path": "data/CENTRAL_AGENCY/records.jsonl", "purpose": "CENTRAL_AGENCY source records fixture", "schema": "source_record.schema.json", "owner": "M1"},
-    {"path": "data/kumbh/events.jsonl", "purpose": "Kumbh events fixture (E1 watchlist, E2 scam, E3 control case)", "schema": "kumbh_event.schema.json", "owner": "M1"}
+    {"path": "data/kumbh/events.jsonl", "purpose": "Kumbh events fixture (E1 watchlist, E2 scam, E3 control case)", "schema": "kumbh_event.schema.json", "owner": "M1"},
+    {"path": "canonical/source_record.json", "purpose": "Canonical SourceRecord fixture with ingestion metadata", "schema": "source_record.schema.json", "owner": "M4"},
+    {"path": "canonical/canonical_account.json", "purpose": "Canonical Account contract fixture", "schema": "canonical_account.schema.json", "owner": "M4"},
+    {"path": "canonical/canonical_transaction.json", "purpose": "Canonical Transaction contract fixture", "schema": "canonical_transaction.schema.json", "owner": "M4"},
+    {"path": "canonical/ingestion_metadata.json", "purpose": "Canonical IngestionMetadata contract fixture", "schema": "ingestion_metadata.schema.json", "owner": "M4"},
+    {"path": "canonical/raw_cctns_fir.json", "purpose": "Simulated raw CCTNS FIR adapter input fixture", "schema": null, "owner": "M4"},
+    {"path": "canonical/raw_mahacyber_incident.json", "purpose": "Simulated raw MahaCyber incident adapter input fixture", "schema": null, "owner": "M4"},
+    {"path": "canonical/raw_banking_transaction.json", "purpose": "Simulated raw Core Banking transaction adapter input fixture", "schema": null, "owner": "M4"},
+    {"path": "canonical/raw_kumbh_observation.json", "purpose": "Simulated raw Kumbh Mela observation adapter input fixture", "schema": null, "owner": "M4"}
   ]
 }

@@ -1,0 +1,29 @@
+{
+  "txn_id": "TXN-BNK-0000042",
+  "source_txn_id": "CBS-FT-991204",
+  "from_account": "HDFC:50100099999999",
+  "to_account": "HDFC:50100012345678",
+  "amount": 50000.0,
+  "currency": "INR",
+  "timestamp": "2026-03-01T10:00:00Z",
+  "type": "IMPS",
+  "utr_number": "HDFC202603010042",
+  "source_system": "CORE_BANKING_CBS",
+  "status": "SUCCESS",
+  "provenance": {
+    "clearing_channel": "NPCI_IMPS",
+    "terminal_id": "ATM-MUM-412"
+  },
+  "ingestion_metadata": {
+    "schema_version": "2.0.0",
+    "source_system": "CORE_BANKING_CBS",
+    "source_record_id": "CBS-FT-991204",
+    "agency": "MAHA_CYBER",
+    "adapter_id": "BankingFiuAdapter",
+    "ingestion_timestamp": "2026-10-24T12:00:00Z",
+    "batch_id": "BATCH-20261024-003",
+    "trace_id": "TRACE-TXN-HDFC-9912",
+    "payload_sha256": "a3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "simulated": true
+  }
+}

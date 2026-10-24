@@ -27,6 +27,7 @@
         "vehicles": {"type": "array", "items": {"type": "string"}}
       }
     },
-    "narrative": {"type": "string"}
+    "narrative": {"type": "string"},
+    "ingestion_metadata": {"$ref": "ingestion_metadata.schema.json"}
   }
 }
