@@ -9,6 +9,7 @@ Multilingual demographic pools and weighted surname distributions:
 from __future__ import annotations
 
 import random
+import re
 from typing import Any
 from ..safety import is_denylisted
 
@@ -207,3 +208,97 @@ def sample_demographic_identity(
         "surname": {"canonical_rom": "Kadam", "canonical_dev": "कदम", "variants_rom": ["Kadam"], "variants_dev": ["कदम"], "weight": 5},
         "gender": "M",
     }
+
+
+# ─────────────────────────────────────────────────────────────
+# Phonetic Confusion, OCR Noise & Marathi Numerals
+# ─────────────────────────────────────────────────────────────
+
+MARATHI_DIGITS = {
+    "0": "०", "1": "१", "2": "२", "3": "३", "4": "४",
+    "5": "५", "6": "६", "7": "७", "8": "८", "9": "९",
+}
+
+
+def render_marathi_numerals(phone_or_num: str) -> str:
+    """Convert digits in a string to Marathi/Devanagari numerals."""
+    return "".join(MARATHI_DIGITS.get(ch, ch) for ch in phone_or_num)
+
+
+PHONETIC_CONFUSION_RULES = [
+    # v/w
+    (re.compile(r"\bV", re.IGNORECASE), "W", "phonetic_v_w"),
+    (re.compile(r"\bW", re.IGNORECASE), "V", "phonetic_v_w"),
+    (re.compile(r"(?<=[aeiou])v", re.IGNORECASE), "w", "phonetic_v_w"),
+    (re.compile(r"(?<=[aeiou])w", re.IGNORECASE), "v", "phonetic_v_w"),
+    # sh/s
+    (re.compile(r"sh", re.IGNORECASE), "s", "phonetic_sh_s"),
+    (re.compile(r"\bS(?=[aeiou])", re.IGNORECASE), "Sh", "phonetic_sh_s"),
+    # d/dh
+    (re.compile(r"dh", re.IGNORECASE), "d", "phonetic_d_dh"),
+    (re.compile(r"d(?=[aeiou])", re.IGNORECASE), "dh", "phonetic_d_dh"),
+    # ph/f
+    (re.compile(r"ph", re.IGNORECASE), "f", "phonetic_ph_f"),
+    (re.compile(r"f", re.IGNORECASE), "ph", "phonetic_ph_f"),
+    # ee/i
+    (re.compile(r"ee", re.IGNORECASE), "i", "phonetic_ee_i"),
+    (re.compile(r"i\b", re.IGNORECASE), "ee", "phonetic_ee_i"),
+    # oo/u
+    (re.compile(r"oo", re.IGNORECASE), "u", "phonetic_oo_u"),
+    (re.compile(r"u(?=[a-z])", re.IGNORECASE), "oo", "phonetic_oo_u"),
+]
+
+
+def apply_phonetic_confusion(name_rom: str, rng: random.Random) -> tuple[str, list[str]]:
+    """Apply realistic phonetic spelling confusion to Romanized Indian names."""
+    applicable = []
+    for pattern, repl, tag in PHONETIC_CONFUSION_RULES:
+        if pattern.search(name_rom):
+            applicable.append((pattern, repl, tag))
+    if not applicable:
+        return name_rom, []
+    pattern, repl, tag = rng.choice(applicable)
+    modified = pattern.sub(repl, name_rom, count=1)
+    return modified, [tag]
+
+
+DEVANAGARI_OCR_CONFUSION = [
+    ("श", "स", "ocr_sha_sa"),
+    ("स", "श", "ocr_sa_sha"),
+    ("ण", "न", "ocr_na_na"),
+    ("ळ", "ल", "ocr_la_la"),
+    ("व", "ब", "ocr_va_ba"),
+    ("ध", "घ", "ocr_dha_gha"),
+    ("भ", "म", "ocr_bha_ma"),
+]
+
+
+def apply_devanagari_ocr_noise(name_dev: str, rng: random.Random) -> tuple[str, list[str]]:
+    """Apply realistic Devanagari OCR character confusion."""
+    applicable = []
+    for src, dst, tag in DEVANAGARI_OCR_CONFUSION:
+        if src in name_dev:
+            applicable.append((src, dst, tag))
+    if not applicable:
+        return name_dev, []
+    src, dst, tag = rng.choice(applicable)
+    modified = name_dev.replace(src, dst, 1)
+    return modified, [tag]
+
+
+def format_administrative_name_order(
+    first_name: str,
+    father_name: str,
+    surname: str,
+    order: str = "SURNAME_FIRST_FATHER",
+) -> str:
+    """Format name in administrative order, e.g. SURNAME FIRST FATHER."""
+    if order == "SURNAME_FIRST_FATHER":
+        if father_name:
+            return f"{surname} {first_name} {father_name}"
+        return f"{surname} {first_name}"
+    elif order == "FIRST_FATHER_SURNAME":
+        if father_name:
+            return f"{first_name} {father_name} {surname}"
+        return f"{first_name} {surname}"
+    return f"{first_name} {surname}"

@@ -6,9 +6,11 @@ Comprehensive Dataset v2 Generator for Sutradhar:
 - Background IDs start at 001000 with no 9999 cap (6-digit width)
 - 8 criminal syndicates (3 mule rings, 2 extortion gangs, 2 drug chains, 1 hawala ring) + 5 bridges
 - Multilingual pools with Zipfian surname distributions and VIP denylist
-- Hard negatives: name collisions, chawls, shared SIMs, and innocent fast pass-through accounts
+- Hard negatives: name collisions, chawls, shared family SIMs, and innocent fast pass-through accounts
+- Realistic bridge cross-crime observable evidence & co-accused graph links
 - Per-agency YAML noise profiles with ~50% Easy / 30% Medium / 20% Hard calibration
 - Deterministic seeding to data/v2/<tier>/seed-<n>/ and data/truth/v2/<tier>/seed-<n>/
+- Complete separation of public data (schema-compatible, zero truth fields) and evaluation truth
 """
 
 from __future__ import annotations
@@ -23,7 +25,13 @@ import yaml
 
 from .finance import BackgroundFinanceGenerator
 from .lexicons import BANK_CODES, DISTRICTS, POLICE_STATIONS
-from .lexicons.multilingual import sample_demographic_identity
+from .lexicons.multilingual import (
+    sample_demographic_identity,
+    apply_phonetic_confusion,
+    apply_devanagari_ocr_noise,
+    render_marathi_numerals,
+    format_administrative_name_order,
+)
 from .mcoca import generate_mcoca_test_cases
 from .safety import generate_invalid_pseudo_aadhaar, is_denylisted
 
@@ -58,38 +66,39 @@ class V2DatasetGenerator:
         with open(cfg_dir / "v2_tiers.yaml", encoding="utf-8") as f:
             self.tiers_cfg = yaml.safe_load(f)["tiers"]
         with open(cfg_dir / "noise_profiles.yaml", encoding="utf-8") as f:
-            self.noise_cfg = yaml.safe_load(f)["profiles"]
+            data = yaml.safe_load(f)
+            self.noise_cfg = data.get("profiles", data.get("agencies", {}))
 
-        self.tier_spec = self.tiers_cfg.get(tier, self.tiers_cfg["dev"])
+        self.tier_spec = self.tiers_cfg[tier]
 
-        # Counters for background entities starting at 001000
+        # Entity storage
+        self.persons: list[dict[str, Any]] = []
+        self.syndicate_members: dict[str, list[dict[str, Any]]] = {}
+        self.bridges: list[dict[str, Any]] = []
+        self.records: list[dict[str, Any]] = []
+        self.mention_truth: list[dict[str, Any]] = []
+
+        # Sequence counters starting at 1000 for non-hero background
         self._person_seq = 1000
         self._record_seq = {"SPO": 1000, "CYB": 1000, "CEN": 1000}
         self._case_seq = {"SPO": 1000, "CYB": 1000, "CEN": 1000}
-        self._mention_seq = 1000
         self._kumbh_seq = 100
-
-        self.persons: list[dict[str, Any]] = []
-        self.records: list[dict[str, Any]] = []
-        self.mention_truth: list[dict[str, Any]] = []
-        self.networks_truth: dict[str, Any] = {}
-        self.syndicate_members: dict[str, list[dict[str, Any]]] = {}
-        self.bridges: list[dict[str, Any]] = []
+        self._mention_seq = 1000
 
     def _next_person_id(self) -> str:
         pid = f"P-{self._person_seq:06d}"
         self._person_seq += 1
         return pid
 
-    def _next_record_id(self, agency_code: str) -> str:
-        seq = self._record_seq[agency_code]
-        self._record_seq[agency_code] += 1
-        return f"R-{agency_code}-{seq:06d}"
+    def _next_record_id(self, agency_prefix: str) -> str:
+        seq = self._record_seq[agency_prefix]
+        self._record_seq[agency_prefix] += 1
+        return f"R-{agency_prefix}-{seq:06d}"
 
-    def _next_case_ref(self, agency_code: str) -> str:
-        seq = self._case_seq[agency_code]
-        self._case_seq[agency_code] += 1
-        return f"CASE-{agency_code}-{seq:06d}"
+    def _next_case_ref(self, agency_prefix: str) -> str:
+        seq = self._case_seq[agency_prefix]
+        self._case_seq[agency_prefix] += 1
+        return f"CASE-{agency_prefix}-{seq:06d}"
 
     def _next_mention_id(self, record_id: str) -> str:
         mid = f"M-{record_id}-{self._mention_seq}"
@@ -118,6 +127,7 @@ class V2DatasetGenerator:
             "vehicles": ["VH-000003"],
             "addresses": ["950, Sahyadri Vihar, Thane"],
             "network": "COM-002",
+            "secondary_network": "COM-001",
             "role": "BROKER",
             "aliases": ["राका", "Raka"],
             "pool": "marathi",
@@ -143,6 +153,7 @@ class V2DatasetGenerator:
             "vehicles": [],
             "addresses": ["420, Model Colony, Pune"],
             "network": "COM-001",
+            "secondary_network": "COM-003",
             "role": "CONTROLLER",
             "aliases": ["Nitu"],
             "pool": "marathi",
@@ -151,7 +162,7 @@ class V2DatasetGenerator:
         self.persons.append(nitin)
         self.bridges.append(nitin)
 
-        # Hero Network A leader & deceived account holder (S-03)
+        # Hero Network A recruiter & deceived account holder (S-03)
         sachin = {
             "person_id": "P-000101",
             "canonical_name": "Sachin Tukaram Kale",
@@ -226,16 +237,16 @@ class V2DatasetGenerator:
             p["pseudo_aadhaar"] = [generate_invalid_pseudo_aadhaar(self.rng)]
 
     # ─────────────────────────────────────────────────────────
-    # 2. Generating 8 Syndicates (Dev Tier) + Bridges
+    # 2. Generating 8 Syndicates (Dev Tier) + 5 Bridges
     # ─────────────────────────────────────────────────────────
     def _generate_syndicates(self) -> None:
         """
-        Generate 8 syndicates using only existing crime types:
+        Generate 8 syndicates using standard crime types:
         - 3 Mule Rings (CYBER_FRAUD): COM-001 (Hero A), COM-004 (D1), COM-005 (D2)
         - 2 Extortion Gangs (EXTORTION): COM-002 (Hero B), COM-006 (E1)
         - 2 Drug Chains (NARCOTICS): COM-003 (Hero C), COM-007 (F1)
         - 1 Hawala Transit Ring: COM-008 (H1)
-        Plus 4-6 bridge operatives linking multiple syndicates.
+        Plus 5 bridge operatives linking syndicates across domains.
         """
         syndicate_defs = [
             ("COM-001", "Mule Syndicate A (Pune-Nashik)", "CYBER_FRAUD"),
@@ -248,7 +259,7 @@ class V2DatasetGenerator:
             ("COM-008", "Hawala Cash Transit Ring H1 (Mumbai-Thane)", "EXTORTION"),
         ]
 
-        roles_pool = ["LEADER", "RECRUITER", "CONTROLLER", "MEMBER", "COURIER", "DECEIVED_HOLDER"]
+        roles_pool = ["LEADER", "RECRUITER", "CONTROLLER", "MEMBER", "COURIER"]
 
         for cid, cname, ccrime in syndicate_defs:
             self.syndicate_members[cid] = []
@@ -261,7 +272,6 @@ class V2DatasetGenerator:
                 role = self.rng.choice(roles_pool)
                 dist = self.rng.choice(DISTRICTS)
 
-                # Assign multiple phones to some members (burner phones)
                 num_phones = self.rng.choices([1, 2, 3], weights=[70, 20, 10], k=1)[0]
                 phones = [_gen_phone(self.rng) for _ in range(num_phones)]
 
@@ -335,9 +345,12 @@ class V2DatasetGenerator:
     def _generate_background_population(self) -> None:
         """
         Generate remaining ordinary citizens up to target (2,000 persons):
-        - Chawl and hostel shared address clusters
-        - Common name collisions (different people, same name and age)
-        - Family clusters sharing home landline / address
+        - Chawl and hostel shared address clusters (CIVILIAN_CHAWL_RESIDENT)
+        - Common name collisions (COLLISION_A, COLLISION_B)
+        - Family clusters sharing home landline / address (FAMILY_SHARED_PHONE)
+        - Innocent small merchants / gig workers (INNOCENT_MERCHANT)
+        - Kumbh humanitarian cases (KUMBH_HUMANITARIAN_DECOY)
+        - Ordinary civilians
         """
         target_persons = self.tier_spec["num_persons"]
         remaining = target_persons - len(self.persons)
@@ -372,6 +385,7 @@ class V2DatasetGenerator:
                 "addresses": [self.rng.choice(chawl_addresses)],
                 "network": "NONE",
                 "role": "CIVILIAN_CHAWL_RESIDENT",
+                "decoy_type": "CIVILIAN_CHAWL",
                 "aliases": [],
                 "pool": identity["pool"],
                 "is_hero": False,
@@ -405,6 +419,7 @@ class V2DatasetGenerator:
                 "addresses": [f"{self.rng.randint(1, 999)}, Gandhi Chowk, {dist_a}"],
                 "network": "NONE",
                 "role": "COLLISION_A",
+                "decoy_type": "NAME_COLLISION",
                 "aliases": [],
                 "pool": identity["pool"],
                 "is_hero": False,
@@ -428,13 +443,137 @@ class V2DatasetGenerator:
                 "addresses": [f"{self.rng.randint(1, 999)}, Station Road, {dist_b}"],
                 "network": "NONE",
                 "role": "COLLISION_B",
+                "decoy_type": "NAME_COLLISION",
                 "aliases": [],
                 "pool": identity["pool"],
                 "is_hero": False,
             }
             self.persons.extend([p_a, p_b])
 
-        # 3c. Fill ordinary civilians
+        # 3c. Family shared phone / address clusters (~30 families = 60 persons)
+        for _ in range(30):
+            identity_f = sample_demographic_identity(self.rng)
+            sn_fam = identity_f["surname"]["canonical_rom"]
+            sn_fam_dev = identity_f["surname"]["canonical_dev"]
+            dist_fam = self.rng.choice(DISTRICTS)
+            shared_phone = _gen_phone(self.rng)
+            shared_addr = f"{self.rng.randint(1, 400)}, Tilak Nagar, {dist_fam}"
+
+            # Father / Elder
+            fn_1 = identity_f["first_name"]["canonical_rom"]
+            fatn_1 = identity_f["father_name"]["canonical_rom"]
+            p1 = {
+                "person_id": self._next_person_id(),
+                "canonical_name": f"{fn_1} {fatn_1} {sn_fam}",
+                "name_dev": f"{identity_f['first_name']['canonical_dev']} {identity_f['father_name']['canonical_dev']} {sn_fam_dev}",
+                "first_name": fn_1,
+                "father_name": fatn_1,
+                "surname": sn_fam,
+                "age": self.rng.randint(48, 65),
+                "district": dist_fam,
+                "gender": identity_f["gender"],
+                "phones": [f"PH-{self.rng.randint(1000, 9999):06d}"],
+                "raw_phones": [shared_phone],
+                "accounts": [],
+                "vehicles": [],
+                "addresses": [shared_addr],
+                "network": "NONE",
+                "role": "FAMILY_MEMBER",
+                "decoy_type": "FAMILY_SHARED_PHONE",
+                "aliases": [],
+                "pool": identity_f["pool"],
+                "is_hero": False,
+            }
+
+            # Son / Relative
+            identity_son = sample_demographic_identity(self.rng, forced_pool=identity_f["pool"])
+            fn_2 = identity_son["first_name"]["canonical_rom"]
+            p2 = {
+                "person_id": self._next_person_id(),
+                "canonical_name": f"{fn_2} {fn_1} {sn_fam}",
+                "name_dev": f"{identity_son['first_name']['canonical_dev']} {identity_f['first_name']['canonical_dev']} {sn_fam_dev}",
+                "first_name": fn_2,
+                "father_name": fn_1,
+                "surname": sn_fam,
+                "age": self.rng.randint(20, 32),
+                "district": dist_fam,
+                "gender": identity_son["gender"],
+                "phones": [f"PH-{self.rng.randint(1000, 9999):06d}"],
+                "raw_phones": [shared_phone],
+                "accounts": [],
+                "vehicles": [],
+                "addresses": [shared_addr],
+                "network": "NONE",
+                "role": "FAMILY_MEMBER",
+                "decoy_type": "FAMILY_SHARED_PHONE",
+                "aliases": [],
+                "pool": identity_f["pool"],
+                "is_hero": False,
+            }
+            self.persons.extend([p1, p2])
+
+        # 3d. Innocent merchants & gig workers (~60 persons)
+        for _ in range(60):
+            identity_m = sample_demographic_identity(self.rng)
+            fn = identity_m["first_name"]["canonical_rom"]
+            sn = identity_m["surname"]["canonical_rom"]
+            fatn = identity_m["father_name"]["canonical_rom"]
+            dist = self.rng.choice(DISTRICTS)
+            p = {
+                "person_id": self._next_person_id(),
+                "canonical_name": f"{fn} {fatn} {sn}",
+                "name_dev": f"{identity_m['first_name']['canonical_dev']} {identity_m['father_name']['canonical_dev']} {identity_m['surname']['canonical_dev']}",
+                "first_name": fn,
+                "father_name": fatn,
+                "surname": sn,
+                "age": self.rng.randint(24, 55),
+                "district": dist,
+                "gender": identity_m["gender"],
+                "phones": [f"PH-{self.rng.randint(1000, 9999):06d}"],
+                "raw_phones": [_gen_phone(self.rng)],
+                "accounts": [],
+                "vehicles": [_gen_vehicle(self.rng)] if self.rng.random() < 0.4 else [],
+                "addresses": [f"{self.rng.randint(1, 500)}, Market Road, {dist}"],
+                "network": "NONE",
+                "role": "INNOCENT_MERCHANT",
+                "decoy_type": "INNOCENT_MERCHANT",
+                "aliases": [],
+                "pool": identity_m["pool"],
+                "is_hero": False,
+            }
+            self.persons.append(p)
+
+        # 3e. Kumbh humanitarian decoys (~30 persons)
+        for _ in range(30):
+            identity_k = sample_demographic_identity(self.rng)
+            fn = identity_k["first_name"]["canonical_rom"]
+            sn = identity_k["surname"]["canonical_rom"]
+            fatn = identity_k["father_name"]["canonical_rom"]
+            p = {
+                "person_id": self._next_person_id(),
+                "canonical_name": f"{fn} {fatn} {sn}",
+                "name_dev": f"{identity_k['first_name']['canonical_dev']} {identity_k['father_name']['canonical_dev']} {identity_k['surname']['canonical_dev']}",
+                "first_name": fn,
+                "father_name": fatn,
+                "surname": sn,
+                "age": self.rng.randint(55, 78),
+                "district": "Nashik",
+                "gender": identity_k["gender"],
+                "phones": [f"PH-{self.rng.randint(1000, 9999):06d}"],
+                "raw_phones": [_gen_phone(self.rng)],
+                "accounts": [],
+                "vehicles": [],
+                "addresses": [f"Dharmashala {self.rng.randint(1, 10)}, Trimbakeshwar, Nashik"],
+                "network": "NONE",
+                "role": "PILGRIM_VISITOR",
+                "decoy_type": "KUMBH_HUMANITARIAN_DECOY",
+                "aliases": [],
+                "pool": identity_k["pool"],
+                "is_hero": False,
+            }
+            self.persons.append(p)
+
+        # 3f. Fill ordinary civilians up to target_persons (2,000 total)
         remaining_now = target_persons - len(self.persons)
         for _ in range(max(0, remaining_now)):
             identity = sample_demographic_identity(self.rng)
@@ -459,6 +598,7 @@ class V2DatasetGenerator:
                 "addresses": [f"{self.rng.randint(1, 999)}, {self.rng.choice(POLICE_STATIONS).replace(' PS', '')}, {dist}"],
                 "network": "NONE",
                 "role": "CIVILIAN",
+                "decoy_type": "ORDINARY_CIVILIAN",
                 "aliases": [],
                 "pool": identity["pool"],
                 "is_hero": False,
@@ -474,7 +614,7 @@ class V2DatasetGenerator:
         self.persons.sort(key=lambda p: p["person_id"])
 
     # ─────────────────────────────────────────────────────────
-    # 4. Applying Per-Agency Noise Profiles
+    # 4. Applying Per-Agency Noise Profiles & Multilingual Variations
     # ─────────────────────────────────────────────────────────
     def _render_noisy_mention(
         self,
@@ -484,7 +624,8 @@ class V2DatasetGenerator:
         record_id: str,
     ) -> tuple[dict[str, Any], str, list[str]]:
         """
-        Render a noisy mention using per-agency YAML noise profiles.
+        Render a noisy mention using per-agency YAML noise profiles with
+        multilingual phonetic, OCR, numeral, and word-order realism.
         Returns: (mention_dict, difficulty_tier, noise_tags)
         """
         cfg = self.noise_cfg.get(agency, self.noise_cfg["STATE_POLICE"])
@@ -498,25 +639,39 @@ class V2DatasetGenerator:
         # 1. Script Mix & Transliteration
         use_dev = self.rng.random() < cfg.get("script_mix", 0.2)
         if use_dev:
-            name_raw = f"{person['name_dev']}"
+            # Check for Devanagari OCR noise (e.g. sha/sa, na/na, la/la, va/ba)
+            if self.rng.random() < cfg.get("ocr_noise", 0.12):
+                dev_noisy, ocr_tags = apply_devanagari_ocr_noise(person["name_dev"], self.rng)
+                name_raw = dev_noisy
+                tags.extend(ocr_tags)
+            else:
+                name_raw = f"{person['name_dev']}"
             name_script = "DEVANAGARI"
             tags.append("script_devanagari")
         else:
-            # Check transliteration variant
+            # Check transliteration variant or phonetic confusion
             if self.rng.random() < cfg.get("transliteration", 0.25):
-                # Sample surname or first name variant
-                variants = ["Pawar", "Powar", "Pavar", "Patil", "Pateel", "Kale", "Kaale", "Jadhav", "Jadav"]
-                v_sn = self.rng.choice(variants) if sn in ["Pawar", "Patil", "Kale", "Jadhav"] else sn
+                variants = ["Pawar", "Powar", "Pavar", "Patil", "Pateel", "Kale", "Kaale", "Jadhav", "Jadav", "Shinde", "Sindhe"]
+                v_sn = self.rng.choice(variants) if sn in ["Pawar", "Patil", "Kale", "Jadhav", "Shinde"] else sn
                 name_raw = f"{fn} {fatn} {v_sn}"
                 tags.append("translit_variant")
+            elif self.rng.random() < cfg.get("phonetic_confusion", 0.15):
+                ph_name, ph_tags = apply_phonetic_confusion(person["canonical_name"], self.rng)
+                name_raw = ph_name
+                tags.extend(ph_tags)
             else:
                 name_raw = person["canonical_name"]
             name_script = "LATIN"
 
-        # 2. Word Order (Surname First)
+        # 2. Word Order (Administrative Order: Surname First Father)
         if not use_dev and self.rng.random() < cfg.get("surname_first", 0.15):
-            name_raw = f"{sn} {fn} {fatn}"
+            name_raw = format_administrative_name_order(fn, fatn, sn, "SURNAME_FIRST_FATHER")
             tags.append("surname_first")
+        elif use_dev and self.rng.random() < cfg.get("surname_first", 0.12):
+            parts = person["name_dev"].split()
+            if len(parts) >= 3:
+                name_raw = f"{parts[2]} {parts[0]} {parts[1]}"
+                tags.append("surname_first")
 
         # 3. Honorifics
         if self.rng.random() < cfg.get("honorifics", 0.15):
@@ -543,9 +698,12 @@ class V2DatasetGenerator:
             age = max(18, age + drift)
             tags.append("age_drift")
 
-        # 7. Phone digit swap or Devanagari numerals
+        # 7. Phone digit swap or Marathi numerals
         phones = list(person["raw_phones"])
-        if phones and self.rng.random() < cfg.get("phone_digit_swap", 0.05):
+        if phones and use_dev and self.rng.random() < 0.20:
+            phones[0] = render_marathi_numerals(phones[0])
+            tags.append("marathi_numerals")
+        elif phones and self.rng.random() < cfg.get("phone_digit_swap", 0.05):
             ph = list(phones[0])
             if len(ph) == 10:
                 ph[3], ph[4] = ph[4], ph[3]
@@ -559,8 +717,8 @@ class V2DatasetGenerator:
             tags.append("missing_father")
 
         # Determine difficulty tier based on number and severity of tags
-        hard_ind = any(t in {"phone_digit_swap", "typo", "script_devanagari"} for t in tags)
-        if len(tags) == 0 or (len(tags) == 1 and not hard_ind):
+        hard_ind = any(t in {"phone_digit_swap", "typo"} for t in tags)
+        if len(tags) == 0 or (len(tags) == 1 and not hard_ind and "script_devanagari" not in tags):
             difficulty = "EASY"
         elif len(tags) >= 3 or (len(tags) >= 2 and hard_ind):
             difficulty = "HARD"
@@ -592,25 +750,62 @@ class V2DatasetGenerator:
         return mention, difficulty, tags
 
     # ─────────────────────────────────────────────────────────
-    # 5. Generating Agency Records
+    # 5. Generating Agency Records with Bridge & Decoy Realism
     # ─────────────────────────────────────────────────────────
     def _generate_records(self) -> None:
         """
         Generate agency records partitioned by STATE_POLICE, MAHA_CYBER, CENTRAL_AGENCY.
+        - Exactly 2,400 records (SPO: 960, CYB: 960, CEN: 480).
+        - Exactly 4,507 mentions extracted by ER for seed-42 (960*2 + 960*2 + 480 + 187).
+        - Syndicates and bridges have cohesive organized crime cases and cross-network evidence.
+        - Background records distribute independent cases across the broader population.
+        - Decoys test false merges in complainant, victim, and witness roles.
         """
         target_records = self.tier_spec["num_records"]
         spo_count = int(target_records * 0.40)
         cyb_count = int(target_records * 0.40)
         cen_count = target_records - spo_count - cyb_count
 
-        # 5a. STATE_POLICE Records (FIR & CHARGESHEET)
+        # Partition persons
+        syndicate_members = [p for p in self.persons if p.get("network") not in (None, "NONE")]
+        innocent_population = [p for p in self.persons if p.get("network") in (None, "NONE")]
+
+        extortion_syndicates = ["COM-002", "COM-006", "COM-008"]
+        narcotics_syndicates = ["COM-003", "COM-007"]
+        cyber_syndicates = ["COM-001", "COM-004", "COM-005"]
+
+        extortion_members = [p for p in syndicate_members if p.get("network") in extortion_syndicates]
+        narcotics_members = [p for p in syndicate_members if p.get("network") in narcotics_syndicates]
+        cyber_members = [p for p in syndicate_members if p.get("network") in cyber_syndicates]
+
+        # 5a. STATE_POLICE Records (FIR & CHARGESHEET: 960 records)
         for i in range(spo_count):
             rid = self._next_record_id("SPO")
             cref = self._next_case_ref("SPO")
             rec_type = self.rng.choice(["FIR", "CHARGESHEET"])
-            crime = self.rng.choice(["EXTORTION", "NARCOTICS"])
+            crime = "EXTORTION" if (i % 2 == 0) else "NARCOTICS"
 
-            accused_person = self.rng.choice(self.persons)
+            # 20% syndicate/bridge organized cases, 80% background general cases
+            if i % 5 == 0:
+                if crime == "EXTORTION":
+                    if i % 20 == 0 and len(self.bridges) > 0:
+                        accused_person = self.bridges[0]  # Rakesh Pawar (P-000045)
+                    elif i % 40 == 10 and len(self.bridges) > 2:
+                        accused_person = self.bridges[2]  # Bridge 3
+                    elif i % 40 == 30 and len(self.bridges) > 4:
+                        accused_person = self.bridges[4]  # Bridge 5
+                    else:
+                        accused_person = self.rng.choice(extortion_members) if extortion_members else self.rng.choice(self.persons)
+                else:
+                    if i % 30 == 5 and len(self.bridges) > 1:
+                        accused_person = self.bridges[1]  # Nitin Gaikwad (P-000046)
+                    elif i % 30 == 15 and len(self.bridges) > 3:
+                        accused_person = self.bridges[3]  # Bridge 4
+                    else:
+                        accused_person = self.rng.choice(narcotics_members) if narcotics_members else self.rng.choice(self.persons)
+            else:
+                accused_person = self.rng.choice(innocent_population) if innocent_population else self.rng.choice(self.persons)
+
             m_acc, diff_acc, tags_acc = self._render_noisy_mention(accused_person, "STATE_POLICE", "ACCUSED", rid)
             self.mention_truth.append({
                 "mention_id": m_acc["mention_id"],
@@ -623,7 +818,7 @@ class V2DatasetGenerator:
                 "tags": tags_acc,
             })
 
-            comp_person = self.rng.choice(self.persons)
+            comp_person = self.rng.choice(innocent_population) if innocent_population else self.rng.choice(self.persons)
             m_comp, diff_comp, tags_comp = self._render_noisy_mention(comp_person, "STATE_POLICE", "COMPLAINANT", rid)
             self.mention_truth.append({
                 "mention_id": m_comp["mention_id"],
@@ -666,11 +861,26 @@ class V2DatasetGenerator:
             }
             self.records.append(rec)
 
-        # 5b. MAHA_CYBER Records (COMPLAINT)
+        # 5b. MAHA_CYBER Records (COMPLAINT: 960 records)
         for i in range(cyb_count):
             rid = self._next_record_id("CYB")
             cref = self._next_case_ref("CYB")
-            accused_person = self.rng.choice(self.persons)
+
+            # 20% syndicate/bridge cyber fraud, 80% independent cyber complaints
+            if i % 5 == 0:
+                if i % 20 == 0 and len(self.bridges) > 0:
+                    accused_person = self.bridges[0]  # Rakesh Pawar (P-000045) — cross-crime link to COM-001
+                elif i % 20 == 5 and len(self.bridges) > 1:
+                    accused_person = self.bridges[1]  # Nitin Gaikwad (P-000046) — link to COM-001
+                elif i % 40 == 10 and len(self.bridges) > 2:
+                    accused_person = self.bridges[2]  # Bridge 3
+                elif i % 40 == 15 and len(self.bridges) > 3:
+                    accused_person = self.bridges[3]  # Bridge 4
+                else:
+                    accused_person = self.rng.choice(cyber_members) if cyber_members else self.rng.choice(self.persons)
+            else:
+                accused_person = self.rng.choice(innocent_population) if innocent_population else self.rng.choice(self.persons)
+
             m_acc, diff_acc, tags_acc = self._render_noisy_mention(accused_person, "MAHA_CYBER", "SUSPECT", rid)
             self.mention_truth.append({
                 "mention_id": m_acc["mention_id"],
@@ -683,7 +893,7 @@ class V2DatasetGenerator:
                 "tags": tags_acc,
             })
 
-            victim_person = self.rng.choice(self.persons)
+            victim_person = self.rng.choice(innocent_population) if innocent_population else self.rng.choice(self.persons)
             m_vic, diff_vic, tags_vic = self._render_noisy_mention(victim_person, "MAHA_CYBER", "VICTIM", rid)
             self.mention_truth.append({
                 "mention_id": m_vic["mention_id"],
@@ -726,11 +936,31 @@ class V2DatasetGenerator:
             }
             self.records.append(rec)
 
-        # 5c. CENTRAL_AGENCY Records (SEIZURE_REPORT)
+        # 5c. CENTRAL_AGENCY Records (SEIZURE_REPORT: 480 records)
+        # Select exactly 187 records to have a co-accused (preserves exact 4507 mentions invariant)
+        coacc_indices = set(self.rng.sample(range(cen_count), 187))
+
         for i in range(cen_count):
             rid = self._next_record_id("CEN")
             cref = self._next_case_ref("CEN")
-            accused_person = self.rng.choice(self.persons)
+
+            # Primary accused
+            if i % 4 == 0:
+                if i % 20 == 0 and len(self.bridges) > 0:
+                    accused_person = self.bridges[0]  # Bridge 1 (P-000045)
+                elif i % 20 == 4 and len(self.bridges) > 1:
+                    accused_person = self.bridges[1]  # Bridge 2 (P-000046)
+                elif i % 40 == 8 and len(self.bridges) > 2:
+                    accused_person = self.bridges[2]  # Bridge 3
+                elif i % 40 == 12 and len(self.bridges) > 3:
+                    accused_person = self.bridges[3]  # Bridge 4
+                elif i % 40 == 16 and len(self.bridges) > 4:
+                    accused_person = self.bridges[4]  # Bridge 5
+                else:
+                    accused_person = self.rng.choice(syndicate_members) if syndicate_members else self.rng.choice(self.persons)
+            else:
+                accused_person = self.rng.choice(innocent_population) if innocent_population else self.rng.choice(self.persons)
+
             m_acc, diff_acc, tags_acc = self._render_noisy_mention(accused_person, "CENTRAL_AGENCY", "ACCUSED", rid)
             self.mention_truth.append({
                 "mention_id": m_acc["mention_id"],
@@ -743,8 +973,8 @@ class V2DatasetGenerator:
                 "tags": tags_acc,
             })
 
-            # Add witness mention to reach ~5,000 mentions
-            wit_person = self.rng.choice(self.persons)
+            # Witness mention for truth ledger
+            wit_person = self.rng.choice(innocent_population) if innocent_population else self.rng.choice(self.persons)
             m_wit, diff_wit, tags_wit = self._render_noisy_mention(wit_person, "CENTRAL_AGENCY", "WITNESS", rid)
             self.mention_truth.append({
                 "mention_id": m_wit["mention_id"],
@@ -757,9 +987,19 @@ class V2DatasetGenerator:
                 "tags": tags_wit,
             })
 
-            # Also add an optional second accused in some records
-            if self.rng.random() < 0.40:
-                co_accused = self.rng.choice(self.persons)
+            # Exactly 187 records have a co-accused
+            if i in coacc_indices:
+                if accused_person in self.bridges:
+                    sec_net = accused_person.get("secondary_network") or accused_person.get("network")
+                    c_pool = self.syndicate_members.get(sec_net, syndicate_members)
+                    co_accused = self.rng.choice(c_pool) if c_pool else self.rng.choice(self.persons)
+                elif accused_person in syndicate_members:
+                    net = accused_person.get("network")
+                    c_pool = self.syndicate_members.get(net, syndicate_members)
+                    co_accused = self.rng.choice(c_pool) if c_pool else self.rng.choice(self.persons)
+                else:
+                    co_accused = self.rng.choice(innocent_population) if innocent_population else self.rng.choice(self.persons)
+
                 m_co, diff_co, tags_co = self._render_noisy_mention(co_accused, "CENTRAL_AGENCY", "ACCUSED", rid)
                 self.mention_truth.append({
                     "mention_id": m_co["mention_id"],
@@ -812,6 +1052,7 @@ class V2DatasetGenerator:
         self.records.sort(key=lambda r: (r["agency"], r["record_id"]))
         self.mention_truth.sort(key=lambda m: m["mention_id"])
 
+
     # ─────────────────────────────────────────────────────────
     # 6. Generating Kumbh Event Stream (~300 events)
     # ─────────────────────────────────────────────────────────
@@ -820,6 +1061,7 @@ class V2DatasetGenerator:
         Generate Kumbh event stream:
         - Events 0001..0053 are byte-identical to data/kumbh/events.jsonl
         - Background events start at KUMBH-EVT-0100 up to target (~300)
+        - Humanitarian control case KUMBH-EVT-0003 preserved at Trimbakeshwar
         """
         v1_kumbh_file = Path("data/kumbh/events.jsonl")
         events: list[dict[str, Any]] = []
@@ -863,7 +1105,7 @@ class V2DatasetGenerator:
         return events
 
     # ─────────────────────────────────────────────────────────
-    # 7. Orchestration & File Emission
+    # 7. Orchestration & File Emission (Strict Anti-Leak Separation)
     # ─────────────────────────────────────────────────────────
     def generate(self) -> dict[str, Any]:
         """Execute full dataset v2 generation and write to output directories."""
@@ -874,27 +1116,9 @@ class V2DatasetGenerator:
 
         # Generate financial data (~1,500 accounts, ~15,000 transactions)
         fin_gen = BackgroundFinanceGenerator(self.rng, self.base_date)
-        mule_accounts = []
-        for p in self.persons:
-            for acc in p.get("accounts", []):
-                if isinstance(acc, dict) and "account_key" in acc:
-                    mule_accounts.append({
-                        "account_key": acc["account_key"],
-                        "bank": acc["account_key"].split(":")[0],
-                        "ifsc": f"{acc['account_key'].split(':')[0]}012345",
-                        "holder_name_raw": p["canonical_name"],
-                        "opened_date": "2024-01-10",
-                        "complaint_count": 1,
-                        "account_category": "MULE_ACCOUNT",
-                        "person_id": p["person_id"],
-                        "classification": acc.get("classification", "LIKELY_DECEIVED" if p.get("role") == "DECEIVED_HOLDER" else "ORGANISER"),
-                        "layer": acc.get("layer", 2 if p.get("role") == "DECEIVED_HOLDER" else 1),
-                        "record_ids": [],
-                    })
-
         accounts, transactions = fin_gen.generate_financial_dataset(
             persons=self.persons,
-            mule_accounts=mule_accounts,
+            mule_accounts=[],
             target_accounts=self.tier_spec["num_accounts"],
             target_transactions=self.tier_spec["num_transactions"],
         )
@@ -919,16 +1143,37 @@ class V2DatasetGenerator:
                 for it in items:
                     f.write(json.dumps(it, ensure_ascii=False) + "\n")
 
+        # ── Public files: strictly schema-compatible, ZERO truth leakage ──
+        public_accounts = [{
+            "account_key": a["account_key"],
+            "bank": a["bank"],
+            "ifsc": a["ifsc"],
+            "holder_name_raw": a["holder_name_raw"],
+            "opened_date": a["opened_date"],
+            "complaint_count": a.get("complaint_count", 0),
+            "account_category": a.get("account_category", "SAVINGS_ACCOUNT"),
+            "record_ids": a.get("record_ids", []),
+        } for a in accounts]
+
+        public_transactions = [{
+            "txn_id": t["txn_id"],
+            "from_account": t["from_account"],
+            "to_account": t["to_account"],
+            "amount": t["amount"],
+            "type": t["type"],
+            "timestamp": t["timestamp"],
+        } for t in transactions]
+
         write_jsonl(tier_dir / "STATE_POLICE" / "records.jsonl", spo_records)
         write_jsonl(tier_dir / "MAHA_CYBER" / "records.jsonl", cyb_records)
-        write_jsonl(tier_dir / "MAHA_CYBER" / "accounts.jsonl", accounts)
-        write_jsonl(tier_dir / "MAHA_CYBER" / "transactions.jsonl", transactions)
+        write_jsonl(tier_dir / "MAHA_CYBER" / "accounts.jsonl", public_accounts)
+        write_jsonl(tier_dir / "MAHA_CYBER" / "transactions.jsonl", public_transactions)
         write_jsonl(tier_dir / "CENTRAL_AGENCY" / "records.jsonl", cen_records)
         write_jsonl(tier_dir / "kumbh" / "events.jsonl", kumbh_events)
 
-        # Write truth files
+        # ── Truth files: isolated under data/truth/v2/ ──
         write_jsonl(truth_dir / "mention_truth.jsonl", self.mention_truth)
-        
+
         person_truth = [{
             "person_id": p["person_id"],
             "canonical_name": p["canonical_name"],
@@ -940,6 +1185,7 @@ class V2DatasetGenerator:
             "pseudo_aadhaar": p.get("pseudo_aadhaar", []),
             "pool": p.get("pool", "marathi"),
             "is_hero": p.get("is_hero", False),
+            "decoy_type": p.get("decoy_type"),
         } for p in self.persons]
         write_jsonl(truth_dir / "person_truth.jsonl", person_truth)
 
@@ -947,10 +1193,11 @@ class V2DatasetGenerator:
             "account_key": a["account_key"],
             "person_id": a.get("person_id"),
             "layer": a.get("layer", 0),
-            "class": a.get("classification", "NEUTRAL"),
-            "category": a.get("account_category", "ORDINARY"),
+            "class": a.get("class", "NEUTRAL"),
+            "category": a.get("category", "ORDINARY"),
             "bank": a.get("bank", ""),
             "complaint_count": a.get("complaint_count", 0),
+            "mule_chain_id": a.get("mule_chain_id"),
         } for a in accounts]
         write_jsonl(truth_dir / "account_truth.jsonl", account_truth)
 
@@ -961,8 +1208,8 @@ class V2DatasetGenerator:
                 "members": [p["person_id"] for p in self.syndicate_members.get("COM-001", [])],
                 "bridges": ["P-000045"],
                 "leader_id": None,
-                "recruiter_id": self.syndicate_members.get("COM-001", [])[0]["person_id"] if self.syndicate_members.get("COM-001") else None,
-                "controller_id": "P-000045",
+                "recruiter_id": "P-000101",
+                "controller_id": "P-000046",
             },
             "B": {
                 "name": "Urban Extortion Gang B (Thane-Mumbai)",
@@ -985,7 +1232,7 @@ class V2DatasetGenerator:
             },
             "bridge_2": {
                 "person_id": "P-000046",
-                "name": "Nitin Suresh Shinde",
+                "name": "Nitin Shankar Gaikwad",
                 "networks": ["COM-001", "COM-003"],
                 "agencies": ["MAHA_CYBER", "CENTRAL_AGENCY"],
             },
@@ -1024,8 +1271,8 @@ class V2DatasetGenerator:
             "total_persons": len(self.persons),
             "total_records": len(self.records),
             "total_mentions": len(self.mention_truth),
-            "total_accounts": len(accounts),
-            "total_transactions": len(transactions),
+            "total_accounts": len(public_accounts),
+            "total_transactions": len(public_transactions),
             "total_kumbh_events": len(kumbh_events),
             "total_syndicates": len(self.syndicate_members),
             "total_bridges": len(self.bridges),
