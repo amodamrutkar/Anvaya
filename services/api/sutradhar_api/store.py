@@ -125,10 +125,69 @@ class DataStore:
     def _load_graph_data(self) -> None:
         path = artifacts_path("graph/graph.json")
         data = _load_json(path)
-        if isinstance(data, dict) and "nodes" in data and "edges" in data:
+        if isinstance(data, dict) and data.get("nodes") and data.get("edges"):
             self._graph_data = data
         else:
-            self._graph_data = {"nodes": [], "edges": []}
+            cid_path = CONTRACTS_FIXTURES_DIR / "api" / "GET_graph_communities_id.json"
+            cid_data = _load_json(cid_path) or {}
+            nodes = list(cid_data.get("nodes") or [])
+            edges = list(cid_data.get("edges") or [])
+
+            path_fixture = CONTRACTS_FIXTURES_DIR / "api" / "GET_graph_path.json"
+            path_data = _load_json(path_fixture) or {}
+            existing_node_ids = {n["id"] for n in nodes if isinstance(n, dict) and "id" in n}
+            for nid in path_data.get("path", []):
+                if nid not in existing_node_ids:
+                    nodes.append(
+                        {
+                            "id": nid,
+                            "type": "PERSON" if nid.startswith("P-") else "PHONE",
+                            "label": nid,
+                        }
+                    )
+                    existing_node_ids.add(nid)
+
+            existing_edge_pairs = {
+                (e["source"], e["target"])
+                for e in edges
+                if isinstance(e, dict) and "source" in e and "target" in e
+            }
+            for e in path_data.get("edges", []):
+                src = e.get("source") or e.get("from")
+                tgt = e.get("target") or e.get("to")
+                if (
+                    src
+                    and tgt
+                    and (src, tgt) not in existing_edge_pairs
+                    and (tgt, src) not in existing_edge_pairs
+                ):
+                    edges.append(
+                        {
+                            "edge_id": e.get("edge_id", f"E-{src}-{tgt}"),
+                            "source": src,
+                            "target": tgt,
+                            "type": e.get("type", "ASSOCIATED_WITH"),
+                            "strength": e.get("strength", "STRONG"),
+                            "evidence": list(e.get("evidence") or []),
+                            "confidence": e.get("confidence", 0.90),
+                        }
+                    )
+                    existing_edge_pairs.add((src, tgt))
+
+            for ent in self._entities.values():
+                eid = ent.get("entity_id")
+                if eid and eid not in existing_node_ids:
+                    nodes.append(
+                        {
+                            "id": eid,
+                            "type": ent.get("entity_type", "PERSON"),
+                            "label": ent.get("canonical_name", eid),
+                            "props": ent.get("attributes", {}),
+                        }
+                    )
+                    existing_node_ids.add(eid)
+
+            self._graph_data = {"nodes": nodes, "edges": edges}
 
     def _load_communities(self) -> None:
         path = artifacts_path("graph/communities.jsonl")
@@ -145,6 +204,9 @@ class DataStore:
                 data = _load_json(fb) or []
                 raw = data if isinstance(data, list) else [data]
         for c in raw:
+            c.setdefault("members", [])
+            c.setdefault("member_count", c.get("size", len(c.get("members", []))))
+            c.setdefault("continuing_activity", False)
             self._communities[c["community_id"]] = c
 
         # Load roles / bridges / mule chains from artifacts or fixtures
@@ -179,11 +241,51 @@ class DataStore:
                 _load_json(CONTRACTS_FIXTURES_DIR / "api" / "GET_mule_chains.json") or []
             )
 
-        # Ensure accounts in mule chains have account_id populated for compatibility
+        # Normalize fallback fixture records to satisfy internal analytics schemas
+        for r in self._roles:
+            if "reasons" in r and isinstance(r["reasons"], list):
+                r["reasons"] = [
+                    x.get("text", str(x)) if isinstance(x, dict) else str(x) for x in r["reasons"]
+                ]
+            r.setdefault("confidence", 0.85)
+            r.setdefault("evidence_record_ids", [])
+
+        for b in self._bridges:
+            b.setdefault("node_id", b.get("entity_id", ""))
+            b.setdefault("node_type", b.get("entity_type", "PERSON"))
+            b.setdefault("label", str(b.get("node_id", "Bridge Node")))
+            if "linked_person" in b and "linked_person_ids" not in b:
+                b["linked_person_ids"] = [b["linked_person"]]
+            b.setdefault("linked_person_ids", [])
+            b.setdefault("evidence_record_ids", [])
+            b.setdefault("reasons", ["Cross-community bridge detected"])
+            b.setdefault("score", 0.80)
+
         for chain in self._mule_chains:
+            chain.setdefault(
+                "depth_gained",
+                max(0, chain.get("max_depth", 1) - chain.get("layer1_baseline_depth", 1)),
+            )
             for acc in chain.get("accounts", []):
                 if "account_key" in acc and "account_id" not in acc:
                     acc["account_id"] = acc["account_key"]
+                if "account_id" in acc and "account_key" not in acc:
+                    acc["account_key"] = acc["account_id"]
+                acc.setdefault("holder_entity_id", f"ENT-{acc.get('account_key', 'UNKNOWN')}")
+                acc.setdefault("holder_name", f"Account Holder {acc.get('account_key', '')}")
+                if "reasons" in acc and isinstance(acc["reasons"], list):
+                    acc["reasons"] = [
+                        x.get("text", str(x)) if isinstance(x, dict) else str(x)
+                        for x in acc["reasons"]
+                    ]
+                if "median_pass_through_minutes" in acc and "median_passthrough_minutes" not in acc:
+                    acc["median_passthrough_minutes"] = acc["median_pass_through_minutes"]
+                acc.setdefault("median_passthrough_minutes", 0.0)
+            for edge in chain.get("edges", []):
+                if "from" in edge and "from_account" not in edge:
+                    edge["from_account"] = edge["from"]
+                if "to" in edge and "to_account" not in edge:
+                    edge["to_account"] = edge["to"]
 
     def _load_kumbh_events(self) -> None:
         events = _load_jsonl(KUMBH_EVENTS_PATH)
