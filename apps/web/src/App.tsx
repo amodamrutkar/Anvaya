@@ -835,7 +835,7 @@ export default function App() {
               <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: health?.status === 'ok' ? 'var(--status-success)' : 'var(--status-danger)', display: 'inline-block' }} />
               <span>API: <strong>{health?.status === 'ok' ? 'Online (200 OK)' : 'Offline'}</strong></span>
               <span style={{ opacity: 0.4 }}>|</span>
-              <span>Connectors: <strong>3 Simulated</strong></span>
+              <span>Connectors: <strong>{connectors.length > 0 ? `${connectors.length} Simulated` : 'Simulated'}</strong></span>
             </div>
 
             {/* Theme Toggle Button */}
@@ -1107,7 +1107,7 @@ export default function App() {
                   { label: '1. Search "Pawar"', tab: 'entities' as TabType },
                   { label: '2. Human Review', tab: 'review' as TabType },
                   { label: '3. Syndicate Topology', tab: 'graph' as TabType },
-                  { label: '4. Mule Flow (₹1.88 Cr)', tab: 'mule' as TabType },
+                  { label: '4. Mule Flow (₹56.15 Lakh)', tab: 'mule' as TabType },
                   { label: '5. Zero-Data Query', tab: 'federated' as TabType },
                   { label: '6. Legal Dossier', tab: 'dossier' as TabType },
                   { label: '7. Kumbh Control Test', tab: 'kumbh' as TabType },
@@ -1185,9 +1185,9 @@ export default function App() {
                       id: 2,
                       tag: 'MONEY MULE PIPELINE',
                       tagClass: 'provenance-derived',
-                      metric: '₹1.88 CR • 4 LAYERS',
+                      metric: '₹56.15 LAKH • 4 LAYERS',
                       metricColor: 'var(--status-danger-text)',
-                      title: '4-Layer Laundering Flow: Chain CH-001 (140 Victims)',
+                      title: '4-Layer Laundering Flow: Chain MULE-001 (140 Victims)',
                       preview: 'Distinguishes innocent student victim accounts (9-min velocity) from syndicate controllers extracting cash.',
                       targetTab: 'mule' as TabType,
                       buttonText: 'Trace 4-Layer Mule Flow'
@@ -1335,12 +1335,12 @@ export default function App() {
                   {selectedLeadIndex === 2 && (
                     <div style={{ marginTop: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                       <h4 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                        4-Layer Money Laundering Pipeline: Chain CH-001
+                        4-Layer Money Laundering Pipeline: Chain MULE-001
                       </h4>
                       <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>WHAT HAPPENED</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                          Autonomous financial graph traversal tracked ₹1.88 Crore extracted from 140 NCRP fraud complaints across 4 account layers with a 9-minute pass-through velocity.
+                          Autonomous financial graph traversal tracked ₹56.15 Lakh extracted from 140 NCRP fraud complaints across 4 account layers with a 9-minute pass-through velocity.
                         </div>
                       </div>
                       <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
@@ -1352,7 +1352,7 @@ export default function App() {
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                         <span className="provenance-tag provenance-derived">4 ACCOUNT LAYERS</span>
                         <span className="provenance-tag provenance-derived">140 COMPLAINTS</span>
-                        <span className="provenance-tag provenance-derived">₹1.88 CR VOLUME</span>
+                        <span className="provenance-tag provenance-derived">₹56.15 LAKH VOLUME</span>
                       </div>
                     </div>
                   )}
@@ -2364,7 +2364,7 @@ export default function App() {
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                     <span style={{ padding: '3px 8px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-gold-subtle)', color: 'var(--accent-gold-light)', border: '1px solid rgba(197, 155, 39, 0.3)', fontSize: '0.72rem', fontWeight: 700 }}>
-                      CHAIN ID: {selectedMuleChain?.chain_id || 'CH-001'}
+                      CHAIN ID: {selectedMuleChain?.chain_id || 'MULE-001'}
                     </span>
                     <h2 style={{ fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                       4-Layer Money Laundering & Mule Account Pipeline
@@ -2400,7 +2400,7 @@ export default function App() {
                 <div style={{ textAlign: 'right' }}>
                   <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>TOTAL SIPHONED VOLUME</div>
                   <div style={{ fontSize: '1.5rem', fontWeight: 800, color: 'var(--status-danger-text)', fontFamily: 'var(--font-mono)' }}>
-                    ₹{(selectedMuleChain?.total_amount || 18800000).toLocaleString('en-IN')}
+                    ₹{(selectedMuleChain?.total_amount || 5615330).toLocaleString('en-IN')}
                   </div>
                 </div>
               </div>
