@@ -23,6 +23,11 @@ import {
   type KumbhZone,
   type KumbhAlert,
   type KumbhSimulationResponse,
+  type KumbhObservation,
+  type KumbhSignal,
+  type KumbhCluster,
+  type KumbhEventIntelligence,
+  type NeighborhoodGraph,
   type Agency,
   type IdentifierType,
   type QueryPurpose
@@ -33,7 +38,7 @@ import {
   ArrowRight, UserCheck, RefreshCw,
   Network, Lock,
   Layers, Activity,
-  FileCheck, X
+  FileCheck, X, Link2Off
 } from 'lucide-react';
 import { TacticalKumbhMap } from './TacticalKumbhMap';
 
@@ -52,21 +57,110 @@ interface InteractiveNode {
   details: string;
 }
 
-const GRAPH_NODES: InteractiveNode[] = [
-  { id: 'P-000001', label: 'Anil Jadhav', role: 'KINGPIN_CANDIDATE', agency: 'STATE_POLICE', x: 140, y: 120, color: '#dc2626', score: 0.92, details: 'Extortion Kingpin active in Thane & Pune. CCTNS FIR CR-142/2026.' },
-  { id: 'P-000045', label: 'Rakesh Pawar', role: 'CROSS_CRIME_BROKER', agency: 'ALL_AGENCIES', x: 340, y: 190, color: '#c59b27', isBridge: true, score: 0.88, details: 'Bridge operative linking extortion ring to cyber fraud. Shared phone PH-000007.' },
-  { id: 'P-000102', label: 'Nitin Gaikwad', role: 'SYNDICATE_CONTROLLER', agency: 'CENTRAL_AGENCY', x: 540, y: 120, color: '#2563eb', score: 0.84, details: 'Controller of money mule accounts and interstate logistics. Seizure report CEN-009.' },
-  { id: 'P-000101', label: 'Sachin Kale', role: 'MULE_RECRUITER', agency: 'MAHA_CYBER', x: 440, y: 280, color: '#d97706', score: 0.79, details: 'Recruits student accounts for pass-through splitting. NCRP 1930 reports.' },
-  { id: 'AC-000310', label: 'Mule AC-000310', role: 'LIKELY_DECEIVED', agency: 'MAHA_CYBER', x: 240, y: 280, color: '#16a34a', score: 0.78, details: 'Student victim account. 9-min median pass-through velocity. ₹14.9L outflow.' }
-];
+interface DynamicEdge {
+  from: string;
+  to: string;
+  label?: string;
+  weight: number;
+}
 
-const GRAPH_EDGES = [
-  { from: 'P-000001', to: 'P-000045', label: 'EXTORTION CHANNEL', weight: 0.85 },
-  { from: 'P-000045', to: 'P-000102', label: 'SHARED PHONE (PH-000007)', weight: 0.91 },
-  { from: 'P-000102', to: 'P-000101', label: 'MULE DIRECTIVES', weight: 0.78 },
-  { from: 'P-000101', to: 'AC-000310', label: 'ACCOUNT SPLIT', weight: 0.82 },
-  { from: 'P-000045', to: 'AC-000310', label: 'COMMUNICATION TRAIL', weight: 0.65 }
-];
+function buildDynamicGraph(
+  commDetail: CommunityDetail | null,
+  selectedComm: Community | null,
+  rolesList: RoleAssignment[],
+  bridgesList: BridgeEntity[]
+): { nodes: InteractiveNode[]; edges: DynamicEdge[] } {
+  const rawNodes = commDetail?.nodes || [];
+  const rawEdges = commDetail?.edges || [];
+  const memberIds = (commDetail?.entity_ids || (selectedComm as any)?.members || []).slice(0, 16);
+
+  let targetNodes: { id: string; label?: string; type?: string }[] = [];
+  if (rawNodes.length > 0) {
+    targetNodes = rawNodes.slice(0, 16);
+  } else if (memberIds.length > 0) {
+    targetNodes = memberIds.map((m: string) => ({ id: m, label: m, type: 'PERSON' }));
+  }
+
+  if (targetNodes.length === 0) {
+    return { nodes: [], edges: [] };
+  }
+
+  const centerX = 350;
+  const centerY = 200;
+  const radius = Math.min(150, 60 + targetNodes.length * 10);
+
+  const nodes: InteractiveNode[] = targetNodes.map((n, i) => {
+    const angle = (2 * Math.PI * i) / targetNodes.length - Math.PI / 2;
+    const x = Math.round(centerX + radius * Math.cos(angle));
+    const y = Math.round(centerY + radius * Math.sin(angle));
+
+    const roleObj = rolesList.find((r) => r.entity_id === n.id);
+    const bridgeObj = bridgesList.find((b) => b.entity_id === n.id);
+    const isBridge = !!bridgeObj;
+
+    let role = roleObj?.role || (n.type === 'CASE' ? 'LINKED_CASE' : isBridge ? 'CROSS_CRIME_BROKER' : 'NETWORK_MEMBER');
+    let color = '#2563eb';
+    if (isBridge) color = '#c59b27';
+    else if (role.includes('KINGPIN') || role.includes('CONTROLLER')) color = '#dc2626';
+    else if (role.includes('RECRUITER') || role.includes('BROKER')) color = '#d97706';
+    else if (role.includes('DECEIVED')) color = '#16a34a';
+    else if (n.type === 'CASE') color = '#7c3aed';
+
+    return {
+      id: n.id,
+      label: n.label || n.id,
+      role,
+      agency: (n as any).agency || 'STATE_POLICE',
+      x,
+      y,
+      color,
+      isBridge,
+      score: roleObj?.score || (isBridge ? 0.88 : 0.75),
+      details:
+        roleObj?.reasons?.map((r) => r.text).join('; ') ||
+        bridgeObj?.crime_types?.join(' ⟷ ') ||
+        `Entity in community ${selectedComm?.community_id || ''}`
+    };
+  });
+
+  const nodeIds = new Set(nodes.map((n) => n.id));
+  const edges: DynamicEdge[] = [];
+
+  for (const e of rawEdges) {
+    const fromId = (e as any).source || (e as any).from;
+    const toId = (e as any).target || (e as any).to;
+    if (nodeIds.has(fromId) && nodeIds.has(toId)) {
+      edges.push({
+        from: fromId,
+        to: toId,
+        label: e.type || 'LINK',
+        weight: e.confidence || 0.85
+      });
+    }
+  }
+
+  // If no raw edges provided in fixture detail, connect adjacent nodes in ring
+  if (edges.length === 0 && nodes.length > 1) {
+    for (let i = 0; i < nodes.length - 1; i++) {
+      edges.push({
+        from: nodes[i].id,
+        to: nodes[i + 1].id,
+        label: 'CO-OCCURRENCE',
+        weight: 0.8
+      });
+    }
+    if (nodes.length > 2) {
+      edges.push({
+        from: nodes[nodes.length - 1].id,
+        to: nodes[0].id,
+        label: 'CO-OCCURRENCE',
+        weight: 0.75
+      });
+    }
+  }
+
+  return { nodes, edges };
+}
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<UserContext>(DEMO_USERS[0]);
@@ -115,14 +209,21 @@ export default function App() {
   const [communityDetail, setCommunityDetail] = useState<CommunityDetail | null>(null);
   const [roles, setRoles] = useState<RoleAssignment[]>([]);
   const [bridges, setBridges] = useState<BridgeEntity[]>([]);
-  const [pathFrom, setPathFrom] = useState('P-000045');
-  const [pathTo, setPathTo] = useState('P-000102');
+  const [pathFrom, setPathFrom] = useState('ENT-0002');
+  const [pathTo, setPathTo] = useState('CASE-SPO-000001');
   const [pathResult, setPathResult] = useState<GraphPathResponse | null>(null);
-  const [inspectedGraphNode, setInspectedGraphNode] = useState<InteractiveNode>(GRAPH_NODES[1]);
+  const [inspectedGraphNode, setInspectedGraphNode] = useState<InteractiveNode | null>(null);
+  const [inspectedNeighborhood, setInspectedNeighborhood] = useState<NeighborhoodGraph | null>(null);
 
   // Mule chains state
   const [muleChains, setMuleChains] = useState<MuleChain[]>([]);
   const [selectedMuleChain, setSelectedMuleChain] = useState<MuleChain | null>(null);
+  const [muleError, setMuleError] = useState<string | null>(null);
+
+  // Unlink action state
+  const [unlinkingLinkId, setUnlinkingLinkId] = useState<string | null>(null);
+  const [unlinkReason, setUnlinkReason] = useState('Independent identity verified; false positive correlation');
+  const [unlinkError, setUnlinkError] = useState<string | null>(null);
 
   // Federated query state
   const [fedAgency, setFedAgency] = useState<Agency>('STATE_POLICE');
@@ -143,10 +244,22 @@ export default function App() {
   const [generatedDossier, setGeneratedDossier] = useState<Dossier | null>(null);
   const [dossierExportResult, setDossierExportResult] = useState<DossierExportResponse | null>(null);
 
-  // Kumbh state
+  // Kumbh state (Step 4 & Step 5A operations intelligence)
   const [kumbhZones, setKumbhZones] = useState<KumbhZone[]>([]);
   const [kumbhAlerts, setKumbhAlerts] = useState<KumbhAlert[]>([]);
   const [lastKumbhSimulation, setLastKumbhSimulation] = useState<KumbhSimulationResponse | null>(null);
+  const [kumbhSection, setKumbhSection] = useState<'live' | 'feed' | 'signals' | 'clusters'>('live');
+  const [kumbhObservations, setKumbhObservations] = useState<KumbhObservation[]>([]);
+  const [kumbhSignals, setKumbhSignals] = useState<KumbhSignal[]>([]);
+  const [kumbhClusters, setKumbhClusters] = useState<KumbhCluster[]>([]);
+  const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+  const [eventIntel, setEventIntel] = useState<KumbhEventIntelligence | null>(null);
+  const [intelLoading, setIntelLoading] = useState<boolean>(false);
+  const [kumbhSubError, setKumbhSubError] = useState<string | null>(null);
+  const [kumbhFilterZone, setKumbhFilterZone] = useState<string>('');
+  const [kumbhFilterType, setKumbhFilterType] = useState<string>('');
+  const [kumbhFilterTier, setKumbhFilterTier] = useState<string>('');
+  const [kumbhFilterClusterType, setKumbhFilterClusterType] = useState<string>('');
 
   // Audit state
   const [auditLogs, setAuditLogs] = useState<AuditEntry[]>([]);
@@ -250,6 +363,9 @@ export default function App() {
       setBridges(bridgeData || []);
       if (commData.length > 0) {
         handleSelectCommunity(commData[0]);
+        if (!dossierCommunityId) {
+          setDossierCommunityId(commData[0].community_id);
+        }
       }
     } catch (err: any) {
       showNotification(err.message, 'error');
@@ -267,18 +383,43 @@ export default function App() {
       ]);
       setCommunityDetail(detail);
       setRoles(rolesData || []);
+
+      // If graph has nodes, pick valid default endpoints for path finder if currently unset
+      const members = comm.members || detail?.entity_ids || [];
+      if (members.length >= 2) {
+        if (!pathFrom || pathFrom === 'P-000045') setPathFrom(members[0]);
+        if (!pathTo || pathTo === 'P-000102') setPathTo(members[1]);
+      }
     } catch (err: any) {
       console.error('Community detail error:', err);
     }
   }
 
+  async function handleInspectGraphNode(node: InteractiveNode) {
+    setInspectedGraphNode(node);
+    try {
+      const nb = await api.getNeighborhood(node.id, 2, currentUser.userId);
+      setInspectedNeighborhood(nb);
+    } catch (err: any) {
+      console.warn('Neighborhood query notice:', err);
+      setInspectedNeighborhood(null);
+    }
+  }
+
   async function handleFindPath() {
-    if (!pathFrom || !pathTo) return;
+    if (!pathFrom || !pathTo) {
+      showNotification('Please enter both source and destination entity IDs.', 'info');
+      return;
+    }
     setLoading(true);
     try {
-      const res = await api.getGraphPath(pathFrom.trim(), pathTo.trim(), currentUser.userId);
+      const res = await api.getGraphPath(pathFrom.trim(), pathTo.trim(), 5, currentUser.userId);
       setPathResult(res);
-      showNotification(`Relationship path found: ${res.hops} hops between ${pathFrom} and ${pathTo}`, 'info');
+      if (res.found) {
+        showNotification(`Relationship path found: ${res.hops} hops between ${pathFrom} and ${pathTo}`, 'info');
+      } else {
+        showNotification(`No connecting path found between ${pathFrom} and ${pathTo}.`, 'info');
+      }
     } catch (err: any) {
       showNotification(err.message, 'error');
     } finally {
@@ -289,6 +430,7 @@ export default function App() {
   // 3. Mule Chains Handlers
   async function loadMuleData() {
     setLoading(true);
+    setMuleError(null);
     try {
       const data = await api.getMuleChains(undefined, currentUser.userId);
       setMuleChains(data);
@@ -296,9 +438,44 @@ export default function App() {
         setSelectedMuleChain(data[0]);
       }
     } catch (err: any) {
+      const msg = err.message || '';
+      if (msg.includes('403') || msg.includes('INSUFFICIENT_PERMISSIONS') || msg.includes('permission')) {
+        setMuleError(`Insufficient permissions: Role ${currentUser.role} lacks MULE_VIEW clearance.`);
+      } else {
+        setMuleError(msg);
+      }
+      setMuleChains([]);
+      setSelectedMuleChain(null);
       showNotification(err.message, 'error');
     } finally {
       setLoading(false);
+    }
+  }
+
+  // Unlink Entity Link Handler
+  async function handleExecuteUnlink(linkId: string) {
+    if (!unlinkReason.trim()) {
+      setUnlinkError('A reason is required to unlink entities.');
+      return;
+    }
+    try {
+      const res = await api.unlink(linkId, unlinkReason.trim(), currentUser.userId);
+      showNotification(`Link ${linkId} unlinked successfully. Audit sequence #${res.audit_seq}`, 'success');
+      setUnlinkingLinkId(null);
+      setUnlinkError(null);
+      if (selectedEntity) {
+        handleSelectEntity(selectedEntity);
+      }
+    } catch (err: any) {
+      const msg = err.message || '';
+      if (msg.includes('403') || msg.includes('INSUFFICIENT_PERMISSIONS') || msg.includes('permission')) {
+        const permMsg = `Permission Denied: Current role (${currentUser.role}) does not have UNLINK authority.`;
+        setUnlinkError(permMsg);
+        showNotification(permMsg, 'error');
+      } else {
+        setUnlinkError(msg);
+        showNotification(msg, 'error');
+      }
     }
   }
 
@@ -398,20 +575,41 @@ export default function App() {
     }
   };
 
-  // 7. Nashik Kumbh Command Handlers (E1, E2, E3 Stepper)
+  // 7. Nashik Kumbh Command Handlers (Step 4 & Step 5A operations intelligence)
   async function loadKumbh() {
     setLoading(true);
+    setKumbhSubError(null);
     try {
-      const [zones, alerts] = await Promise.all([
-        api.getKumbhZones(currentUser.userId),
-        api.getKumbhAlerts(currentUser.userId),
+      const [zones, alerts, obs, sigs, clusts] = await Promise.all([
+        api.getKumbhZones(currentUser.userId).catch(() => []),
+        api.getKumbhAlerts(currentUser.userId).catch(() => []),
+        api.getKumbhObservations({ limit: 100 }, currentUser.userId).catch(() => []),
+        api.getKumbhSignals({ limit: 100 }, currentUser.userId).catch(() => []),
+        api.getKumbhClusters({ limit: 100 }, currentUser.userId).catch(() => []),
       ]);
       setKumbhZones(zones);
       setKumbhAlerts(alerts);
+      setKumbhObservations(obs);
+      setKumbhSignals(sigs);
+      setKumbhClusters(clusts);
     } catch (err: any) {
       showNotification(err.message, 'error');
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleInspectEventIntelligence(eventId: string) {
+    setSelectedEventId(eventId);
+    setIntelLoading(true);
+    try {
+      const data = await api.getKumbhEventIntelligence(eventId, currentUser.userId);
+      setEventIntel(data);
+    } catch (err: any) {
+      showNotification(err.message || `Unable to load intelligence portfolio for ${eventId}`, 'error');
+      setEventIntel(null);
+    } finally {
+      setIntelLoading(false);
     }
   }
 
@@ -1609,10 +1807,43 @@ export default function App() {
                     selectedEntityLinks.map((lnk) => (
                       <div key={lnk.link_id} style={{ padding: '12px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.82rem' }}>{lnk.link_id}</span>
-                          <span className="score-pill-success">
-                            Score: {(lnk.score * 100).toFixed(0)}% ({lnk.band})
-                          </span>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '0.82rem' }}>{lnk.link_id}</span>
+                            {lnk.status === 'UNLINKED' && (
+                              <span style={{ fontSize: '0.65rem', padding: '1px 6px', borderRadius: '2px', background: 'var(--bg-danger)', color: 'var(--status-danger-text)', fontWeight: 700 }}>
+                                UNLINKED
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span className="score-pill-success">
+                              Score: {(lnk.score * 100).toFixed(0)}% ({lnk.band})
+                            </span>
+                            {lnk.status !== 'UNLINKED' && (
+                              <button
+                                onClick={() => {
+                                  setUnlinkingLinkId(unlinkingLinkId === lnk.link_id ? null : lnk.link_id);
+                                  setUnlinkError(null);
+                                }}
+                                title="Unlink this association (Requires UNLINK permission)"
+                                style={{
+                                  background: 'var(--bg-subtle)',
+                                  color: 'var(--status-danger-text)',
+                                  border: '1px solid var(--border-subtle)',
+                                  padding: '2px 6px',
+                                  fontSize: '0.68rem',
+                                  borderRadius: 'var(--radius-xs)',
+                                  cursor: 'pointer',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '3px'
+                                }}
+                              >
+                                <Link2Off size={11} />
+                                <span>Unlink</span>
+                              </button>
+                            )}
+                          </div>
                         </div>
 
                         <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '6px', lineHeight: 1.4 }}>
@@ -1639,6 +1870,41 @@ export default function App() {
                         <div style={{ marginTop: '8px', fontSize: '0.65rem', color: 'var(--text-muted)' }}>
                           Mentions: <code>{lnk.a_mention_id}</code> ⟷ <code>{lnk.b_mention_id}</code>
                         </div>
+
+                        {/* Unlink Confirmation Box */}
+                        {unlinkingLinkId === lnk.link_id && (
+                          <div style={{ marginTop: '8px', padding: '8px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-medium)' }}>
+                            <div style={{ fontSize: '0.7rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>
+                              Confirm Unlink (Audit Tracked)
+                            </div>
+                            <input
+                              type="text"
+                              value={unlinkReason}
+                              onChange={(e) => setUnlinkReason(e.target.value)}
+                              placeholder="Reason for unlinking (required)"
+                              style={{ width: '100%', padding: '4px 6px', fontSize: '0.72rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xs)', marginBottom: '4px' }}
+                            />
+                            {unlinkError && (
+                              <div style={{ fontSize: '0.68rem', color: 'var(--status-danger-text)', marginBottom: '4px' }}>
+                                {unlinkError}
+                              </div>
+                            )}
+                            <div style={{ display: 'flex', gap: '4px', justifyContent: 'flex-end' }}>
+                              <button
+                                onClick={() => { setUnlinkingLinkId(null); setUnlinkError(null); }}
+                                style={{ padding: '2px 6px', fontSize: '0.68rem', background: 'transparent', color: 'var(--text-secondary)', border: 'none', cursor: 'pointer' }}
+                              >
+                                Cancel
+                              </button>
+                              <button
+                                onClick={() => handleExecuteUnlink(lnk.link_id)}
+                                style={{ padding: '2px 8px', fontSize: '0.68rem', background: 'var(--status-danger)', color: '#fff', borderRadius: 'var(--radius-xs)', fontWeight: 700, border: 'none', cursor: 'pointer' }}
+                              >
+                                Confirm Unlink
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
                     ))
                   )}
@@ -1718,123 +1984,146 @@ export default function App() {
               <div className="gov-card" style={{ padding: '18px', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
                   <span style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-                    INTERACTIVE SYNDICATE TOPOLOGY (COM-001)
+                    INTERACTIVE SYNDICATE TOPOLOGY ({selectedCommunity?.community_id || 'COMMUNITY'})
                   </span>
                   <span style={{ fontSize: '0.7rem', color: 'var(--accent-gold)' }}>
-                    Click node to inspect intelligence
+                    Click node to inspect neighborhood intelligence
                   </span>
                 </div>
 
-                <div style={{
-                  position: 'relative',
-                  width: '100%',
-                  height: '420px',
-                  background: 'var(--bg-subtle)',
-                  borderRadius: 'var(--radius-xs)',
-                  border: '1px solid var(--border-subtle)',
-                  overflow: 'hidden'
-                }}>
-                  <svg width="100%" height="100%" viewBox="0 0 700 400" style={{ display: 'block' }}>
-                    {/* Background Grid */}
-                    <defs>
-                      <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
-                        <path d="M 30 0 L 0 0 0 30" fill="none" stroke="var(--border-subtle)" strokeWidth="1" />
-                      </pattern>
-                    </defs>
-                    <rect width="100%" height="100%" fill="url(#grid)" />
+                {(() => {
+                  const dynamicGraph = buildDynamicGraph(communityDetail, selectedCommunity, roles, bridges);
+                  if (dynamicGraph.nodes.length === 0) {
+                    return (
+                      <div style={{
+                        height: '420px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        background: 'var(--bg-subtle)',
+                        borderRadius: 'var(--radius-xs)',
+                        border: '1px solid var(--border-subtle)',
+                        color: 'var(--text-muted)',
+                        fontSize: '0.8rem'
+                      }}>
+                        No graph entities available for this community snapshot.
+                      </div>
+                    );
+                  }
 
-                    {/* Edges */}
-                    {GRAPH_EDGES.map((edge, idx) => {
-                      const source = GRAPH_NODES.find(n => n.id === edge.from);
-                      const target = GRAPH_NODES.find(n => n.id === edge.to);
-                      if (!source || !target) return null;
-                      return (
-                        <g key={idx}>
-                          <line
-                            x1={source.x}
-                            y1={source.y}
-                            x2={target.x}
-                            y2={target.y}
-                            stroke={edge.weight > 0.85 ? 'var(--accent-gold)' : 'rgba(148, 163, 184, 0.3)'}
-                            strokeWidth={edge.weight > 0.85 ? 2.5 : 1.5}
-                            strokeDasharray={edge.weight > 0.85 ? 'none' : '4,4'}
-                          />
-                        </g>
-                      );
-                    })}
+                  return (
+                    <div style={{
+                      position: 'relative',
+                      width: '100%',
+                      height: '420px',
+                      background: 'var(--bg-subtle)',
+                      borderRadius: 'var(--radius-xs)',
+                      border: '1px solid var(--border-subtle)',
+                      overflow: 'hidden'
+                    }}>
+                      <svg width="100%" height="100%" viewBox="0 0 700 400" style={{ display: 'block' }}>
+                        {/* Background Grid */}
+                        <defs>
+                          <pattern id="grid" width="30" height="30" patternUnits="userSpaceOnUse">
+                            <path d="M 30 0 L 0 0 0 30" fill="none" stroke="var(--border-subtle)" strokeWidth="1" />
+                          </pattern>
+                        </defs>
+                        <rect width="100%" height="100%" fill="url(#grid)" />
 
-                    {/* Nodes */}
-                    {GRAPH_NODES.map((node) => {
-                      const isSelected = inspectedGraphNode?.id === node.id;
-                      return (
-                        <g
-                          key={node.id}
-                          onClick={() => setInspectedGraphNode(node)}
-                          style={{ cursor: 'pointer' }}
-                        >
-                          {/* Pulse ring for bridge operative */}
-                          {node.isBridge && (
-                            <circle
-                              cx={node.x}
-                              cy={node.y}
-                              r="26"
-                              fill="none"
-                              stroke="var(--accent-gold)"
-                              strokeWidth="1.5"
-                              strokeDasharray="2,3"
-                            />
-                          )}
+                        {/* Edges */}
+                        {dynamicGraph.edges.map((edge, idx) => {
+                          const source = dynamicGraph.nodes.find((n) => n.id === edge.from);
+                          const target = dynamicGraph.nodes.find((n) => n.id === edge.to);
+                          if (!source || !target) return null;
+                          return (
+                            <g key={idx}>
+                              <line
+                                x1={source.x}
+                                y1={source.y}
+                                x2={target.x}
+                                y2={target.y}
+                                stroke={edge.weight > 0.85 ? 'var(--accent-gold)' : 'rgba(148, 163, 184, 0.3)'}
+                                strokeWidth={edge.weight > 0.85 ? 2.5 : 1.5}
+                                strokeDasharray={edge.weight > 0.85 ? 'none' : '4,4'}
+                              />
+                            </g>
+                          );
+                        })}
 
-                          {/* Selection indicator */}
-                          {isSelected && (
-                            <circle
-                              cx={node.x}
-                              cy={node.y}
-                              r="22"
-                              fill="none"
-                              stroke="#ffffff"
-                              strokeWidth="2"
-                            />
-                          )}
+                        {/* Nodes */}
+                        {dynamicGraph.nodes.map((node) => {
+                          const isSelected = inspectedGraphNode?.id === node.id;
+                          return (
+                            <g
+                              key={node.id}
+                              onClick={() => handleInspectGraphNode(node)}
+                              style={{ cursor: 'pointer' }}
+                            >
+                              {/* Pulse ring for bridge operative */}
+                              {node.isBridge && (
+                                <circle
+                                  cx={node.x}
+                                  cy={node.y}
+                                  r="24"
+                                  fill="none"
+                                  stroke="var(--accent-gold)"
+                                  strokeWidth="1.5"
+                                  strokeDasharray="2,3"
+                                />
+                              )}
 
-                          {/* Node circle */}
-                          <circle
-                            cx={node.x}
-                            cy={node.y}
-                            r="16"
-                            fill={node.color}
-                            stroke="rgba(255,255,255,0.4)"
-                            strokeWidth="2"
-                          />
+                              {/* Selection indicator */}
+                              {isSelected && (
+                                <circle
+                                  cx={node.x}
+                                  cy={node.y}
+                                  r="20"
+                                  fill="none"
+                                  stroke="#ffffff"
+                                  strokeWidth="2"
+                                />
+                              )}
 
-                          {/* Label */}
-                          <text
-                            x={node.x}
-                            y={node.y + 28}
-                            fill="var(--text-primary)"
-                            fontSize="11"
-                            fontWeight="700"
-                            textAnchor="middle"
-                          >
-                            {node.label}
-                          </text>
+                              {/* Node circle */}
+                              <circle
+                                cx={node.x}
+                                cy={node.y}
+                                r="14"
+                                fill={node.color}
+                                stroke="rgba(255,255,255,0.4)"
+                                strokeWidth="2"
+                              />
 
-                          {/* Role tag */}
-                          <text
-                            x={node.x}
-                            y={node.y + 40}
-                            fill={node.isBridge ? 'var(--accent-gold)' : 'var(--text-muted)'}
-                            fontSize="8"
-                            fontWeight="600"
-                            textAnchor="middle"
-                          >
-                            {node.isBridge ? '★ BRIDGE' : node.role}
-                          </text>
-                        </g>
-                      );
-                    })}
-                  </svg>
-                </div>
+                              {/* Label */}
+                              <text
+                                x={node.x}
+                                y={node.y + 24}
+                                fill="var(--text-primary)"
+                                fontSize="10"
+                                fontWeight="700"
+                                textAnchor="middle"
+                              >
+                                {node.label.length > 18 ? `${node.label.slice(0, 16)}…` : node.label}
+                              </text>
+
+                              {/* Role tag */}
+                              <text
+                                x={node.x}
+                                y={node.y + 34}
+                                fill={node.isBridge ? 'var(--accent-gold)' : 'var(--text-muted)'}
+                                fontSize="7"
+                                fontWeight="600"
+                                textAnchor="middle"
+                              >
+                                {node.isBridge ? '★ BRIDGE' : node.role}
+                              </text>
+                            </g>
+                          );
+                        })}
+                      </svg>
+                    </div>
+                  );
+                })()}
 
                 {/* Node Inspector Card */}
                 {inspectedGraphNode && (
@@ -1850,10 +2139,29 @@ export default function App() {
                       <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
                         {inspectedGraphNode.details}
                       </p>
+                      {inspectedNeighborhood && (
+                        <div style={{ marginTop: '4px', fontSize: '0.7rem', color: 'var(--accent-gold)' }}>
+                          Neighborhood: {inspectedNeighborhood.nodes.length} connected entities • {inspectedNeighborhood.edges.length} graph links
+                        </div>
+                      )}
+                      <div style={{ marginTop: '6px', display: 'flex', gap: '6px' }}>
+                        <button
+                          onClick={() => setPathFrom(inspectedGraphNode.id)}
+                          style={{ padding: '2px 8px', fontSize: '0.68rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-medium)', color: 'var(--text-primary)', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
+                        >
+                          Use as Path From
+                        </button>
+                        <button
+                          onClick={() => setPathTo(inspectedGraphNode.id)}
+                          style={{ padding: '2px 8px', fontSize: '0.68rem', background: 'var(--bg-secondary)', border: '1px solid var(--border-medium)', color: 'var(--text-primary)', borderRadius: 'var(--radius-xs)', cursor: 'pointer' }}
+                        >
+                          Use as Path To
+                        </button>
+                      </div>
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>CENTRALITY SCORE</span>
+                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>CONFIDENCE SCORE</span>
                       <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)' }}>
                         {inspectedGraphNode.score?.toFixed(2) || '0.85'}
                       </div>
@@ -1914,14 +2222,14 @@ export default function App() {
                       type="text"
                       value={pathFrom}
                       onChange={(e) => setPathFrom(e.target.value)}
-                      placeholder="From ID (P-000045)"
+                      placeholder="From ID (e.g. ENT-0002)"
                       style={{ flex: 1, padding: '6px 10px', fontSize: '0.75rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xs)' }}
                     />
                     <input
                       type="text"
                       value={pathTo}
                       onChange={(e) => setPathTo(e.target.value)}
-                      placeholder="To ID (P-000102)"
+                      placeholder="To ID (e.g. CASE-SPO-000001)"
                       style={{ flex: 1, padding: '6px 10px', fontSize: '0.75rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xs)' }}
                     />
                     <button
@@ -1934,10 +2242,32 @@ export default function App() {
 
                   {pathResult && (
                     <div style={{ padding: '8px 12px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
-                      <span style={{ fontSize: '0.68rem', color: 'var(--accent-gold)', fontWeight: 700 }}>HOPS: {pathResult.hops}</span>
-                      <div style={{ marginTop: '4px', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
-                        {pathResult.path.join(' ──► ')}
-                      </div>
+                      {pathResult.found ? (
+                        <>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.68rem', color: 'var(--accent-gold)', fontWeight: 700 }}>
+                              HOPS: {pathResult.hops}
+                            </span>
+                            {pathResult.requires_investigator_review && (
+                              <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '2px', background: 'var(--bg-gold-subtle)', color: 'var(--accent-gold-light)', fontWeight: 700 }}>
+                                Requires Investigator Review
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ marginTop: '4px', fontSize: '0.75rem', fontFamily: 'var(--font-mono)', color: 'var(--text-primary)' }}>
+                            {pathResult.path.filter(Boolean).join(' ──► ')}
+                          </div>
+                          {pathResult.evidence && pathResult.evidence.length > 0 && (
+                            <div style={{ marginTop: '6px', fontSize: '0.68rem', color: 'var(--text-secondary)' }}>
+                              <strong>Evidence:</strong> {pathResult.evidence.join(', ')}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          No path found between the selected entities.
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1977,6 +2307,57 @@ export default function App() {
             ───────────────────────────────────────────────────────────── */}
         {activeTab === 'mule' && (
           <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            {muleError ? (
+              <div className="gov-card" style={{ padding: '48px 24px', textAlign: 'center' }}>
+                <div style={{ display: 'inline-flex', padding: '14px', borderRadius: '50%', background: 'var(--bg-danger)', color: 'var(--status-danger-text)', marginBottom: '14px' }}>
+                  <Lock size={32} />
+                </div>
+                <h3 style={{ fontSize: '1.15rem', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>
+                  Insufficient Permissions
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', maxWidth: '540px', margin: '0 auto 18px', lineHeight: 1.5 }}>
+                  Inspecting the Money Mule Pipeline requires <strong>MULE_VIEW</strong> clearance. Current role <strong>{currentUser.role}</strong> ({currentUser.displayName}) does not hold security privileges to view bank account layers or mule recruiter graphs.
+                </p>
+                <div style={{ display: 'flex', gap: '10px', justifyContent: 'center' }}>
+                  <button
+                    onClick={() => {
+                      const analyst = DEMO_USERS.find((u) => u.role === 'ANALYST') || DEMO_USERS[0];
+                      setCurrentUser(analyst);
+                    }}
+                    style={{
+                      background: 'var(--accent-navy)',
+                      color: '#ffffff',
+                      padding: '8px 16px',
+                      borderRadius: 'var(--radius-xs)',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Switch to Analyst (analyst1)
+                  </button>
+                  <button
+                    onClick={() => {
+                      const inspector = DEMO_USERS.find((u) => u.role === 'INSPECTOR');
+                      if (inspector) setCurrentUser(inspector);
+                    }}
+                    style={{
+                      background: 'var(--bg-subtle)',
+                      color: 'var(--text-primary)',
+                      border: '1px solid var(--border-medium)',
+                      padding: '8px 16px',
+                      borderRadius: 'var(--radius-xs)',
+                      fontSize: '0.8rem',
+                      fontWeight: 700,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    Switch to Inspector (inspector1)
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <>
             {/* Top Syndicate Summary */}
             <div className="gov-card" style={{ padding: '18px 24px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
@@ -2164,6 +2545,8 @@ export default function App() {
                 ))}
               </div>
             </div>
+            </>
+            )}
           </div>
         )}
 
@@ -2541,13 +2924,44 @@ export default function App() {
                 </p>
               </div>
 
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                    TARGET:
+                  </label>
+                  {communities.length > 0 ? (
+                    <select
+                      value={dossierCommunityId}
+                      onChange={(e) => setDossierCommunityId(e.target.value)}
+                      style={{
+                        padding: '6px 10px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        background: 'var(--bg-subtle)',
+                        border: '1px solid var(--border-subtle)',
+                        borderRadius: 'var(--radius-xs)',
+                        color: 'var(--text-primary)'
+                      }}
+                    >
+                      {communities.map((c) => (
+                        <option key={c.community_id} value={c.community_id}>
+                          {c.community_id} {c.label ? `— ${c.label}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
+                      No communities available
+                    </span>
+                  )}
+                </div>
+
                 <button
                   onClick={handleGenerateDossier}
-                  disabled={loading}
+                  disabled={loading || !dossierCommunityId}
                   style={{ background: 'var(--accent-navy)', color: '#ffffff', padding: '8px 16px', borderRadius: 'var(--radius-xs)', fontWeight: 700, fontSize: '0.8rem' }}
                 >
-                  {loading ? 'Synthesizing...' : 'Synthesize Dossier (COM-001)'}
+                  {loading ? 'Synthesizing...' : `Synthesize Dossier (${dossierCommunityId})`}
                 </button>
 
                 <button
@@ -2699,162 +3113,853 @@ export default function App() {
         {/* ─────────────────────────────────────────────────────────────
             WORKFLOW 8: KUMBH OPERATIONS (कुंभ ऑपरेशन्स)
             ───────────────────────────────────────────────────────────── */}
+        {/* ─────────────────────────────────────────────────────────────
+            WORKFLOW 8: KUMBH OPERATIONS (कुंभ ऑपरेशन्स)
+            ───────────────────────────────────────────────────────────── */}
         {activeTab === 'kumbh' && (
           <div className="animate-fade-in" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div className="gov-card" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            {/* Kumbh Header & Sub-Navigation */}
+            <div className="gov-card" style={{ padding: '16px 20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '12px' }}>
               <div>
                 <span className="provenance-tag provenance-source">
-                  REAL-TIME SURVEILLANCE CORRELATION • 53 EVENTS
+                  REAL-TIME SURVEILLANCE & OPERATIONS INTELLIGENCE
                 </span>
-                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)' }}>
-                  Nashik Kumbh Mela Operations Command
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
+                  Nashik Kumbh Mela Operations Command & Intelligence Matrix
                 </h3>
                 <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                  Continuous surveillance feed across Ramkund, Panchavati, Trimbakeshwar, and Tapovan. High threat detection with zero false alarms.
+                  Continuous surveillance feed across Ramkund, Panchavati, Trimbakeshwar, Tapovan, and Godavari Ghats with false-positive protections.
                 </p>
               </div>
 
-              {/* Fast-Forward Scenario Stepper Controls */}
-              <div style={{ display: 'flex', gap: '8px' }}>
+              {/* Sub-Navigation Segmented Control */}
+              <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'var(--bg-secondary)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)', flexWrap: 'wrap' }}>
                 <button
-                  onClick={() => handleSimulateToScenario('E1')}
-                  disabled={loading}
-                  style={{ background: 'var(--status-danger)', color: '#fff', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, borderRadius: 'var(--radius-xs)' }}
+                  onClick={() => setKumbhSection('live')}
+                  style={{
+                    padding: '6px 14px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    borderRadius: 'var(--radius-xs)',
+                    border: 'none',
+                    background: kumbhSection === 'live' ? 'var(--accent-navy)' : 'transparent',
+                    color: kumbhSection === 'live' ? '#ffffff' : 'var(--text-secondary)',
+                    cursor: 'pointer'
+                  }}
                 >
-                  Step to E1 (Watchlist)
+                  1. Live Operations
                 </button>
-
                 <button
-                  onClick={() => handleSimulateToScenario('E2')}
-                  disabled={loading}
-                  style={{ background: 'var(--status-warning)', color: '#000', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, borderRadius: 'var(--radius-xs)' }}
+                  onClick={() => setKumbhSection('feed')}
+                  style={{
+                    padding: '6px 14px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    borderRadius: 'var(--radius-xs)',
+                    border: 'none',
+                    background: kumbhSection === 'feed' ? 'var(--accent-navy)' : 'transparent',
+                    color: kumbhSection === 'feed' ? '#ffffff' : 'var(--text-secondary)',
+                    cursor: 'pointer'
+                  }}
                 >
-                  Step to E2 (Scam)
+                  2. Surveillance Feed ({kumbhObservations.length})
                 </button>
-
                 <button
-                  onClick={() => handleSimulateToScenario('E3')}
-                  disabled={loading}
-                  style={{ background: 'var(--status-success)', color: '#fff', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, borderRadius: 'var(--radius-xs)' }}
+                  onClick={() => setKumbhSection('signals')}
+                  style={{
+                    padding: '6px 14px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    borderRadius: 'var(--radius-xs)',
+                    border: 'none',
+                    background: kumbhSection === 'signals' ? 'var(--accent-navy)' : 'transparent',
+                    color: kumbhSection === 'signals' ? '#ffffff' : 'var(--text-secondary)',
+                    cursor: 'pointer'
+                  }}
                 >
-                  Step to E3 (Control Case)
+                  3. Intelligence Signals ({kumbhSignals.length})
                 </button>
-
                 <button
-                  onClick={handleSimulateSingleStep}
-                  disabled={loading}
-                  style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 600, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-medium)' }}
+                  onClick={() => setKumbhSection('clusters')}
+                  style={{
+                    padding: '6px 14px',
+                    fontSize: '0.75rem',
+                    fontWeight: 700,
+                    borderRadius: 'var(--radius-xs)',
+                    border: 'none',
+                    background: kumbhSection === 'clusters' ? 'var(--accent-navy)' : 'transparent',
+                    color: kumbhSection === 'clusters' ? '#ffffff' : 'var(--text-secondary)',
+                    cursor: 'pointer'
+                  }}
                 >
-                  +1 Step
+                  4. Operational Clusters ({kumbhClusters.length})
                 </button>
               </div>
             </div>
 
-            {/* Kumbh Zones Grid */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
-              {kumbhZones.map((z) => (
-                <div key={z.zone} className="gov-card" style={{ padding: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{z.zone}</span>
-                    <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '2px', background: z.state === 'ALERT' ? 'var(--bg-danger)' : 'var(--bg-success)', color: z.state === 'ALERT' ? 'var(--status-danger-text)' : 'var(--status-success-text)', fontWeight: 700 }}>
-                      {z.state}
-                    </span>
-                  </div>
-                  <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
-                    Sector Status: <strong>{z.state === 'ALERT' ? 'SURVEILLANCE SURGE' : 'ROUTINE PATROL'}</strong> • Active Alerts: <strong>{z.active_alerts}</strong>
+            {kumbhSubError && (
+              <div style={{ padding: '10px 16px', background: 'var(--bg-danger)', color: 'var(--status-danger-text)', borderRadius: 'var(--radius-xs)', fontSize: '0.75rem', fontWeight: 600 }}>
+                ⚠️ {kumbhSubError}
+              </div>
+            )}
+
+            {/* ─────────────────────────────────────────────────────────
+                SECTION 1: LIVE OPERATIONS (Existing Simulation + Zones + Alerts)
+                ───────────────────────────────────────────────────────── */}
+            {kumbhSection === 'live' && (
+              <>
+                {/* Fast-Forward Scenario Stepper Controls */}
+                <div className="gov-card" style={{ padding: '12px 18px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+                    Surveillance Stepper Controls:
+                  </span>
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <button
+                      onClick={() => handleSimulateToScenario('E1')}
+                      disabled={loading}
+                      style={{ background: 'var(--status-danger)', color: '#fff', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, borderRadius: 'var(--radius-xs)' }}
+                    >
+                      Step to E1 (Watchlist)
+                    </button>
+                    <button
+                      onClick={() => handleSimulateToScenario('E2')}
+                      disabled={loading}
+                      style={{ background: 'var(--status-warning)', color: '#000', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, borderRadius: 'var(--radius-xs)' }}
+                    >
+                      Step to E2 (Scam)
+                    </button>
+                    <button
+                      onClick={() => handleSimulateToScenario('E3')}
+                      disabled={loading}
+                      style={{ background: 'var(--status-success)', color: '#fff', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 700, borderRadius: 'var(--radius-xs)' }}
+                    >
+                      Step to E3 (Control Case)
+                    </button>
+                    <button
+                      onClick={handleSimulateSingleStep}
+                      disabled={loading}
+                      style={{ background: 'var(--bg-tertiary)', color: 'var(--text-primary)', padding: '6px 12px', fontSize: '0.75rem', fontWeight: 600, borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-medium)' }}
+                    >
+                      +1 Step
+                    </button>
                   </div>
                 </div>
-              ))}
-            </div>
 
-            {/* Last Event Banner */}
-            {lastKumbhSimulation?.event_played && (
-              <div className="gov-card" style={{ padding: '16px', borderLeft: `4px solid ${lastKumbhSimulation.alert_raised ? 'var(--status-danger)' : 'var(--status-success)'}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                {/* Kumbh Zones Grid */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px' }}>
+                  {kumbhZones.map((z) => (
+                    <div key={z.zone} className="gov-card" style={{ padding: '14px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text-primary)' }}>{z.zone}</span>
+                        <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '2px', background: z.state === 'ALERT' ? 'var(--bg-danger)' : 'var(--bg-success)', color: z.state === 'ALERT' ? 'var(--status-danger-text)' : 'var(--status-success-text)', fontWeight: 700 }}>
+                          {z.state}
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                        Sector Status: <strong>{z.state === 'ALERT' ? 'SURVEILLANCE SURGE' : 'ROUTINE PATROL'}</strong> • Active Alerts: <strong>{z.active_alerts}</strong>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Last Event Banner */}
+                {lastKumbhSimulation?.event_played && (
+                  <div className="gov-card" style={{ padding: '16px', borderLeft: `4px solid ${lastKumbhSimulation.alert_raised ? 'var(--status-danger)' : 'var(--status-success)'}` }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <div>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>PROCESSED EVENT:</span>
+                        <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
+                          {lastKumbhSimulation.event_played.event_id} ({lastKumbhSimulation.event_played.event_type}) in {lastKumbhSimulation.event_played.zone}
+                        </h4>
+                        <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                          {lastKumbhSimulation.event_played.details?.description}
+                        </p>
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <button
+                          onClick={() => handleInspectEventIntelligence(lastKumbhSimulation.event_played.event_id)}
+                          style={{
+                            background: 'var(--bg-subtle)',
+                            color: 'var(--text-primary)',
+                            border: '1px solid var(--border-medium)',
+                            padding: '4px 10px',
+                            borderRadius: 'var(--radius-xs)',
+                            fontSize: '0.72rem',
+                            fontWeight: 600,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          Inspect Event Portfolio
+                        </button>
+                        <span style={{
+                          fontSize: '0.8rem',
+                          fontWeight: 800,
+                          padding: '4px 12px',
+                          borderRadius: 'var(--radius-xs)',
+                          background: lastKumbhSimulation.alert_raised ? 'var(--bg-danger)' : 'var(--bg-success)',
+                          color: lastKumbhSimulation.alert_raised ? 'var(--status-danger-text)' : 'var(--status-success-text)'
+                        }}>
+                          {lastKumbhSimulation.alert_raised ? '🚨 THREAT ALERT GENERATED' : '✓ NO ALERT (CONTROL CASE PASSED)'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Active Alerts Table */}
+                <div className="gov-card" style={{ padding: '20px' }}>
+                  <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '12px' }}>
+                    ACTIVE SURVEILLANCE ALERTS ({kumbhAlerts.length})
+                  </div>
+
+                  {kumbhAlerts.length === 0 ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
+                      No active alerts. Use steppers above to fast-forward into planted events E1, E2, or E3.
+                    </div>
+                  ) : (
+                    <table className="gov-table">
+                      <thead>
+                        <tr>
+                          <th>ALERT ID</th>
+                          <th>TYPE</th>
+                          <th>ZONE</th>
+                          <th>REASON / DETAILS</th>
+                          <th>STATUS</th>
+                          <th>ACTION</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {kumbhAlerts.map((alt) => (
+                          <tr key={alt.alert_id}>
+                            <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-gold)' }}>{alt.alert_id}</td>
+                            <td style={{ fontWeight: 700, color: 'var(--status-danger-text)' }}>{alt.alert_type}</td>
+                            <td>{alt.zone}</td>
+                            <td style={{ maxWidth: '400px' }}>{alt.reason}</td>
+                            <td>
+                              <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '2px', background: alt.state === 'OPEN' ? 'var(--bg-danger)' : 'var(--bg-success)', color: alt.state === 'OPEN' ? 'var(--status-danger-text)' : 'var(--status-success-text)', fontWeight: 700 }}>
+                                {alt.state}
+                              </span>
+                            </td>
+                            <td>
+                              {alt.state === 'OPEN' && (
+                                <div style={{ display: 'flex', gap: '6px' }}>
+                                  <button
+                                    onClick={() => handleConfirmKumbhAlert(alt.alert_id, 'CONFIRM')}
+                                    style={{ background: 'var(--status-success)', color: '#fff', padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, borderRadius: '2px' }}
+                                  >
+                                    Confirm
+                                  </button>
+                                  <button
+                                    onClick={() => handleConfirmKumbhAlert(alt.alert_id, 'DISMISS')}
+                                    style={{ background: 'var(--bg-subtle)', color: 'var(--text-secondary)', padding: '3px 8px', fontSize: '0.68rem', borderRadius: '2px', border: '1px solid var(--border-subtle)' }}
+                                  >
+                                    Dismiss
+                                  </button>
+                                </div>
+                              )}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  )}
+                </div>
+              </>
+            )}
+
+            {/* ─────────────────────────────────────────────────────────
+                SECTION 2: SURVEILLANCE FEED (GET /kumbh/observations)
+                ───────────────────────────────────────────────────────── */}
+            {kumbhSection === 'feed' && (
+              <div className="gov-card" style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
                   <div>
-                    <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>PROCESSED EVENT:</span>
-                    <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
-                      {lastKumbhSimulation.event_played.event_id} ({lastKumbhSimulation.event_played.event_type}) in {lastKumbhSimulation.event_played.zone}
-                    </h4>
-                    <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                      {lastKumbhSimulation.event_played.details?.description}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="provenance-tag provenance-source">GET /kumbh/observations</span>
+                      <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        OPERATIONAL SURVEILLANCE FEED ({kumbhObservations.length})
+                      </h4>
+                    </div>
+                    <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      <strong>Important Principle:</strong> Observation ≠ Signal ≠ Guilt. Sensor observations record routine crowd activity and do not imply criminal conduct.
                     </p>
                   </div>
 
-                  <div style={{ textAlign: 'right' }}>
-                    <span style={{
-                      fontSize: '0.8rem',
-                      fontWeight: 800,
-                      padding: '4px 12px',
-                      borderRadius: 'var(--radius-xs)',
-                      background: lastKumbhSimulation.alert_raised ? 'var(--bg-danger)' : 'var(--bg-success)',
-                      color: lastKumbhSimulation.alert_raised ? 'var(--status-danger-text)' : 'var(--status-success-text)'
-                    }}>
-                      {lastKumbhSimulation.alert_raised ? '🚨 THREAT ALERT GENERATED' : '✓ NO ALERT (CONTROL CASE PASSED)'}
-                    </span>
+                  {/* Filter Toolbar */}
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <select
+                      value={kumbhFilterZone}
+                      onChange={(e) => setKumbhFilterZone(e.target.value)}
+                      style={{ padding: '5px 10px', fontSize: '0.74rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xs)', color: 'var(--text-primary)' }}
+                    >
+                      <option value="">All Zones</option>
+                      <option value="Ramkund">Ramkund</option>
+                      <option value="Panchavati">Panchavati</option>
+                      <option value="Trimbakeshwar">Trimbakeshwar</option>
+                      <option value="Tapovan">Tapovan</option>
+                      <option value="Godavari Ghats">Godavari Ghats</option>
+                    </select>
+
+                    <select
+                      value={kumbhFilterType}
+                      onChange={(e) => setKumbhFilterType(e.target.value)}
+                      style={{ padding: '5px 10px', fontSize: '0.74rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xs)', color: 'var(--text-primary)' }}
+                    >
+                      <option value="">All Event Types</option>
+                      <option value="WATCHLIST_SIGHTING">WATCHLIST_SIGHTING</option>
+                      <option value="CROWD_SURGE">CROWD_SURGE</option>
+                      <option value="LOST_AND_FOUND">LOST_AND_FOUND</option>
+                      <option value="TRAFFIC_DIVERSION">TRAFFIC_DIVERSION</option>
+                      <option value="POWER_OUTAGE">POWER_OUTAGE</option>
+                      <option value="WATER_SUPPLY_ISSUE">WATER_SUPPLY_ISSUE</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Observations Table */}
+                {(() => {
+                  const filtered = kumbhObservations.filter((obs) => {
+                    if (kumbhFilterZone && obs.zone !== kumbhFilterZone) return false;
+                    if (kumbhFilterType && obs.event_type !== kumbhFilterType) return false;
+                    return true;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        No operational observations found matching filter criteria.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ overflowX: 'auto' }}>
+                      <table className="gov-table">
+                        <thead>
+                          <tr>
+                            <th>EVENT ID</th>
+                            <th>TIMESTAMP</th>
+                            <th>EVENT TYPE</th>
+                            <th>SECTOR / ZONE</th>
+                            <th>OPERATIONAL DETAILS</th>
+                            <th>RELATED IDS</th>
+                            <th>STATUS</th>
+                            <th>INSPECTION</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {filtered.map((obs) => (
+                            <tr key={obs.event_id}>
+                              <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-gold)' }}>
+                                {obs.event_id}
+                              </td>
+                              <td style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+                                {obs.ts ? new Date(obs.ts).toLocaleTimeString() : 'N/A'}
+                              </td>
+                              <td>
+                                <span style={{
+                                  fontSize: '0.7rem',
+                                  padding: '2px 6px',
+                                  borderRadius: '2px',
+                                  fontWeight: 700,
+                                  background: obs.event_type === 'WATCHLIST_SIGHTING' ? 'var(--bg-danger)' : 'var(--bg-secondary)',
+                                  color: obs.event_type === 'WATCHLIST_SIGHTING' ? 'var(--status-danger-text)' : 'var(--text-primary)'
+                                }}>
+                                  {obs.event_type}
+                                </span>
+                              </td>
+                              <td style={{ fontWeight: 600 }}>{obs.zone}</td>
+                              <td style={{ maxWidth: '350px', fontSize: '0.74rem' }}>
+                                {obs.location_info?.description || 'Routine observation.'}
+                              </td>
+                              <td>
+                                {obs.related_ids && obs.related_ids.length > 0 ? (
+                                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', color: 'var(--accent-gold)' }}>
+                                    {obs.related_ids.join(', ')}
+                                  </span>
+                                ) : (
+                                  <span style={{ color: 'var(--text-muted)' }}>—</span>
+                                )}
+                              </td>
+                              <td>
+                                <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '2px', background: 'var(--bg-subtle)', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                                  {obs.status || 'OBSERVED'}
+                                </span>
+                              </td>
+                              <td>
+                                <button
+                                  onClick={() => handleInspectEventIntelligence(obs.event_id)}
+                                  style={{
+                                    padding: '3px 8px',
+                                    fontSize: '0.68rem',
+                                    fontWeight: 700,
+                                    borderRadius: 'var(--radius-xs)',
+                                    background: 'var(--accent-navy)',
+                                    color: '#ffffff',
+                                    border: 'none',
+                                    cursor: 'pointer'
+                                  }}
+                                >
+                                  Inspect Portfolio
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* ─────────────────────────────────────────────────────────
+                SECTION 3: INTELLIGENCE SIGNALS (GET /kumbh/signals)
+                ───────────────────────────────────────────────────────── */}
+            {kumbhSection === 'signals' && (
+              <div className="gov-card" style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="provenance-tag provenance-derived">GET /kumbh/signals</span>
+                      <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        CORRELATED INTELLIGENCE SIGNALS ({kumbhSignals.length})
+                      </h4>
+                    </div>
+                    <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      Intelligence signals represent algorithmic correlations (entity matches, proximity, infrastructure). <strong>They require investigator review and are never autonomous criminal verdicts.</strong>
+                    </p>
+                  </div>
+
+                  {/* Filter Toolbar */}
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                    <select
+                      value={kumbhFilterTier}
+                      onChange={(e) => setKumbhFilterTier(e.target.value)}
+                      style={{ padding: '5px 10px', fontSize: '0.74rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xs)', color: 'var(--text-primary)' }}
+                    >
+                      <option value="">All Evidence Tiers</option>
+                      <option value="STRONG">STRONG Tier</option>
+                      <option value="MEDIUM">MEDIUM Tier</option>
+                      <option value="WEAK">WEAK Tier</option>
+                    </select>
+                  </div>
+                </div>
+
+                {(() => {
+                  const filtered = kumbhSignals.filter((sig) => {
+                    if (kumbhFilterTier && sig.evidence_tier !== kumbhFilterTier) return false;
+                    return true;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        No intelligence signals match the current criteria.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                      {filtered.map((sig) => (
+                        <div
+                          key={sig.signal_id}
+                          style={{
+                            padding: '14px 18px',
+                            borderRadius: 'var(--radius-xs)',
+                            background: 'var(--bg-subtle)',
+                            border: '1px solid var(--border-subtle)',
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            gap: '16px'
+                          }}
+                        >
+                          <div style={{ flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                              <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '0.82rem', color: 'var(--accent-gold)' }}>
+                                {sig.signal_id}
+                              </span>
+                              <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '2px', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontWeight: 700 }}>
+                                {sig.signal_type}
+                              </span>
+                              <span style={{
+                                fontSize: '0.68rem',
+                                padding: '2px 8px',
+                                borderRadius: '2px',
+                                fontWeight: 800,
+                                background: sig.evidence_tier === 'STRONG' ? 'rgba(22, 163, 74, 0.15)' : sig.evidence_tier === 'MEDIUM' ? 'var(--bg-gold-subtle)' : 'var(--bg-secondary)',
+                                color: sig.evidence_tier === 'STRONG' ? 'var(--status-success-text)' : sig.evidence_tier === 'MEDIUM' ? 'var(--accent-gold-light)' : 'var(--text-muted)'
+                              }}>
+                                {sig.evidence_tier} EVIDENCE TIER
+                              </span>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
+                                Event: <code>{sig.event_id}</code>
+                              </span>
+                            </div>
+
+                            <p style={{ fontSize: '0.78rem', color: 'var(--text-primary)', marginTop: '8px', lineHeight: 1.45 }}>
+                              {sig.description}
+                            </p>
+
+                            {sig.evidence && sig.evidence.length > 0 && (
+                              <div style={{ marginTop: '8px', display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700 }}>CORRELATED EVIDENCE:</span>
+                                {sig.evidence.map((ev, evi) => (
+                                  <span key={evi} style={{ fontSize: '0.68rem', padding: '1px 6px', borderRadius: '2px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', fontFamily: 'var(--font-mono)' }}>
+                                    {ev}
+                                  </span>
+                                ))}
+                              </div>
+                            )}
+
+                            {sig.requires_investigator_review && (
+                              <div style={{ marginTop: '8px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '0.7rem', padding: '2px 8px', borderRadius: '2px', background: 'var(--bg-gold-subtle)', color: 'var(--accent-gold-light)', fontWeight: 700 }}>
+                                ⚠️ Requires Investigator Review
+                              </div>
+                            )}
+                          </div>
+
+                          <div style={{ textAlign: 'right', minWidth: '130px' }}>
+                            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>CONFIDENCE</div>
+                            <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--accent-gold)', fontFamily: 'var(--font-mono)' }}>
+                              {(sig.confidence * 100).toFixed(0)}%
+                            </div>
+                            <button
+                              onClick={() => handleInspectEventIntelligence(sig.event_id)}
+                              style={{
+                                marginTop: '10px',
+                                padding: '4px 10px',
+                                fontSize: '0.7rem',
+                                fontWeight: 700,
+                                background: 'var(--accent-navy)',
+                                color: '#ffffff',
+                                border: 'none',
+                                borderRadius: 'var(--radius-xs)',
+                                cursor: 'pointer'
+                              }}
+                            >
+                              Inspect Portfolio
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* ─────────────────────────────────────────────────────────
+                SECTION 4: OPERATIONAL CLUSTERS (GET /kumbh/clusters)
+                ───────────────────────────────────────────────────────── */}
+            {kumbhSection === 'clusters' && (
+              <div className="gov-card" style={{ padding: '20px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '14px', flexWrap: 'wrap', gap: '10px' }}>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span className="provenance-tag provenance-derived">GET /kumbh/clusters</span>
+                      <h4 style={{ fontSize: '0.9rem', fontWeight: 800, color: 'var(--text-primary)' }}>
+                        OPERATIONAL INCIDENT CLUSTERS ({kumbhClusters.length})
+                      </h4>
+                    </div>
+                    <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '4px' }}>
+                      Operational clustering reflects shared physical infrastructure, vehicle re-occurrence, or spatio-temporal bursts. <strong>Clusters are operational groupings, not proof of criminal syndicates.</strong>
+                    </p>
+                  </div>
+
+                  <select
+                    value={kumbhFilterClusterType}
+                    onChange={(e) => setKumbhFilterClusterType(e.target.value)}
+                    style={{ padding: '5px 10px', fontSize: '0.74rem', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)', borderRadius: 'var(--radius-xs)', color: 'var(--text-primary)' }}
+                  >
+                    <option value="">All Cluster Classifications</option>
+                    <option value="SHARED_INFRASTRUCTURE_CLUSTER">SHARED_INFRASTRUCTURE_CLUSTER</option>
+                    <option value="SHARED_ENTITY_CLUSTER">SHARED_ENTITY_CLUSTER</option>
+                    <option value="SPATIO_TEMPORAL_BURST">SPATIO_TEMPORAL_BURST</option>
+                  </select>
+                </div>
+
+                {(() => {
+                  const filtered = kumbhClusters.filter((c) => {
+                    if (kumbhFilterClusterType && c.cluster_type !== kumbhFilterClusterType) return false;
+                    return true;
+                  });
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.8rem' }}>
+                        No operational incident clusters currently formed.
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(420px, 1fr))', gap: '14px' }}>
+                      {filtered.map((clust) => (
+                        <div
+                          key={clust.cluster_id}
+                          style={{
+                            padding: '16px',
+                            borderRadius: 'var(--radius-xs)',
+                            background: 'var(--bg-subtle)',
+                            border: '1px solid var(--border-subtle)',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '10px'
+                          }}
+                        >
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontFamily: 'var(--font-mono)', fontWeight: 800, fontSize: '0.85rem', color: 'var(--accent-gold)' }}>
+                              {clust.cluster_id}
+                            </span>
+                            <span style={{ fontSize: '0.7rem', padding: '2px 8px', borderRadius: '2px', background: 'var(--bg-secondary)', color: 'var(--accent-blue)', fontWeight: 700 }}>
+                              {clust.cluster_type}
+                            </span>
+                          </div>
+
+                          <p style={{ fontSize: '0.76rem', color: 'var(--text-primary)', lineHeight: 1.45 }}>
+                            {clust.explanation}
+                          </p>
+
+                          {/* Member Events Chips */}
+                          <div>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '4px' }}>
+                              MEMBER SURVEILLANCE EVENTS ({clust.member_events?.length || 0}):
+                            </div>
+                            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                              {clust.member_events?.map((mId) => (
+                                <button
+                                  key={mId}
+                                  onClick={() => handleInspectEventIntelligence(mId)}
+                                  style={{
+                                    padding: '2px 6px',
+                                    borderRadius: '2px',
+                                    fontSize: '0.68rem',
+                                    fontFamily: 'var(--font-mono)',
+                                    background: 'var(--bg-card)',
+                                    border: '1px solid var(--border-medium)',
+                                    color: 'var(--text-primary)',
+                                    cursor: 'pointer'
+                                  }}
+                                  title="Inspect Event Intelligence Portfolio"
+                                >
+                                  {mId}
+                                </button>
+                              ))}
+                            </div>
+                          </div>
+
+                          {/* Shared Evidence */}
+                          {clust.shared_evidence && clust.shared_evidence.length > 0 && (
+                            <div>
+                              <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 700, marginBottom: '4px' }}>
+                                SHARED OPERATIONAL EVIDENCE:
+                              </div>
+                              <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                                {clust.shared_evidence.map((ev, evi) => (
+                                  <span key={evi} style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '2px', background: 'var(--bg-card)', border: '1px solid var(--border-subtle)', color: 'var(--text-secondary)' }}>
+                                    {ev}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '4px', paddingTop: '8px', borderTop: '1px solid var(--border-subtle)' }}>
+                            <span style={{ fontSize: '0.7rem', padding: '2px 6px', borderRadius: '2px', background: 'var(--bg-gold-subtle)', color: 'var(--accent-gold-light)', fontWeight: 700 }}>
+                              ⚠️ Requires Investigator Review
+                            </span>
+                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
+                              Confidence: {(clust.confidence * 100).toFixed(0)}%
+                            </span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  );
+                })()}
+              </div>
+            )}
+
+            {/* ─────────────────────────────────────────────────────────
+                EVENT INTELLIGENCE INSPECTOR (Drawer / Modal)
+                ───────────────────────────────────────────────────────── */}
+            {selectedEventId && (
+              <div
+                style={{
+                  position: 'fixed',
+                  top: 0,
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  background: 'rgba(0, 0, 0, 0.65)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  zIndex: 9999,
+                  padding: '20px'
+                }}
+              >
+                <div
+                  className="gov-card animate-fade-in"
+                  style={{
+                    width: '100%',
+                    maxWidth: '780px',
+                    maxHeight: '90vh',
+                    overflowY: 'auto',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '16px',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.4)',
+                    border: '1px solid var(--border-medium)'
+                  }}
+                >
+                  {/* Modal Header */}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: '1px solid var(--border-subtle)', paddingBottom: '12px' }}>
+                    <div>
+                      <span className="provenance-tag provenance-derived">
+                        GET /kumbh/events/{selectedEventId}/intelligence
+                      </span>
+                      <h3 style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--text-primary)', marginTop: '4px' }}>
+                        Event Intelligence Portfolio: {selectedEventId}
+                      </h3>
+                      <p style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
+                        Structured intelligence correlation across observation, signals, network context, and incident clustering.
+                      </p>
+                    </div>
+
+                    <button
+                      onClick={() => { setSelectedEventId(null); setEventIntel(null); }}
+                      style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                    >
+                      <X size={20} />
+                    </button>
+                  </div>
+
+                  {intelLoading ? (
+                    <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-muted)' }}>
+                      Loading structured intelligence portfolio for {selectedEventId}...
+                    </div>
+                  ) : eventIntel ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {/* Layer 1: Operational Observation */}
+                      <div style={{ padding: '12px 14px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                          1. Operational Observation
+                        </div>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', fontSize: '0.74rem' }}>
+                          <div><strong>Type:</strong> {eventIntel.observation?.event_type || 'OBSERVATION'}</div>
+                          <div><strong>Sector:</strong> {eventIntel.observation?.zone}</div>
+                          <div><strong>Status:</strong> {eventIntel.observation?.status || 'OBSERVED'}</div>
+                        </div>
+                        <p style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', marginTop: '6px' }}>
+                          {eventIntel.observation?.location_info?.description || 'Routine observation recorded in Kumbh surveillance feed.'}
+                        </p>
+                      </div>
+
+                      {/* Layer 2: Intelligence Signals */}
+                      <div style={{ padding: '12px 14px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                          2. Correlated Intelligence Signals ({eventIntel.signals?.length || 0})
+                        </div>
+                        {eventIntel.signals && eventIntel.signals.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                            {eventIntel.signals.map((s: any, idx: number) => (
+                              <div key={idx} style={{ padding: '8px 10px', background: 'var(--bg-card)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                  <span style={{ fontWeight: 700, fontSize: '0.76rem', color: 'var(--accent-gold)' }}>{s.signal_type}</span>
+                                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: s.evidence_tier === 'STRONG' ? 'var(--status-success-text)' : 'var(--accent-gold-light)' }}>
+                                    {s.evidence_tier} TIER ({(s.confidence * 100).toFixed(0)}%)
+                                  </span>
+                                </div>
+                                <p style={{ fontSize: '0.74rem', color: 'var(--text-primary)', marginTop: '4px' }}>{s.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 0' }}>
+                            No intelligence signals generated. Event matches routine surveillance baseline.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Layer 3: Network Context */}
+                      <div style={{ padding: '12px 14px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                          3. Graph & Network Context
+                        </div>
+                        {eventIntel.network_context ? (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-primary)' }}>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+                              <div><strong>Matched Entity:</strong> {eventIntel.network_context.matched_entity || 'N/A'}</div>
+                              <div><strong>Community:</strong> {eventIntel.network_context.community_id || 'N/A'}</div>
+                              <div><strong>Network Role:</strong> {eventIntel.network_context.role || 'MEMBER'}</div>
+                              <div><strong>Proximity:</strong> {eventIntel.network_context.distance_km ? `${eventIntel.network_context.distance_km} km` : 'Direct match'}</div>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 0' }}>
+                            No meaningful correlation found / Standard operational observation.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Layer 4: Cluster Correlation */}
+                      <div style={{ padding: '12px 14px', borderRadius: 'var(--radius-xs)', background: 'var(--bg-subtle)', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                          4. Incident Cluster Association
+                        </div>
+                        {eventIntel.cluster ? (
+                          <div style={{ fontSize: '0.75rem', color: 'var(--text-primary)' }}>
+                            <strong>Cluster Type:</strong> {(eventIntel.cluster as any).cluster_type || 'OPERATIONAL_CLUSTER'}
+                            <p style={{ marginTop: '4px', fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                              {(eventIntel.cluster as any).explanation || 'Associated through shared infrastructure or spatio-temporal correlation.'}
+                            </p>
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontStyle: 'italic', padding: '6px 0' }}>
+                            No operational cluster association.
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Zero-Correlation Safe Banner */}
+                      {(!eventIntel.signals || eventIntel.signals.length === 0) && !eventIntel.network_context && (
+                        <div style={{ padding: '10px 14px', borderRadius: 'var(--radius-xs)', background: 'rgba(22, 163, 74, 0.12)', border: '1px solid rgba(22, 163, 74, 0.3)', color: 'var(--status-success-text)', fontSize: '0.75rem', fontWeight: 700 }}>
+                          ✓ Zero-Correlation Control Case — Passed false-positive protection. Preserved as standard operational observation without criminal accusation.
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div style={{ padding: '30px', textAlign: 'center', color: 'var(--status-danger-text)', fontSize: '0.8rem' }}>
+                      Unable to load intelligence portfolio for {selectedEventId}.
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', justifyContent: 'flex-end', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
+                    <button
+                      onClick={() => { setSelectedEventId(null); setEventIntel(null); }}
+                      style={{
+                        padding: '6px 16px',
+                        fontSize: '0.75rem',
+                        fontWeight: 700,
+                        background: 'var(--bg-secondary)',
+                        color: 'var(--text-primary)',
+                        border: '1px solid var(--border-medium)',
+                        borderRadius: 'var(--radius-xs)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      Close Inspector
+                    </button>
                   </div>
                 </div>
               </div>
             )}
-
-            {/* Active Alerts Table */}
-            <div className="gov-card" style={{ padding: '20px' }}>
-              <div style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '12px' }}>
-                ACTIVE SURVEILLANCE ALERTS ({kumbhAlerts.length})
-              </div>
-
-              {kumbhAlerts.length === 0 ? (
-                <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.78rem' }}>
-                  No active alerts. Use steppers above to fast-forward into planted events E1, E2, or E3.
-                </div>
-              ) : (
-                <table className="gov-table">
-                  <thead>
-                    <tr>
-                      <th>ALERT ID</th>
-                      <th>TYPE</th>
-                      <th>ZONE</th>
-                      <th>REASON / DETAILS</th>
-                      <th>STATUS</th>
-                      <th>ACTION</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {kumbhAlerts.map((alt) => (
-                      <tr key={alt.alert_id}>
-                        <td style={{ fontFamily: 'var(--font-mono)', fontWeight: 700, color: 'var(--accent-gold)' }}>{alt.alert_id}</td>
-                        <td style={{ fontWeight: 700, color: 'var(--status-danger-text)' }}>{alt.alert_type}</td>
-                        <td>{alt.zone}</td>
-                        <td style={{ maxWidth: '400px' }}>{alt.reason}</td>
-                        <td>
-                          <span style={{ fontSize: '0.68rem', padding: '2px 6px', borderRadius: '2px', background: alt.state === 'OPEN' ? 'var(--bg-danger)' : 'var(--bg-success)', color: alt.state === 'OPEN' ? 'var(--status-danger-text)' : 'var(--status-success-text)', fontWeight: 700 }}>
-                            {alt.state}
-                          </span>
-                        </td>
-                        <td>
-                          {alt.state === 'OPEN' && (
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              <button
-                                onClick={() => handleConfirmKumbhAlert(alt.alert_id, 'CONFIRM')}
-                                style={{ background: 'var(--status-success)', color: '#fff', padding: '3px 8px', fontSize: '0.68rem', fontWeight: 700, borderRadius: '2px' }}
-                              >
-                                Confirm
-                              </button>
-                              <button
-                                onClick={() => handleConfirmKumbhAlert(alt.alert_id, 'DISMISS')}
-                                style={{ background: 'var(--bg-subtle)', color: 'var(--text-secondary)', padding: '3px 8px', fontSize: '0.68rem', borderRadius: '2px', border: '1px solid var(--border-subtle)' }}
-                              >
-                                Dismiss
-                              </button>
-                            </div>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              )}
-            </div>
           </div>
         )}
 

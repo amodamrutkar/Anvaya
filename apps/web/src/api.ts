@@ -159,6 +159,7 @@ export interface Community {
   case_ids?: string[];
   density?: string | number;
   member_count?: number;
+  members?: string[];
   entity_ids?: string[];
   risk_level?: string;
 }
@@ -217,9 +218,15 @@ export interface GraphPathEdge {
 }
 
 export interface GraphPathResponse {
-  path: (string | null)[];
-  edges: GraphPathEdge[];
+  from_id?: string | null;
+  to_id?: string | null;
+  found: boolean;
   hops: number;
+  path: (string | null)[];
+  nodes?: (GraphNode | Entity | Record<string, any>)[];
+  edges: GraphPathEdge[];
+  evidence?: string[];
+  requires_investigator_review?: boolean;
 }
 
 export interface BridgeEntity {
@@ -445,6 +452,55 @@ export interface KumbhSimulationResponse {
   zone?: string;
 }
 
+export interface KumbhObservation {
+  event_id: string;
+  event_type: string;
+  ts: string;
+  zone: string;
+  location_info?: Record<string, any>;
+  related_ids?: string[];
+  source_agency?: string;
+  status?: string;
+  provenance?: Record<string, any>;
+}
+
+export interface KumbhSignal {
+  signal_id: string;
+  event_id: string;
+  signal_type: string;
+  confidence: number;
+  evidence_tier: 'STRONG' | 'MEDIUM' | 'WEAK' | string;
+  description: string;
+  reasons: string[];
+  evidence: string[];
+  provenance?: Record<string, any> | Record<string, any>[];
+  network_context?: Record<string, any> | null;
+  requires_investigator_review: boolean;
+  action: string;
+}
+
+export interface KumbhCluster {
+  cluster_id: string;
+  cluster_type: 'SHARED_INFRASTRUCTURE_CLUSTER' | 'SHARED_ENTITY_CLUSTER' | 'SPATIO_TEMPORAL_BURST' | string;
+  member_events: string[];
+  shared_evidence: string[];
+  confidence: number;
+  provenance?: Record<string, any>;
+  explanation: string;
+  requires_investigator_review: boolean;
+  action: string;
+}
+
+export interface KumbhEventIntelligence {
+  event_id: string;
+  event: Record<string, any>;
+  observation: Record<string, any>;
+  signals: KumbhSignal[] | Record<string, any>[];
+  network_context: Record<string, any> | null;
+  cluster: KumbhCluster | Record<string, any> | Record<string, any>[] | null;
+  requires_investigator_review: boolean;
+}
+
 // ─────────────────────────────────────────────────────────────
 // Generic Fetch Helper
 // ─────────────────────────────────────────────────────────────
@@ -504,8 +560,26 @@ export const api = {
     apiRequest<CommunityDetail>(`/graph/communities/${encodeURIComponent(id)}`, { method: 'GET' }, userId),
   getNeighborhood: (entityId: string, hops = 2, userId = 'analyst1') =>
     apiRequest<NeighborhoodGraph>(`/graph/entity/${encodeURIComponent(entityId)}/neighborhood?hops=${hops}`, { method: 'GET' }, userId),
-  getGraphPath: (fromId: string, toId: string, userId = 'analyst1') =>
-    apiRequest<GraphPathResponse>(`/graph/path?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}`, { method: 'GET' }, userId),
+  getGraphPath: (
+    fromId: string,
+    toId: string,
+    maxHopsOrUserId?: number | string,
+    maybeUserId?: string
+  ) => {
+    let maxHops = 5;
+    let userId = 'analyst1';
+    if (typeof maxHopsOrUserId === 'number') {
+      maxHops = maxHopsOrUserId;
+      if (maybeUserId) userId = maybeUserId;
+    } else if (typeof maxHopsOrUserId === 'string') {
+      userId = maxHopsOrUserId;
+    }
+    return apiRequest<GraphPathResponse>(
+      `/graph/path?from=${encodeURIComponent(fromId)}&to=${encodeURIComponent(toId)}&max_hops=${maxHops}`,
+      { method: 'GET' },
+      userId
+    );
+  },
   getRoles: (communityId?: string, userId = 'analyst1') => {
     const params = communityId ? `?community_id=${encodeURIComponent(communityId)}` : '';
     return apiRequest<RoleAssignment[]>(`/roles${params}`, { method: 'GET' }, userId);
@@ -578,7 +652,7 @@ export const api = {
   getAgencyInbox: (agency: string, userId = 'liaison1') =>
     apiRequest<AgencyInboxItem[]>(`/agency/${encodeURIComponent(agency)}/inbox`, { method: 'GET' }, userId),
 
-  // Nashik Kumbh Mela Surveillance Matrix
+  // Nashik Kumbh Mela Surveillance Matrix & Operations Intelligence
   getKumbhZones: (userId = 'analyst1') =>
     apiRequest<KumbhZone[]>('/kumbh/zones', { method: 'GET' }, userId),
   getKumbhAlerts: (userId = 'analyst1') =>
@@ -590,10 +664,47 @@ export const api = {
       `/kumbh/alerts/${encodeURIComponent(alertId)}/confirm`,
       {
         method: 'POST',
-        body: JSON.stringify({ action, notes }),
+        body: JSON.stringify({ action, reason: notes }),
       },
       userId
     ),
+  getKumbhObservations: (
+    params?: { limit?: number; offset?: number; zone?: string; event_type?: string },
+    userId = 'analyst1'
+  ) => {
+    const q = new URLSearchParams();
+    if (params?.limit !== undefined) q.set('limit', String(params.limit));
+    if (params?.offset !== undefined) q.set('offset', String(params.offset));
+    if (params?.zone) q.set('zone', params.zone);
+    if (params?.event_type) q.set('event_type', params.event_type);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return apiRequest<KumbhObservation[]>(`/kumbh/observations${qs}`, { method: 'GET' }, userId);
+  },
+  getKumbhSignals: (
+    params?: { limit?: number; offset?: number; signal_type?: string; evidence_tier?: string },
+    userId = 'analyst1'
+  ) => {
+    const q = new URLSearchParams();
+    if (params?.limit !== undefined) q.set('limit', String(params.limit));
+    if (params?.offset !== undefined) q.set('offset', String(params.offset));
+    if (params?.signal_type) q.set('signal_type', params.signal_type);
+    if (params?.evidence_tier) q.set('evidence_tier', params.evidence_tier);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return apiRequest<KumbhSignal[]>(`/kumbh/signals${qs}`, { method: 'GET' }, userId);
+  },
+  getKumbhClusters: (
+    params?: { limit?: number; offset?: number; cluster_type?: string },
+    userId = 'analyst1'
+  ) => {
+    const q = new URLSearchParams();
+    if (params?.limit !== undefined) q.set('limit', String(params.limit));
+    if (params?.offset !== undefined) q.set('offset', String(params.offset));
+    if (params?.cluster_type) q.set('cluster_type', params.cluster_type);
+    const qs = q.toString() ? `?${q.toString()}` : '';
+    return apiRequest<KumbhCluster[]>(`/kumbh/clusters${qs}`, { method: 'GET' }, userId);
+  },
+  getKumbhEventIntelligence: (eventId: string, userId = 'analyst1') =>
+    apiRequest<KumbhEventIntelligence>(`/kumbh/events/${encodeURIComponent(eventId)}/intelligence`, { method: 'GET' }, userId),
 
   // Audit Ledger & Integrity Verification
   getAuditLog: (limit = 50, offset = 0, userId = 'auditor1') =>
