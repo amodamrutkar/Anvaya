@@ -7,8 +7,19 @@ No secrets are hard-coded. All values come from .env / environment.
 import os
 from pathlib import Path
 
-# Root of the repository (two levels up from services/api/sutradhar_api/)
-_REPO_ROOT = Path(__file__).parent.parent.parent.parent
+# Environment and Root of the repository / container
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+
+_env_root = os.getenv("APP_ROOT") or os.getenv("REPO_ROOT")
+if _env_root:
+    _REPO_ROOT = Path(_env_root)
+elif (
+    Path("/app/contracts").exists()
+    and not (Path(__file__).parent.parent.parent.parent / "contracts").exists()
+):
+    _REPO_ROOT = Path("/app")
+else:
+    _REPO_ROOT = Path(__file__).parent.parent.parent.parent
 
 # Where pipeline artifacts live. Falls back to contracts/fixtures/ if absent.
 ARTIFACTS_DIR = Path(os.getenv("ARTIFACTS_DIR", str(_REPO_ROOT / "artifacts")))
@@ -17,13 +28,20 @@ CONTRACTS_SCHEMAS_DIR = _REPO_ROOT / "contracts" / "schemas"
 DATA_DIR = _REPO_ROOT / "data"
 KUMBH_EVENTS_PATH = DATA_DIR / "kumbh" / "events.jsonl"
 
-# Demo tamper mode — defaults to 1 for live demo tamper-detection demonstration
-DEMO_TAMPER = os.getenv("DEMO_TAMPER", "1") == "1"
+# Demo tamper mode — defaults to 0 for production; enable explicitly (DEMO_TAMPER=1) only for live tamper demo
+DEMO_TAMPER = os.getenv("DEMO_TAMPER", "0") == "1"
 
-# Development authentication and token verification
+# Development / controlled deployment authentication and token verification
 DEV_AUTH_ENABLED = os.getenv("DEV_AUTH_ENABLED", "1") == "1"
 DEV_AUTH_SECRET = os.getenv("DEV_AUTH_SECRET", "sutradhar-dev-secret-change-in-prod")
 DEV_AUTH_TOKEN_TTL_SECONDS = int(os.getenv("DEV_AUTH_TOKEN_TTL_SECONDS", "3600"))
+
+_INSECURE_DEFAULT_SECRET = "sutradhar-dev-secret-change-in-prod"
+if ENVIRONMENT == "production" and DEV_AUTH_ENABLED and DEV_AUTH_SECRET == _INSECURE_DEFAULT_SECRET:
+    raise RuntimeError(
+        "Production deployment cannot use the default DEV_AUTH_SECRET. "
+        "Set a strong DEV_AUTH_SECRET in your environment or .env file."
+    )
 
 # CORS
 CORS_ORIGINS: list[str] = [

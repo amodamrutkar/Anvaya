@@ -131,8 +131,8 @@ def run_checks(base_url: str) -> int:
                 print(f"  FAIL: federated response contains forbidden field: {field}")
                 failures += 1
 
-    # 12. Audit verify
-    r = client.get("/audit/verify")
+    # 12. Audit verify (requires AUDITOR role)
+    r = client.get("/audit/verify", headers={"X-Demo-User": "auditor1"})
     body = check("GET /audit/verify", r)
     if body is None:
         failures += 1

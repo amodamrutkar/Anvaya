@@ -5,19 +5,19 @@ LABEL description="Sutradhar API — synthetic data, simulated connectors"
 
 WORKDIR /app
 
-# Copy dependency spec first for layer caching
-COPY pyproject.toml .
-RUN pip install --no-cache-dir -e "."
+# Copy service dependencies and packages
+COPY services/graph/ ./services/graph/
+COPY services/api/ ./services/api/
 
-# Copy service source
-COPY sutradhar_api/ ./sutradhar_api/
+# Copy canonical contracts and data fixtures
+COPY contracts/ ./contracts/
+COPY data/ ./data/
 
-# Copy contracts and data (mounted as volumes in compose, but needed for fallback)
-# These are read-only at runtime; never write to them from the container
-COPY ../../contracts /app/contracts
-COPY ../../data /app/data
+# Install both sutradhar_graph and sutradhar_api
+RUN pip install --no-cache-dir -e ./services/graph -e ./services/api
 
 ENV PYTHONUNBUFFERED=1
+ENV APP_ROOT=/app
 ENV ARTIFACTS_DIR=/app/artifacts
 ENV DEMO_TAMPER=0
 
