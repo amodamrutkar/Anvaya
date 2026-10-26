@@ -45,7 +45,7 @@ log = logging.getLogger("sutradhar_api")
 # FastAPI app
 # ─────────────────────────────────────────────────────────────
 app = FastAPI(
-    title="Sutradhar API",
+    title="Anvaya API",
     version=__version__,
     description=(
         "Multi-agency financial intelligence and entity-resolution platform. "

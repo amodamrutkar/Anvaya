@@ -1,7 +1,7 @@
 {
   "openapi": "3.1.0",
   "info": {
-    "title": "Sutradhar API",
+    "title": "Anvaya API",
     "description": "Multi-agency financial intelligence and entity-resolution platform. **All data is entirely synthetic.** All connectors are simulated. No real person, agency or case is represented.",
     "version": "0.1.0"
   },

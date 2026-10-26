@@ -805,9 +805,9 @@ export default function App() {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
                   <h1 style={{ fontSize: '1.25rem', fontWeight: 800, letterSpacing: '0.02em', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px', margin: 0, lineHeight: 1.2 }}>
-                    <span className="font-mr" style={{ color: theme === 'light' ? '#1e3a8a' : 'var(--accent-gold)', fontSize: '1.3rem', fontWeight: 800 }}>सूत्रधार</span>
+                    <span className="font-mr" style={{ color: theme === 'light' ? '#1e3a8a' : 'var(--accent-gold)', fontSize: '1.3rem', fontWeight: 800 }}>अन्वय</span>
                     <span style={{ color: 'var(--border-strong)', fontWeight: 400 }}>•</span>
-                    <span>SUTRADHAR</span>
+                    <span>ANVAYA</span>
                   </h1>
 
                   <span style={{ fontSize: '0.62rem', padding: '2px 8px', borderRadius: '3px', background: theme === 'light' ? '#eff6ff' : 'rgba(37, 99, 235, 0.15)', color: theme === 'light' ? '#1e3a8a' : '#93c5fd', border: `1px solid ${theme === 'light' ? '#bfdbfe' : 'rgba(59, 130, 246, 0.3)'}`, fontWeight: 700, letterSpacing: '0.04em' }}>
@@ -1321,7 +1321,7 @@ export default function App() {
                       <div style={{ padding: '10px 12px', background: 'var(--bg-subtle)', borderRadius: 'var(--radius-xs)', border: '1px solid var(--border-subtle)' }}>
                         <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontWeight: 600 }}>WHY IT MATTERS TO JUDGES</div>
                         <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: '2px' }}>
-                          Traditional police investigations only pursue local crime types. SUTRADHAR automatically identifies high-betweenness brokers who enable multi-crime syndicates to operate.
+                          Traditional police investigations only pursue local crime types. ANVAYA automatically identifies high-betweenness brokers who enable multi-crime syndicates to operate.
                         </div>
                       </div>
                       <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
