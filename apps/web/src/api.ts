@@ -507,7 +507,9 @@ export interface KumbhEventIntelligence {
 // ─────────────────────────────────────────────────────────────
 
 async function apiRequest<T>(endpoint: string, options: RequestInit = {}, userId = 'analyst1'): Promise<T> {
-  const url = `${API_BASE_URL}${endpoint}`;
+  const baseUrl = API_BASE_URL.replace(/\/+$/, '');
+  const cleanEndpoint = endpoint.replace(/^\/+/, '');
+  const url = baseUrl ? `${baseUrl}/${cleanEndpoint}` : `/${cleanEndpoint}`;
   const headers = {
     'Content-Type': 'application/json',
     'X-Demo-User': userId,
