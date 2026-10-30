@@ -1,0 +1,113 @@
+{
+  "bridges": [
+    {
+      "node_id": "PHONE:6022768040",
+      "node_type": "PHONE",
+      "label": "6022768040",
+      "communities": [
+        "COM-002"
+      ],
+      "crime_types": [
+        "CYBER_FRAUD",
+        "EXTORTION",
+        "NARCOTICS"
+      ],
+      "linked_person_ids": [
+        "ENT-0038",
+        "ENT-0045",
+        "ENT-0194",
+        "ENT-0197",
+        "ENT-0428"
+      ],
+      "evidence_record_ids": [
+        "R-CEN-000007",
+        "R-CYB-000007",
+        "R-CYB-000008",
+        "R-SPO-000007",
+        "R-SPO-000008"
+      ],
+      "reasons": [
+        "Spans 3 distinct crime classifications: CYBER_FRAUD, EXTORTION, NARCOTICS",
+        "Shared technical infrastructure utilized by 5 persons"
+      ]
+    },
+    {
+      "node_id": "ACCOUNT:PUNB:26577442871422",
+      "node_type": "ACCOUNT",
+      "label": "PUNB:26577442871422",
+      "communities": [
+        "COM-002"
+      ],
+      "crime_types": [
+        "CYBER_FRAUD",
+        "EXTORTION"
+      ],
+      "linked_person_ids": [
+        "ENT-0038",
+        "ENT-0045",
+        "ENT-0194",
+        "ENT-0197"
+      ],
+      "evidence_record_ids": [
+        "R-CYB-000007",
+        "R-CYB-000008",
+        "R-SPO-000007",
+        "R-SPO-000008"
+      ],
+      "reasons": [
+        "Spans 2 distinct crime classifications: CYBER_FRAUD, EXTORTION",
+        "Shared technical infrastructure utilized by 4 persons"
+      ]
+    },
+    {
+      "node_id": "VEHICLE:MH03SN7201",
+      "node_type": "VEHICLE",
+      "label": "MH03SN7201",
+      "communities": [
+        "COM-002"
+      ],
+      "crime_types": [
+        "EXTORTION",
+        "NARCOTICS"
+      ],
+      "linked_person_ids": [
+        "ENT-0038",
+        "ENT-0045",
+        "ENT-0428"
+      ],
+      "evidence_record_ids": [
+        "R-CEN-000007",
+        "R-SPO-000007",
+        "R-SPO-000008"
+      ],
+      "reasons": [
+        "Spans 2 distinct crime classifications: EXTORTION, NARCOTICS",
+        "Shared technical infrastructure utilized by 3 persons"
+      ]
+    },
+    {
+      "node_id": "PHONE:7884095724",
+      "node_type": "PHONE",
+      "label": "7884095724",
+      "communities": [
+        "COM-001"
+      ],
+      "crime_types": [
+        "CYBER_FRAUD",
+        "NARCOTICS"
+      ],
+      "linked_person_ids": [
+        "ENT-0167",
+        "ENT-0430"
+      ],
+      "evidence_record_ids": [
+        "R-CEN-000008",
+        "R-CYB-000002"
+      ],
+      "reasons": [
+        "Spans 2 distinct crime classifications: CYBER_FRAUD, NARCOTICS",
+        "Shared technical infrastructure utilized by 2 persons"
+      ]
+    }
+  ]
+}

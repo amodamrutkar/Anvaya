@@ -1,0 +1,372 @@
+{
+  "chains": [
+    {
+      "chain_id": "MULE-001",
+      "total_amount": 5615330.0,
+      "victims_count": 140,
+      "max_depth": 2,
+      "layer1_baseline_depth": 1,
+      "depth_gained": 1,
+      "accounts": [
+        {
+          "account_key": "BARB:54004320985996",
+          "holder_entity_id": "ENT-BARB:5",
+          "holder_name": "Unknown Holder",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 0.7,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "High fund dispersion fan-out to 2 downstream accounts",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 625776.0,
+          "outflow": 622129.0,
+          "fan_in": 2,
+          "fan_out": 2,
+          "median_passthrough_minutes": 38171.0,
+          "complaint_count": 1
+        },
+        {
+          "account_key": "HDFC:21263322966171",
+          "holder_entity_id": "ENT-0161",
+          "holder_name": "Sachin Tukaram Kale",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 0.7,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "High fund dispersion fan-out to 2 downstream accounts",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 130461.0,
+          "outflow": 597667.0,
+          "fan_in": 2,
+          "fan_out": 2,
+          "median_passthrough_minutes": 62201.0,
+          "complaint_count": 9
+        },
+        {
+          "account_key": "HDFC:95604812343829",
+          "holder_entity_id": "ENT-0188",
+          "holder_name": "प्रशांत लक्ष्मण बोर्से",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 0.7,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "High fund dispersion fan-out to 3 downstream accounts",
+            "Flagged in 17 distinct NCRP/1930 fraud complaints",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 904553.0,
+          "outflow": 846745.0,
+          "fan_in": 2,
+          "fan_out": 3,
+          "median_passthrough_minutes": 54694.0,
+          "complaint_count": 17
+        },
+        {
+          "account_key": "ICIC:58511387882217",
+          "holder_entity_id": "ENT-0227",
+          "holder_name": "Bijay S. Khann",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 1.0,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "Flagged in 46 distinct NCRP/1930 fraud complaints",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 206043.0,
+          "outflow": 429813.0,
+          "fan_in": 1,
+          "fan_out": 1,
+          "median_passthrough_minutes": 20774.0,
+          "complaint_count": 46
+        },
+        {
+          "account_key": "IDFB:52440634806607",
+          "holder_entity_id": "ENT-0206",
+          "holder_name": "Pratibha Pardhi",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 1.0,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 465278.0,
+          "outflow": 472840.0,
+          "fan_in": 1,
+          "fan_out": 1,
+          "median_passthrough_minutes": 170244.0,
+          "complaint_count": 7
+        },
+        {
+          "account_key": "IDFB:73435388196874",
+          "holder_entity_id": "ENT-IDFB:7",
+          "holder_name": "Unknown Holder",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 0.7,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "High fund dispersion fan-out to 3 downstream accounts",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 487986.0,
+          "outflow": 494184.0,
+          "fan_in": 3,
+          "fan_out": 3,
+          "median_passthrough_minutes": 39746.0,
+          "complaint_count": 1
+        },
+        {
+          "account_key": "KKBK:61757503098830",
+          "holder_entity_id": "ENT-0200",
+          "holder_name": "Jayant Subhash Waghmare",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 1.0,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "Flagged in 48 distinct NCRP/1930 fraud complaints",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 840066.0,
+          "outflow": 68705.0,
+          "fan_in": 2,
+          "fan_out": 1,
+          "median_passthrough_minutes": 19409.0,
+          "complaint_count": 48
+        },
+        {
+          "account_key": "MAHB:43928104561890",
+          "holder_entity_id": "ENT-MAHB:4",
+          "holder_name": "Unknown Holder",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 1.0,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 21491.0,
+          "outflow": 493387.0,
+          "fan_in": 1,
+          "fan_out": 1,
+          "median_passthrough_minutes": 81254.0,
+          "complaint_count": 1
+        },
+        {
+          "account_key": "PUNB:42635395343273",
+          "holder_entity_id": "ENT-PUNB:4",
+          "holder_name": "Unknown Holder",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 0.7,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "High fund dispersion fan-out to 4 downstream accounts",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 0.0,
+          "outflow": 909077.0,
+          "fan_in": 0,
+          "fan_out": 4,
+          "median_passthrough_minutes": 46906.0,
+          "complaint_count": 1
+        },
+        {
+          "account_key": "SBIN:86117574539147",
+          "holder_entity_id": "ENT-0167",
+          "holder_name": "Nitin Shankar Gaikwad",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 1.0,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "Flagged in 37 distinct NCRP/1930 fraud complaints",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 1063320.0,
+          "outflow": 474740.0,
+          "fan_in": 4,
+          "fan_out": 1,
+          "median_passthrough_minutes": 50018.0,
+          "complaint_count": 37
+        },
+        {
+          "account_key": "UBIN:36516371548327",
+          "holder_entity_id": "ENT-0238",
+          "holder_name": "Nitin Shankar Dubey",
+          "layer": 1,
+          "classification": "LIKELY_DECEIVED",
+          "score": 1.0,
+          "reasons": [
+            "Layer 1 initial victim-intake account",
+            "Flagged in 31 distinct NCRP/1930 fraud complaints",
+            "Account profile matches deceived holder: zero outbound fan-out; swept by external syndicate"
+          ],
+          "inflow": 870356.0,
+          "outflow": 206043.0,
+          "fan_in": 2,
+          "fan_out": 1,
+          "median_passthrough_minutes": 62527.0,
+          "complaint_count": 31
+        }
+      ],
+      "edges": [
+        {
+          "from_account": "PUNB:42635395343273",
+          "to_account": "HDFC:21263322966171",
+          "amount": 91086.0,
+          "ts": "2025-08-23T14:01:00Z",
+          "channel": "RTGS"
+        },
+        {
+          "from_account": "KKBK:61757503098830",
+          "to_account": "SBIN:86117574539147",
+          "amount": 68705.0,
+          "ts": "2025-10-16T14:16:00Z",
+          "channel": "RTGS"
+        },
+        {
+          "from_account": "SBIN:86117574539147",
+          "to_account": "HDFC:95604812343829",
+          "amount": 474740.0,
+          "ts": "2025-07-23T04:26:00Z",
+          "channel": "NEFT"
+        },
+        {
+          "from_account": "ICIC:58511387882217",
+          "to_account": "HDFC:95604812343829",
+          "amount": 429813.0,
+          "ts": "2025-11-18T16:12:00Z",
+          "channel": "NEFT"
+        },
+        {
+          "from_account": "MAHB:43928104561890",
+          "to_account": "BARB:54004320985996",
+          "amount": 493387.0,
+          "ts": "2025-08-19T20:03:00Z",
+          "channel": "NEFT"
+        },
+        {
+          "from_account": "PUNB:42635395343273",
+          "to_account": "IDFB:73435388196874",
+          "amount": 145410.0,
+          "ts": "2025-07-22T00:15:00Z",
+          "channel": "NEFT"
+        },
+        {
+          "from_account": "IDFB:73435388196874",
+          "to_account": "SBIN:86117574539147",
+          "amount": 433318.0,
+          "ts": "2025-09-11T20:38:00Z",
+          "channel": "NEFT"
+        },
+        {
+          "from_account": "PUNB:42635395343273",
+          "to_account": "UBIN:36516371548327",
+          "amount": 478260.0,
+          "ts": "2025-10-24T16:45:00Z",
+          "channel": "RTGS"
+        },
+        {
+          "from_account": "IDFB:73435388196874",
+          "to_account": "MAHB:43928104561890",
+          "amount": 21491.0,
+          "ts": "2025-06-24T09:49:00Z",
+          "channel": "RTGS"
+        },
+        {
+          "from_account": "UBIN:36516371548327",
+          "to_account": "ICIC:58511387882217",
+          "amount": 206043.0,
+          "ts": "2025-11-04T05:58:00Z",
+          "channel": "RTGS"
+        },
+        {
+          "from_account": "IDFB:52440634806607",
+          "to_account": "KKBK:61757503098830",
+          "amount": 472840.0,
+          "ts": "2025-11-06T14:44:00Z",
+          "channel": "RTGS"
+        },
+        {
+          "from_account": "HDFC:95604812343829",
+          "to_account": "KKBK:61757503098830",
+          "amount": 367226.0,
+          "ts": "2025-10-24T03:15:00Z",
+          "channel": "RTGS"
+        },
+        {
+          "from_account": "HDFC:21263322966171",
+          "to_account": "IDFB:52440634806607",
+          "amount": 465278.0,
+          "ts": "2025-07-11T09:20:00Z",
+          "channel": "IMPS"
+        },
+        {
+          "from_account": "BARB:54004320985996",
+          "to_account": "SBIN:86117574539147",
+          "amount": 366976.0,
+          "ts": "2025-07-26T16:50:00Z",
+          "channel": "RTGS"
+        },
+        {
+          "from_account": "PUNB:42635395343273",
+          "to_account": "SBIN:86117574539147",
+          "amount": 194321.0,
+          "ts": "2025-06-20T03:35:00Z",
+          "channel": "IMPS"
+        },
+        {
+          "from_account": "HDFC:95604812343829",
+          "to_account": "IDFB:73435388196874",
+          "amount": 87423.0,
+          "ts": "2025-08-04T07:04:00Z",
+          "channel": "UPI"
+        },
+        {
+          "from_account": "IDFB:73435388196874",
+          "to_account": "HDFC:21263322966171",
+          "amount": 39375.0,
+          "ts": "2025-11-11T23:42:00Z",
+          "channel": "RTGS"
+        },
+        {
+          "from_account": "HDFC:95604812343829",
+          "to_account": "UBIN:36516371548327",
+          "amount": 392096.0,
+          "ts": "2025-09-11T06:38:00Z",
+          "channel": "RTGS"
+        },
+        {
+          "from_account": "HDFC:21263322966171",
+          "to_account": "BARB:54004320985996",
+          "amount": 132389.0,
+          "ts": "2025-06-30T04:39:00Z",
+          "channel": "IMPS"
+        },
+        {
+          "from_account": "BARB:54004320985996",
+          "to_account": "IDFB:73435388196874",
+          "amount": 255153.0,
+          "ts": "2025-09-27T02:19:00Z",
+          "channel": "UPI"
+        }
+      ],
+      "recruiter_candidates": [],
+      "controller_candidates": [
+        "ENT-0161",
+        "ENT-0188",
+        "ENT-BARB:5",
+        "ENT-IDFB:7",
+        "ENT-PUNB:4"
+      ]
+    }
+  ]
+}

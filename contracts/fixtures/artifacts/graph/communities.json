@@ -1,0 +1,135 @@
+{
+  "communities": [
+    {
+      "community_id": "COM-001",
+      "label": "Cyber-Fraud Mule Ring (Beed)",
+      "crime_types": [
+        "CYBER_FRAUD",
+        "NARCOTICS"
+      ],
+      "members": [
+        "ENT-0161",
+        "ENT-0167",
+        "ENT-0188",
+        "ENT-0200",
+        "ENT-0206",
+        "ENT-0227",
+        "ENT-0238",
+        "ENT-0430"
+      ],
+      "member_count": 8,
+      "cohesion": 0.3214,
+      "districts": [
+        "Beed",
+        "Osmanabad",
+        "Pune",
+        "Wardha"
+      ],
+      "agencies": [
+        "CENTRAL_AGENCY",
+        "MAHA_CYBER"
+      ],
+      "case_ids": [
+        "CASE-CEN-000008",
+        "CASE-CYB-000001",
+        "CASE-CYB-000002",
+        "CASE-CYB-000006",
+        "CASE-CYB-000009",
+        "CASE-CYB-000010",
+        "CASE-CYB-000014",
+        "CASE-CYB-000016"
+      ],
+      "first_activity": "2025-01-07",
+      "last_activity": "2026-10-20",
+      "continuing_activity": true,
+      "timeline": [
+        {
+          "month": "2025-01",
+          "case_count": 1
+        },
+        {
+          "month": "2025-04",
+          "case_count": 1
+        },
+        {
+          "month": "2025-05",
+          "case_count": 1
+        },
+        {
+          "month": "2025-10",
+          "case_count": 1
+        },
+        {
+          "month": "2026-08",
+          "case_count": 1
+        },
+        {
+          "month": "2026-09",
+          "case_count": 2
+        },
+        {
+          "month": "2026-10",
+          "case_count": 1
+        }
+      ]
+    },
+    {
+      "community_id": "COM-002",
+      "label": "Extortion Syndicate (Thane)",
+      "crime_types": [
+        "EXTORTION",
+        "CYBER_FRAUD",
+        "NARCOTICS"
+      ],
+      "members": [
+        "ENT-0038",
+        "ENT-0045",
+        "ENT-0194",
+        "ENT-0197",
+        "ENT-0428"
+      ],
+      "member_count": 5,
+      "cohesion": 1.0,
+      "districts": [
+        "Thane"
+      ],
+      "agencies": [
+        "CENTRAL_AGENCY",
+        "MAHA_CYBER",
+        "STATE_POLICE"
+      ],
+      "case_ids": [
+        "CASE-CEN-000007",
+        "CASE-CYB-000007",
+        "CASE-CYB-000008",
+        "CASE-SPO-000007",
+        "CASE-SPO-000008"
+      ],
+      "first_activity": "2026-02-15",
+      "last_activity": "2026-12-03",
+      "continuing_activity": true,
+      "timeline": [
+        {
+          "month": "2026-02",
+          "case_count": 1
+        },
+        {
+          "month": "2026-09",
+          "case_count": 1
+        },
+        {
+          "month": "2026-10",
+          "case_count": 1
+        },
+        {
+          "month": "2026-11",
+          "case_count": 1
+        },
+        {
+          "month": "2026-12",
+          "case_count": 1
+        }
+      ]
+    }
+  ]
+}

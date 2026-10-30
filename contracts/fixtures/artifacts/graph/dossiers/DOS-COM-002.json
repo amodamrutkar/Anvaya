@@ -1,0 +1,211 @@
+{
+  "dossier_id": "DOS-COM-002",
+  "community_id": "COM-002",
+  "community_label": "Extortion Syndicate (Thane)",
+  "status": "DRAFT",
+  "generated_at": "2026-10-21T18:30:15Z",
+  "disclaimer": "Draft to support officer judgement. Synthetic data.",
+  "legal_params": {
+    "act_name": "Maharashtra Control of Organised Crime Act, 1999",
+    "section": "Section 3(1) & Section 3(2)",
+    "lookback_years": 10,
+    "min_chargesheets_required": 2,
+    "min_gang_members_required": 2,
+    "verified": false,
+    "disclaimer": "Draft to support officer judgement. Synthetic data."
+  },
+  "summary": "This intelligence dossier documents Extortion Syndicate (Thane), comprising 5 identified operatives led by kingpin candidate(s) Rakesh Dagdu Pawar. Across the period 2026-02-15 to 2026-12-03, the syndicate is linked to 5 distinct case filings across Thane in the domains of EXTORTION, CYBER_FRAUD, NARCOTICS. Internal cohesion is measured at 1.00. Statutory audit indicates 1 formal chargesheet(s) and 4 evidence gap(s) requiring investigative resolution before formal sanction.",
+  "linked_cases": [
+    {
+      "case_ref": "CASE-CEN-000007",
+      "crime_type": "NARCOTICS",
+      "agency": "CENTRAL_AGENCY",
+      "filed_date": "2026-10-18",
+      "station": "Ambedkar Colony PS",
+      "source_record_ids": [
+        "R-CEN-000007"
+      ]
+    },
+    {
+      "case_ref": "CASE-CYB-000007",
+      "crime_type": "CYBER_FRAUD",
+      "agency": "MAHA_CYBER",
+      "filed_date": "2026-11-02",
+      "station": "Rajiv Nagar PS",
+      "source_record_ids": [
+        "R-CYB-000007"
+      ]
+    },
+    {
+      "case_ref": "CASE-CYB-000008",
+      "crime_type": "CYBER_FRAUD",
+      "agency": "MAHA_CYBER",
+      "filed_date": "2026-09-12",
+      "station": "Pragati Nagar PS",
+      "source_record_ids": [
+        "R-CYB-000008"
+      ]
+    },
+    {
+      "case_ref": "CASE-SPO-000007",
+      "crime_type": "EXTORTION",
+      "agency": "STATE_POLICE",
+      "filed_date": "2026-02-15",
+      "station": "Bahujan Colony PS",
+      "source_record_ids": [
+        "R-SPO-000007"
+      ]
+    },
+    {
+      "case_ref": "CASE-SPO-000008",
+      "crime_type": "EXTORTION",
+      "agency": "STATE_POLICE",
+      "filed_date": "2026-12-03",
+      "station": "Govind Peth PS",
+      "source_record_ids": [
+        "R-SPO-000008"
+      ]
+    }
+  ],
+  "prior_chargesheets": [
+    {
+      "case_ref": "CASE-SPO-000007",
+      "sections": [
+        "BNS-308",
+        "BNS-351"
+      ],
+      "filed_date": "2026-02-15",
+      "source_record_ids": [
+        "R-SPO-000007"
+      ]
+    }
+  ],
+  "associates": [
+    {
+      "entity_id": "ENT-0038",
+      "name": "Rakesh Dagdu Pawar",
+      "role": "KINGPIN_CANDIDATE",
+      "role_score": 0.73,
+      "role_reasons": [
+        "Commands central position in COM-002 (0 direct syndicate ties)",
+        "High insulation ratio: appears in only 1 direct cases while directing syndicate structure"
+      ],
+      "source_record_ids": [
+        "R-SPO-000007"
+      ]
+    },
+    {
+      "entity_id": "ENT-0045",
+      "name": "Raeksh Dagdu Pawar",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-002 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-SPO-000008"
+      ]
+    },
+    {
+      "entity_id": "ENT-0194",
+      "name": "Rakesh Dagdu Pawar",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-002 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-CYB-000007"
+      ]
+    },
+    {
+      "entity_id": "ENT-0197",
+      "name": "Rakesh Dagdu Pawar",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-002 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-CYB-000008"
+      ]
+    },
+    {
+      "entity_id": "ENT-0428",
+      "name": "Rakesh Dagdu Pawar",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-002 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-CEN-000007"
+      ]
+    }
+  ],
+  "financial_links": [],
+  "timeline": [
+    {
+      "date": "2026-02-15",
+      "event_type": "CASE_REGISTRATION",
+      "description": "STATE_POLICE registered case CASE-SPO-000007 (EXTORTION) at Bahujan Colony PS",
+      "source_record_ids": [
+        "R-SPO-000007"
+      ]
+    },
+    {
+      "date": "2026-09-12",
+      "event_type": "CASE_REGISTRATION",
+      "description": "MAHA_CYBER registered case CASE-CYB-000008 (CYBER_FRAUD) at Pragati Nagar PS",
+      "source_record_ids": [
+        "R-CYB-000008"
+      ]
+    },
+    {
+      "date": "2026-10-18",
+      "event_type": "CASE_REGISTRATION",
+      "description": "CENTRAL_AGENCY registered case CASE-CEN-000007 (NARCOTICS) at Ambedkar Colony PS",
+      "source_record_ids": [
+        "R-CEN-000007"
+      ]
+    },
+    {
+      "date": "2026-11-02",
+      "event_type": "CASE_REGISTRATION",
+      "description": "MAHA_CYBER registered case CASE-CYB-000007 (CYBER_FRAUD) at Rajiv Nagar PS",
+      "source_record_ids": [
+        "R-CYB-000007"
+      ]
+    },
+    {
+      "date": "2026-12-03",
+      "event_type": "CASE_REGISTRATION",
+      "description": "STATE_POLICE registered case CASE-SPO-000008 (EXTORTION) at Govind Peth PS",
+      "source_record_ids": [
+        "R-SPO-000008"
+      ]
+    }
+  ],
+  "evidence_gaps": [
+    {
+      "gap_type": "SINGLE_CASE_INVOLVEMENT",
+      "severity": "HIGH",
+      "description": "5 associate(s) appear in only one registered case (Rakesh Dagdu Pawar, Raeksh Dagdu Pawar, Rakesh Dagdu Pawar); statutory continuity requires multi-incident proof."
+    },
+    {
+      "gap_type": "INSUFFICIENT_CHARGESHEETS",
+      "severity": "HIGH",
+      "description": "Community has 1 formal chargesheet(s), whereas statutory MCOCA threshold requires >= 2 chargesheets filed within lookback window."
+    },
+    {
+      "gap_type": "MISSING_FINANCIAL_LINKAGE",
+      "severity": "MEDIUM",
+      "description": "No intra-syndicate financial transfers or shared mule accounts detected among members."
+    },
+    {
+      "gap_type": "SINGLE_DISTRICT_SCOPE",
+      "severity": "LOW",
+      "description": "Evidence confined to single district (Thane)."
+    }
+  ]
+}

@@ -1,1 +1,44 @@
-{"dataset_version": "v1", "er": {"auto_precision": 0.99, "auto_recall": 0.82, "overall_recall": 0.91, "by_difficulty": {"easy": {"precision": 0.99, "recall": 0.97}, "hard": {"precision": 0.97, "recall": 0.74}}, "wrong_merge_rate": 0.004, "review_share": 0.12}, "network": {"planted": 3, "recovered": 3, "kingpin_rank": 2, "bridges_found": 2, "bridges_planted": 2}, "mule": {"max_depth": 4, "layer1_baseline_depth": 1, "recruiter_detected": true, "deceived_precision": 0.85}, "time_saved": {"manual_minutes_estimate": 240, "system_seconds": 12}}
+{
+  "dataset_version": "v1",
+  "er": {
+    "auto_precision": 0.0,
+    "auto_recall": 0.0,
+    "overall_precision": 0.0,
+    "overall_recall": 0.0,
+    "overall_f1": 0.0,
+    "by_difficulty": {
+      "easy": {
+        "precision": 0.0,
+        "recall": 0.0
+      },
+      "hard": {
+        "precision": 0.0,
+        "recall": 0.0
+      }
+    },
+    "wrong_merge_rate": 1.0,
+    "review_share": 0.36
+  },
+  "network": {
+    "planted": 3,
+    "recovered": 0,
+    "kingpin_rank": -1,
+    "bridges_found": 0,
+    "bridges_planted": 0
+  },
+  "mule": {
+    "max_depth": 2,
+    "layer1_baseline_depth": 1,
+    "recruiter_detected": false,
+    "deceived_precision": 0.0
+  },
+  "time_saved": {
+    "manual_minutes_estimate": 240,
+    "system_seconds": 0
+  },
+  "fairness": {
+    "passed": true,
+    "concerns": [],
+    "unique_surnames": 0
+  }
+}

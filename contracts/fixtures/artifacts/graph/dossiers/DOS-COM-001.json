@@ -1,0 +1,409 @@
+{
+  "dossier_id": "DOS-COM-001",
+  "community_id": "COM-001",
+  "community_label": "Cyber-Fraud Mule Ring (Beed)",
+  "status": "DRAFT",
+  "generated_at": "2026-10-21T18:30:15Z",
+  "disclaimer": "Draft to support officer judgement. Synthetic data.",
+  "legal_params": {
+    "act_name": "Maharashtra Control of Organised Crime Act, 1999",
+    "section": "Section 3(1) & Section 3(2)",
+    "lookback_years": 10,
+    "min_chargesheets_required": 2,
+    "min_gang_members_required": 2,
+    "verified": false,
+    "disclaimer": "Draft to support officer judgement. Synthetic data."
+  },
+  "summary": "This intelligence dossier documents Cyber-Fraud Mule Ring (Beed), comprising 8 identified operatives led by kingpin candidate(s) प्रशांत लक्ष्मण बोर्से. Across the period 2025-01-07 to 2026-10-20, the syndicate is linked to 8 distinct case filings across Beed, Osmanabad, Pune, Wardha in the domains of CYBER_FRAUD, NARCOTICS. Internal cohesion is measured at 0.32. Statutory audit indicates 0 formal chargesheet(s) and 2 evidence gap(s) requiring investigative resolution before formal sanction.",
+  "linked_cases": [
+    {
+      "case_ref": "CASE-CEN-000008",
+      "crime_type": "NARCOTICS",
+      "agency": "CENTRAL_AGENCY",
+      "filed_date": "2026-09-26",
+      "station": "Andheri PS",
+      "source_record_ids": [
+        "R-CEN-000008"
+      ]
+    },
+    {
+      "case_ref": "CASE-CYB-000001",
+      "crime_type": "CYBER_FRAUD",
+      "agency": "MAHA_CYBER",
+      "filed_date": "2026-09-19",
+      "station": "Andheri PS",
+      "source_record_ids": [
+        "R-CYB-000001"
+      ]
+    },
+    {
+      "case_ref": "CASE-CYB-000002",
+      "crime_type": "CYBER_FRAUD",
+      "agency": "MAHA_CYBER",
+      "filed_date": "2025-05-18",
+      "station": "Nutan Chowk PS",
+      "source_record_ids": [
+        "R-CYB-000002"
+      ]
+    },
+    {
+      "case_ref": "CASE-CYB-000006",
+      "crime_type": "CYBER_FRAUD",
+      "agency": "MAHA_CYBER",
+      "filed_date": "2026-10-20",
+      "station": "Airoli PS",
+      "source_record_ids": [
+        "R-CYB-000006"
+      ]
+    },
+    {
+      "case_ref": "CASE-CYB-000009",
+      "crime_type": "CYBER_FRAUD",
+      "agency": "MAHA_CYBER",
+      "filed_date": "2025-10-31",
+      "station": "Airoli PS",
+      "source_record_ids": [
+        "R-CYB-000009"
+      ]
+    },
+    {
+      "case_ref": "CASE-CYB-000010",
+      "crime_type": "CYBER_FRAUD",
+      "agency": "MAHA_CYBER",
+      "filed_date": "2026-08-18",
+      "station": "Airoli PS",
+      "source_record_ids": [
+        "R-CYB-000010"
+      ]
+    },
+    {
+      "case_ref": "CASE-CYB-000014",
+      "crime_type": "CYBER_FRAUD",
+      "agency": "MAHA_CYBER",
+      "filed_date": "2025-04-26",
+      "station": "Bandra PS",
+      "source_record_ids": [
+        "R-CYB-000014"
+      ]
+    },
+    {
+      "case_ref": "CASE-CYB-000016",
+      "crime_type": "CYBER_FRAUD",
+      "agency": "MAHA_CYBER",
+      "filed_date": "2025-01-07",
+      "station": "Sadashiv Peth PS",
+      "source_record_ids": [
+        "R-CYB-000016"
+      ]
+    }
+  ],
+  "prior_chargesheets": [],
+  "associates": [
+    {
+      "entity_id": "ENT-0161",
+      "name": "Sachin Tukaram Kale",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-CYB-000001"
+      ]
+    },
+    {
+      "entity_id": "ENT-0167",
+      "name": "Nitin Shankar Gaikwad",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-CYB-000002"
+      ]
+    },
+    {
+      "entity_id": "ENT-0188",
+      "name": "प्रशांत लक्ष्मण बोर्से",
+      "role": "KINGPIN_CANDIDATE",
+      "role_score": 0.76,
+      "role_reasons": [
+        "Commands central position in COM-001 (0 direct syndicate ties)",
+        "High insulation ratio: appears in only 1 direct cases while directing syndicate structure",
+        "Significant financial inflow sink (directed flow score: 0.0655)"
+      ],
+      "source_record_ids": [
+        "R-CYB-000006"
+      ]
+    },
+    {
+      "entity_id": "ENT-0200",
+      "name": "Jayant Subhash Waghmare",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-CYB-000009"
+      ]
+    },
+    {
+      "entity_id": "ENT-0206",
+      "name": "Pratibha Pardhi",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-CYB-000010"
+      ]
+    },
+    {
+      "entity_id": "ENT-0227",
+      "name": "Bijay S. Khann",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-CYB-000014"
+      ]
+    },
+    {
+      "entity_id": "ENT-0238",
+      "name": "Nitin Shankar Dubey",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-CYB-000016"
+      ]
+    },
+    {
+      "entity_id": "ENT-0430",
+      "name": "Nitin Shankar Gaikwad",
+      "role": "MEMBER",
+      "role_score": 0.65,
+      "role_reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "source_record_ids": [
+        "R-CEN-000008"
+      ]
+    }
+  ],
+  "financial_links": [
+    {
+      "from_account": "PUNB:42635395343273",
+      "to_account": "HDFC:21263322966171",
+      "amount": 91086.0,
+      "source_record_ids": [
+        "EDGE-000440"
+      ]
+    },
+    {
+      "from_account": "KKBK:61757503098830",
+      "to_account": "SBIN:86117574539147",
+      "amount": 68705.0,
+      "source_record_ids": [
+        "EDGE-000441"
+      ]
+    },
+    {
+      "from_account": "SBIN:86117574539147",
+      "to_account": "HDFC:95604812343829",
+      "amount": 474740.0,
+      "source_record_ids": [
+        "EDGE-000442"
+      ]
+    },
+    {
+      "from_account": "ICIC:58511387882217",
+      "to_account": "HDFC:95604812343829",
+      "amount": 429813.0,
+      "source_record_ids": [
+        "EDGE-000443"
+      ]
+    },
+    {
+      "from_account": "IDFB:73435388196874",
+      "to_account": "SBIN:86117574539147",
+      "amount": 433318.0,
+      "source_record_ids": [
+        "EDGE-000446"
+      ]
+    },
+    {
+      "from_account": "PUNB:42635395343273",
+      "to_account": "UBIN:36516371548327",
+      "amount": 478260.0,
+      "source_record_ids": [
+        "EDGE-000447"
+      ]
+    },
+    {
+      "from_account": "UBIN:36516371548327",
+      "to_account": "ICIC:58511387882217",
+      "amount": 206043.0,
+      "source_record_ids": [
+        "EDGE-000449"
+      ]
+    },
+    {
+      "from_account": "IDFB:52440634806607",
+      "to_account": "KKBK:61757503098830",
+      "amount": 472840.0,
+      "source_record_ids": [
+        "EDGE-000450"
+      ]
+    },
+    {
+      "from_account": "HDFC:95604812343829",
+      "to_account": "KKBK:61757503098830",
+      "amount": 367226.0,
+      "source_record_ids": [
+        "EDGE-000451"
+      ]
+    },
+    {
+      "from_account": "HDFC:21263322966171",
+      "to_account": "IDFB:52440634806607",
+      "amount": 465278.0,
+      "source_record_ids": [
+        "EDGE-000452"
+      ]
+    },
+    {
+      "from_account": "BARB:54004320985996",
+      "to_account": "SBIN:86117574539147",
+      "amount": 366976.0,
+      "source_record_ids": [
+        "EDGE-000453"
+      ]
+    },
+    {
+      "from_account": "PUNB:42635395343273",
+      "to_account": "SBIN:86117574539147",
+      "amount": 194321.0,
+      "source_record_ids": [
+        "EDGE-000454"
+      ]
+    },
+    {
+      "from_account": "HDFC:95604812343829",
+      "to_account": "IDFB:73435388196874",
+      "amount": 87423.0,
+      "source_record_ids": [
+        "EDGE-000455"
+      ]
+    },
+    {
+      "from_account": "IDFB:73435388196874",
+      "to_account": "HDFC:21263322966171",
+      "amount": 39375.0,
+      "source_record_ids": [
+        "EDGE-000456"
+      ]
+    },
+    {
+      "from_account": "HDFC:95604812343829",
+      "to_account": "UBIN:36516371548327",
+      "amount": 392096.0,
+      "source_record_ids": [
+        "EDGE-000457"
+      ]
+    },
+    {
+      "from_account": "HDFC:21263322966171",
+      "to_account": "BARB:54004320985996",
+      "amount": 132389.0,
+      "source_record_ids": [
+        "EDGE-000458"
+      ]
+    }
+  ],
+  "timeline": [
+    {
+      "date": "2025-01-07",
+      "event_type": "CASE_REGISTRATION",
+      "description": "MAHA_CYBER registered case CASE-CYB-000016 (CYBER_FRAUD) at Sadashiv Peth PS",
+      "source_record_ids": [
+        "R-CYB-000016"
+      ]
+    },
+    {
+      "date": "2025-04-26",
+      "event_type": "CASE_REGISTRATION",
+      "description": "MAHA_CYBER registered case CASE-CYB-000014 (CYBER_FRAUD) at Bandra PS",
+      "source_record_ids": [
+        "R-CYB-000014"
+      ]
+    },
+    {
+      "date": "2025-05-18",
+      "event_type": "CASE_REGISTRATION",
+      "description": "MAHA_CYBER registered case CASE-CYB-000002 (CYBER_FRAUD) at Nutan Chowk PS",
+      "source_record_ids": [
+        "R-CYB-000002"
+      ]
+    },
+    {
+      "date": "2025-10-31",
+      "event_type": "CASE_REGISTRATION",
+      "description": "MAHA_CYBER registered case CASE-CYB-000009 (CYBER_FRAUD) at Airoli PS",
+      "source_record_ids": [
+        "R-CYB-000009"
+      ]
+    },
+    {
+      "date": "2026-08-18",
+      "event_type": "CASE_REGISTRATION",
+      "description": "MAHA_CYBER registered case CASE-CYB-000010 (CYBER_FRAUD) at Airoli PS",
+      "source_record_ids": [
+        "R-CYB-000010"
+      ]
+    },
+    {
+      "date": "2026-09-19",
+      "event_type": "CASE_REGISTRATION",
+      "description": "MAHA_CYBER registered case CASE-CYB-000001 (CYBER_FRAUD) at Andheri PS",
+      "source_record_ids": [
+        "R-CYB-000001"
+      ]
+    },
+    {
+      "date": "2026-09-26",
+      "event_type": "CASE_REGISTRATION",
+      "description": "CENTRAL_AGENCY registered case CASE-CEN-000008 (NARCOTICS) at Andheri PS",
+      "source_record_ids": [
+        "R-CEN-000008"
+      ]
+    },
+    {
+      "date": "2026-10-20",
+      "event_type": "CASE_REGISTRATION",
+      "description": "MAHA_CYBER registered case CASE-CYB-000006 (CYBER_FRAUD) at Airoli PS",
+      "source_record_ids": [
+        "R-CYB-000006"
+      ]
+    }
+  ],
+  "evidence_gaps": [
+    {
+      "gap_type": "SINGLE_CASE_INVOLVEMENT",
+      "severity": "HIGH",
+      "description": "8 associate(s) appear in only one registered case (Sachin Tukaram Kale, Nitin Shankar Gaikwad, प्रशांत लक्ष्मण बोर्से); statutory continuity requires multi-incident proof."
+    },
+    {
+      "gap_type": "INSUFFICIENT_CHARGESHEETS",
+      "severity": "HIGH",
+      "description": "Community has 0 formal chargesheet(s), whereas statutory MCOCA threshold requires >= 2 chargesheets filed within lookback window."
+    }
+  ]
+}

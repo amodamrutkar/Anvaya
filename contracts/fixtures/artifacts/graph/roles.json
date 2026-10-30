@@ -1,0 +1,163 @@
+{
+  "roles": [
+    {
+      "entity_id": "ENT-0188",
+      "role": "KINGPIN_CANDIDATE",
+      "score": 0.76,
+      "reasons": [
+        "Commands central position in COM-001 (0 direct syndicate ties)",
+        "High insulation ratio: appears in only 1 direct cases while directing syndicate structure",
+        "Significant financial inflow sink (directed flow score: 0.0655)"
+      ],
+      "evidence_record_ids": [
+        "R-CYB-000006"
+      ],
+      "community_id": "COM-001"
+    },
+    {
+      "entity_id": "ENT-0038",
+      "role": "KINGPIN_CANDIDATE",
+      "score": 0.73,
+      "reasons": [
+        "Commands central position in COM-002 (0 direct syndicate ties)",
+        "High insulation ratio: appears in only 1 direct cases while directing syndicate structure"
+      ],
+      "evidence_record_ids": [
+        "R-SPO-000007"
+      ],
+      "community_id": "COM-002"
+    },
+    {
+      "entity_id": "ENT-0161",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-CYB-000001"
+      ],
+      "community_id": "COM-001"
+    },
+    {
+      "entity_id": "ENT-0167",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-CYB-000002"
+      ],
+      "community_id": "COM-001"
+    },
+    {
+      "entity_id": "ENT-0200",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-CYB-000009"
+      ],
+      "community_id": "COM-001"
+    },
+    {
+      "entity_id": "ENT-0206",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-CYB-000010"
+      ],
+      "community_id": "COM-001"
+    },
+    {
+      "entity_id": "ENT-0227",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-CYB-000014"
+      ],
+      "community_id": "COM-001"
+    },
+    {
+      "entity_id": "ENT-0238",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-CYB-000016"
+      ],
+      "community_id": "COM-001"
+    },
+    {
+      "entity_id": "ENT-0430",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-001 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-CEN-000008"
+      ],
+      "community_id": "COM-001"
+    },
+    {
+      "entity_id": "ENT-0045",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-002 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-SPO-000008"
+      ],
+      "community_id": "COM-002"
+    },
+    {
+      "entity_id": "ENT-0194",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-002 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-CYB-000007"
+      ],
+      "community_id": "COM-002"
+    },
+    {
+      "entity_id": "ENT-0197",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-002 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-CYB-000008"
+      ],
+      "community_id": "COM-002"
+    },
+    {
+      "entity_id": "ENT-0428",
+      "role": "MEMBER",
+      "score": 0.65,
+      "reasons": [
+        "Active participant in COM-002 cases (1 case filings)"
+      ],
+      "evidence_record_ids": [
+        "R-CEN-000007"
+      ],
+      "community_id": "COM-002"
+    }
+  ]
+}

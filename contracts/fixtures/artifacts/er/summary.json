@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "elapsed_seconds": 0.19,
+  "records": 98,
+  "mentions": 200,
+  "candidate_pairs": 115,
+  "links_total": 25,
+  "links_auto": 16,
+  "links_review": 9,
+  "entities_person": 190,
+  "entities_phone": 187,
+  "entities_account": 49,
+  "entities_vehicle": 19,
+  "validation_stats": {
+    "phone": {
+      "accepted": 375,
+      "rejected": 0
+    },
+    "vehicle": {
+      "accepted": 50,
+      "rejected": 0
+    },
+    "account": {
+      "accepted": 48,
+      "rejected": 0
+    }
+  }
+}
